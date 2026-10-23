@@ -1,0 +1,111 @@
+# Стык дисциплин: метаболизм и физиология кислорода.
+#
+# Вопрос: почему мышца без кислорода производит лактат, и сколько ATP она
+# получает на глюкозу? Ответа нет ни в стволе гликолиза, ни в физиологии — он
+# выводится из стыка.
+#
+#   - Гликолиз (ствол) потребляет 2 NAD⁺ на глюкозу.
+#   - Сохранение: в установившемся режиме система может потреблять из среды
+#     только то, что среда даёт. NAD⁺ среда не даёт — он должен сойтись в ноль.
+#   - Физиология: O₂ среда даёт только в плоскости oxygen:present.
+#
+# Ядро перебирает системы «гликолиз + способ вернуть NAD⁺» и в каждой плоскости
+# выводит, какие из них жизнеспособны и каков их итог.
+
+include lib.agl
+
+axis oxygen
+value oxygen present
+value oxygen absent
+
+plane aerobic   = oxygen:present
+plane anaerobic = oxygen:absent
+
+# Дыхательная цепь, укрупнённо (учебник): 2 NADH + 2 H⁺ + O₂ → 2 NAD⁺ + 2 H₂O.
+# Это не реакция Rhea, а сумма многих; её баланс ядро проверяет так же.
+fact etc_rx: reaction(id: etc_lumped) @ [textbook]
+fact etc_1: participates(reaction: etc_lumped, species: CHEBI_57945, side: left, coeff: 2) @ [textbook]
+fact etc_2: participates(reaction: etc_lumped, species: CHEBI_15378, side: left, coeff: 2) @ [textbook]
+fact etc_3: participates(reaction: etc_lumped, species: CHEBI_15379, side: left, coeff: 1) @ [textbook]
+fact etc_4: participates(reaction: etc_lumped, species: CHEBI_57540, side: right, coeff: 2) @ [textbook]
+fact etc_5: participates(reaction: etc_lumped, species: CHEBI_15377, side: right, coeff: 2) @ [textbook]
+
+query balanced_all(reaction: RHEA_23444) @ expect yes
+query balanced_all(reaction: etc_lumped) @ expect yes
+
+# Способы вернуть NAD⁺.
+fact pw_lf: pathway(id: lactate_fermentation) @ [textbook]
+fact lf1: step(pathway: lactate_fermentation, reaction: RHEA_23444, direction: reverse, times: 1) @ [textbook]
+fact pw_no: pathway(id: nadh_oxidation) @ [textbook]
+fact no1: step(pathway: nadh_oxidation, reaction: etc_lumped, direction: forward, times: 1) @ [textbook]
+
+# Системы-кандидаты.
+fact sy1: system(id: glycolysis_only) @ [hypothesis]
+fact u11: uses(system: glycolysis_only, pathway: glycolysis, times: 1) @ [hypothesis]
+fact sy2: system(id: fermenting) @ [hypothesis]
+fact u21: uses(system: fermenting, pathway: glycolysis, times: 1) @ [hypothesis]
+fact u22: uses(system: fermenting, pathway: lactate_fermentation, times: 2) @ [hypothesis]
+fact sy3: system(id: respiring) @ [hypothesis]
+fact u31: uses(system: respiring, pathway: glycolysis, times: 1) @ [hypothesis]
+fact u32: uses(system: respiring, pathway: nadh_oxidation, times: 1) @ [hypothesis]
+
+# Что даёт среда. Кислород — только в аэробной плоскости.
+fact av_glc: available(species: CHEBI_4167) @ [textbook]
+fact av_adp: available(species: CHEBI_456216) @ [textbook]
+fact av_pi:  available(species: CHEBI_43474) @ [textbook]
+fact av_h:   available(species: CHEBI_15378) @ [textbook]
+fact av_w:   available(species: CHEBI_15377) @ [textbook]
+fact av_o2:  available(species: CHEBI_15379) @ aerobic [textbook]
+
+rule sys_net strict @: sys_net(system: ?s, species: ?x, value: ?v) <-
+    system(id: ?s), top(species: ?x),
+    ?v = sum(?u * ?d * ?t * ?sv * ?c) over (uses(system: ?s, pathway: ?p, times: ?u),
+                                           member(species: ?y, of: ?x),
+                                           step(pathway: ?p, reaction: ?r, direction: ?dir, times: ?t),
+                                           dir_value(direction: ?dir, value: ?d),
+                                           participates(reaction: ?r, species: ?y, side: ?side, coeff: ?c),
+                                           side_value(side: ?side, value: ?sv))
+
+rule consumed strict @: consumed(system: ?s, species: ?x) <- sys_net(system: ?s, species: ?x, value: ?v), ?v < 0
+rule lacking strict @: lacking(system: ?s, species: ?x) <-
+    consumed(system: ?s, species: ?x), ?k = count(?x) over (available(species: ?x)), ?k = 0
+rule supplied strict @: supplied(system: ?s, species: ?x) <- consumed(system: ?s, species: ?x), available(species: ?x)
+rule viable strict @: viable(system: ?s) <-
+    system(id: ?s),
+    ?c = count(?x) over (consumed(system: ?s, species: ?x)),
+    ?a = count(?x) over (supplied(system: ?s, species: ?x)),
+    ?c = ?a
+rule not_viable strict @: ¬viable(system: ?s) <- lacking(system: ?s, species: ?x)
+
+# Ответ: какие системы живут без кислорода и с ним.
+query viable(system: fermenting) @ anaerobic      expect yes
+query viable(system: respiring) @ anaerobic       expect no
+query viable(system: glycolysis_only) @ anaerobic expect no
+query viable(system: fermenting) @ aerobic        expect yes
+query viable(system: respiring) @ aerobic         expect yes
+query viable(system: glycolysis_only) @ aerobic   expect no
+
+# Почему: чего не хватает.
+query lacking(system: glycolysis_only, species: CHEBI_57540) @ anaerobic expect yes
+query lacking(system: respiring, species: CHEBI_15379) @ anaerobic       expect yes
+query lacking(system: respiring, species: CHEBI_15379) @ aerobic         expect unknown
+
+# Итог брожения: глюкоза + 2 ADP + 2 Pᵢ → 2 лактат + 2 ATP + 2 H₂O.
+query sys_net(system: fermenting, species: CHEBI_16651, value: 2) @ anaerobic  expect yes
+query sys_net(system: fermenting, species: CHEBI_30616, value: 2) @ anaerobic  expect yes
+query sys_net(system: fermenting, species: CHEBI_4167, value: -1) @ anaerobic  expect yes
+query sys_net(system: fermenting, species: CHEBI_57540, value: 0) @ anaerobic  expect yes
+query sys_net(system: fermenting, species: CHEBI_15378, value: 0) @ anaerobic  expect yes
+
+# Физиология: насыщение гемоглобина по кривой Хилла.
+fact hb: hill(protein: HbA, p50: 26.8[mmHg], n: 2.7) @ [textbook]
+fact pa1: pao2(site: sea_level, value: 95[mmHg]) @ [textbook]
+fact pa2: pao2(site: everest_8400m, value: 24.6[mmHg]) @ [measurement]   # Grocott et al., NEJM 2009
+rule sat strict @: saturation(site: ?s, value: ?S) <-
+    pao2(site: ?s, value: ?p), hill(protein: HbA, p50: ?p50, n: ?n),
+    ?r = (?p / ?p50) ^ ?n, ?S = ?r / (1 + ?r)
+rule hypox strict @: hypoxemic(site: ?s) <- saturation(site: ?s, value: ?S), ?S < 0.9
+rule normox strict @: ¬hypoxemic(site: ?s) <- saturation(site: ?s, value: ?S), ?S >= 0.9
+
+query hypoxemic(site: sea_level) @     expect no
+query hypoxemic(site: everest_8400m) @ expect yes

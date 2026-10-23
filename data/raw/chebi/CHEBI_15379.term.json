@@ -1,0 +1,321 @@
+{
+  "_embedded" : {
+    "terms" : [ {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_15379",
+      "lang" : "en",
+      "description" : [ ],
+      "synonyms" : [ "Disauerstoff", "E 948", "E-948", "E948", "O(2)", "O2", "OXYGEN MOLECULE", "Oxygen", "Oxygen", "[OO]", "dioxygen", "dioxygen", "dioxygene", "molecular oxygen" ],
+      "annotation" : {
+        "charge" : [ 0.0 ],
+        "database_cross_reference" : [ "cas:7782-44-7", "gmelin:485", "hmdb:HMDB0001377", "kegg.compound:C00007", "kegg.drug:D00003", "metacyc.compound:OXYGEN-MOLECULE", "molbase:750", "pdb-ccd:OXY", "pubmed:10906528", "pubmed:16977326", "pubmed:18210929", "pubmed:18638417", "pubmed:19840863", "pubmed:7710549", "pubmed:9463773", "wikipedia.en:Oxygen" ],
+        "generalized_empirical_formula" : [ "O2" ],
+        "has_alternative_id" : [ "CHEBI:10745", "CHEBI:13416", "CHEBI:23833", "CHEBI:25366", "CHEBI:29097", "CHEBI:30491", "CHEBI:44742", "CHEBI:7860" ],
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:15379" ],
+        "inchi_key_string" : [ "MYMOFIZGZYHOMD-UHFFFAOYSA-N" ],
+        "inchi_string" : [ "InChI=1S/O2/c1-2" ],
+        "mass" : [ "31.998" ],
+        "monoisotopic_mass" : [ "31.98983" ],
+        "smiles_string" : [ "O=O" ]
+      },
+      "label" : "dioxygen",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_15379",
+      "obo_id" : "CHEBI:15379",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : [ {
+        "database" : "cas",
+        "id" : "7782-44-7",
+        "description" : "cas",
+        "url" : "https://commonchemistry.cas.org/detail?cas_rn=7782-44-7"
+      }, {
+        "database" : "gmelin",
+        "id" : "485",
+        "description" : "gmelin",
+        "url" : null
+      }, {
+        "database" : "hmdb",
+        "id" : "HMDB0001377",
+        "description" : "hmdb",
+        "url" : "http://www.hmdb.ca/metabolites/HMDB0001377"
+      }, {
+        "database" : "kegg.compound",
+        "id" : "C00007",
+        "description" : "kegg.compound",
+        "url" : null
+      }, {
+        "database" : "kegg.drug",
+        "id" : "D00003",
+        "description" : "kegg.drug",
+        "url" : null
+      }, {
+        "database" : "metacyc.compound",
+        "id" : "OXYGEN-MOLECULE",
+        "description" : "metacyc.compound",
+        "url" : null
+      }, {
+        "database" : "molbase",
+        "id" : "750",
+        "description" : "molbase",
+        "url" : "http://www.molbase.com/en/index.php?app=search&search_keyword=750"
+      }, {
+        "database" : "pdb-ccd",
+        "id" : "OXY",
+        "description" : "pdb-ccd",
+        "url" : null
+      }, {
+        "database" : "pubmed",
+        "id" : "10906528",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/10906528/"
+      }, {
+        "database" : "pubmed",
+        "id" : "16977326",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/16977326/"
+      }, {
+        "database" : "pubmed",
+        "id" : "18210929",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/18210929/"
+      }, {
+        "database" : "pubmed",
+        "id" : "18638417",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/18638417/"
+      }, {
+        "database" : "pubmed",
+        "id" : "19840863",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/19840863/"
+      }, {
+        "database" : "pubmed",
+        "id" : "7710549",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/7710549/"
+      }, {
+        "database" : "pubmed",
+        "id" : "9463773",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/9463773/"
+      }, {
+        "database" : "wikipedia.en",
+        "id" : "Oxygen",
+        "description" : "wikipedia.en",
+        "url" : null
+      } ],
+      "obo_synonym" : [ {
+        "name" : "Oxygen",
+        "scope" : "hasExactSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "KEGG_COMPOUND",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "dioxygen",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Disauerstoff",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "E 948",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "E-948",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "E948",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "O(2)",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "uniprot_ft",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "O2",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "O2",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "OXYGEN MOLECULE",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "pdb-ccd",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Oxygen",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "[OO]",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "molbase",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "dioxygen",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "dioxygene",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "molecular oxygen",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_15379?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_15379/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_15379/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_15379/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_15379/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_15379/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_15379/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_15379/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_15379/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_15379/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_15379/graph"
+        },
+        "has_role" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_15379/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0000087"
+        },
+        "is_deprotonated_form_of" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_15379/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0018033"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms?iri=http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FCHEBI_15379"
+    }
+  },
+  "page" : {
+    "size" : 1,
+    "totalElements" : 1,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}

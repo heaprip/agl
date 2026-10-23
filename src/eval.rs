@@ -14,6 +14,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::model::*;
 use crate::units::Dim;
 
+/// Prefix of a premise that records an aggregate which found nothing.
+pub const ABSENT: &str = "∅ ";
+
 /// Upper bound on derived atoms, against runaway arithmetic recursion.
 const MAX_ATOMS: usize = 100_000;
 
@@ -334,9 +337,11 @@ fn fixpoint(
                 let strict = r.strength == Strength::Strict
                     && premises
                         .iter()
+                        .filter(|p| !p.starts_with(ABSENT))
                         .all(|p| db.get(p).is_some_and(|(_, ds)| ds.iter().any(|d| d.strict)));
                 let rank = premises
                     .iter()
+                    .filter(|p| !p.starts_with(ABSENT))
                     .map(|p| db.get(p).map_or(0, |(_, ds)| best_rank(ds)))
                     .min()
                     .unwrap_or(top);
@@ -609,6 +614,16 @@ impl Matcher<'_> {
         let mut used_all: Vec<String> = distinct.values().flat_map(|(_, u)| u.clone()).collect();
         used_all.sort();
         used_all.dedup();
+        if distinct.is_empty() {
+            // Reasoning from absence must show in the grounds: say what was
+            // looked for and not found. Marked with ∅, it is not an atom key.
+            let mut looked: Vec<String> = over.iter().map(|a| subst(a, binding).to_string()).collect();
+            looked.sort();
+            used_all = vec![format!(
+                "{ABSENT}none in this context: {}",
+                looked.join(", ")
+            )];
+        }
         if func == AggFn::Count {
             return Some((Term::Num(distinct.len() as f64, Dim::NONE), used_all));
         }
@@ -984,6 +999,10 @@ fn explain_rec(
     s: &mut String,
 ) {
     let pad = "  ".repeat(depth);
+    if key.starts_with(ABSENT) {
+        s.push_str(&format!("{pad}{key}\n"));
+        return;
+    }
     let Some((_, derivs)) = out.db.get(key) else {
         s.push_str(&format!("{pad}{key}  (not derived)\n"));
         return;

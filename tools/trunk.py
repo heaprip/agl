@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Loader of the glycolysis trunk from Rhea and ChEBI.
+"""Loader of the metabolism trunk from Rhea and ChEBI.
 
     tools/trunk.py fetch   download raw responses into data/raw/ and write MANIFEST
-    tools/trunk.py build   build data/glycolysis.agl from data/raw/, offline
+    tools/trunk.py build   build data/metabolism.agl from data/raw/, offline
 
 Only `fetch` touches the network. `build` checks every raw file against
 MANIFEST and is deterministic: two builds give the same bytes. The kernel
@@ -21,7 +21,7 @@ import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw"
-OUT = ROOT / "data" / "glycolysis.agl"
+OUT = ROOT / "data" / "metabolism.agl"
 
 # The ten steps of glycolysis, found in Rhea by EC number (see docs/hypotheses.md, H34).
 REACTIONS = [
@@ -35,7 +35,12 @@ REACTIONS = [
     ("15901", "5.4.2.11", "phosphoglycerate mutase"),
     ("10164", "4.2.1.11", "enolase"),
     ("18157", "2.7.1.40", "pyruvate kinase"),
+    # Beyond glycolysis: regenerating NAD(+) without oxygen.
+    ("23444", "1.1.1.27", "L-lactate dehydrogenase"),
 ]
+
+# Species needed by textbook reactions that are not in Rhea's reaction set.
+EXTRA_SPECIES = ["15379"]  # dioxygen
 
 RHEA_URL = "https://www.rhea-db.org/rhea/?query=RHEA:{id}&columns=rhea-id,equation,chebi-id&format=tsv"
 OLS_TERM = "https://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms?iri={iri}"
@@ -72,6 +77,7 @@ def fetch():
         body = get(RHEA_URL.format(id=rid))
         (RAW / "rhea" / f"RHEA_{rid}.tsv").write_bytes(body)
         species.update(rhea_participants(body)[1])
+    species.update(EXTRA_SPECIES)
     for cid in sorted(species, key=int):
         iri = chebi_iri(cid)
         term = get(OLS_TERM.format(iri=urllib.parse.quote(iri, safe="")))
@@ -141,6 +147,8 @@ def build():
                 f"fact pa_{rid}_{k}: participates(reaction: RHEA_{rid}, species: CHEBI_{cid}, side: {side}, coeff: {coeff}) @ [curated_db]"
             )
         lines.append("")
+    for cid in EXTRA_SPECIES:
+        species[cid] = None
     in_set = set(species)
     for cid in sorted(species, key=int):
         term = json.loads((RAW / "chebi" / f"CHEBI_{cid}.term.json").read_bytes())["_embedded"]["terms"][0]
