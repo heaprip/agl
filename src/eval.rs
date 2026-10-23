@@ -617,7 +617,8 @@ impl Matcher<'_> {
         if distinct.is_empty() {
             // Reasoning from absence must show in the grounds: say what was
             // looked for and not found. Marked with ∅, it is not an atom key.
-            let mut looked: Vec<String> = over.iter().map(|a| subst(a, binding).to_string()).collect();
+            let mut looked: Vec<String> =
+                over.iter().map(|a| subst(a, binding).to_string()).collect();
             looked.sort();
             used_all = vec![format!(
                 "{ABSENT}none in this context: {}",

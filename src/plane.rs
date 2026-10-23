@@ -19,6 +19,10 @@ pub struct Axes {
 }
 
 impl Axes {
+    pub fn count(&self) -> usize {
+        self.values.len()
+    }
+
     pub fn declare_axis(&mut self, axis: &str) {
         self.values.entry(axis.to_string()).or_default();
     }

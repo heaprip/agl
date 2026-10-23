@@ -214,7 +214,7 @@ fn verdict_of(prog: &Program, q: &Query) -> Verdict {
 }
 
 fn wrong(prog: &Program, q: &Query, expect: Verdict, got: Verdict, passing: &[usize]) -> Diagnosis {
-    let out = eval::evaluate(prog, &q.plane);
+    let out = eval::evaluate(prog, &check::effective_plane(prog, q));
     let key = match got {
         Verdict::No => q.atom.complement().key(),
         _ => q.atom.key(),
@@ -268,9 +268,15 @@ fn relation(prog: &Program, rule_plane: &Plane, ctx: &Plane) -> &'static str {
 }
 
 fn plane_notes(prog: &Program, rules: &BTreeSet<String>, ctx: &Plane) -> Vec<String> {
-    prog.rules
+    // In rule-id order, not program order: the diagnosis must not depend on it.
+    let mut in_rules: Vec<&Rule> = prog
+        .rules
         .iter()
         .filter(|r| rules.contains(&r.id))
+        .collect();
+    in_rules.sort_by(|a, b| a.id.cmp(&b.id));
+    in_rules
+        .into_iter()
         .map(|r| {
             format!(
                 "rule `{}` holds in {}: {}",
@@ -288,14 +294,16 @@ fn missing(prog: &Program, q: &Query, expect: Verdict) -> Diagnosis {
     } else {
         q.atom.clone()
     };
-    let out = eval::evaluate(prog, &q.plane);
+    let out = eval::evaluate(prog, &check::effective_plane(prog, q));
     let mut notes = vec![format!("expected {expect}, nothing derives {want}")];
     let mut sup = BTreeSet::new();
-    for r in prog
+    let mut heads: Vec<&Rule> = prog
         .rules
         .iter()
         .filter(|r| r.head.rel == want.rel && r.head.neg == want.neg)
-    {
+        .collect();
+    heads.sort_by(|a, b| a.id.cmp(&b.id));
+    for r in heads {
         sup.insert(r.id.clone());
         let rel = relation(prog, &r.plane, &q.plane);
         if !prog.axes.plane_within(&q.plane, &r.plane) {
@@ -320,7 +328,7 @@ fn missing(prog: &Program, q: &Query, expect: Verdict) -> Diagnosis {
             want.rel
         ));
     }
-    let facts: Vec<String> = prog
+    let mut facts: Vec<String> = prog
         .facts
         .iter()
         .filter(|f| f.atom == want && !prog.axes.plane_within(&q.plane, &f.plane))
@@ -333,6 +341,7 @@ fn missing(prog: &Program, q: &Query, expect: Verdict) -> Diagnosis {
             )
         })
         .collect();
+    facts.sort();
     notes.extend(facts);
     Diagnosis {
         kind: Kind::Missing,

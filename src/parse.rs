@@ -272,20 +272,35 @@ fn parse_statement(prog: &mut Program, stmt: &str) -> Result<(), String> {
         }
         "query" => {
             let (lit, spec) = split_at_plane(rest)?;
-            let words: Vec<&str> = spec.split_whitespace().collect();
-            let (spec, expect) = match words.iter().position(|w| *w == "expect") {
-                Some(k) => (
-                    words[..k].join(" "),
-                    Some(parse_verdict(words.get(k + 1).copied().unwrap_or(""))?),
-                ),
-                None => (words.join(" "), None),
+            let mut words: Vec<&str> = spec.split_whitespace().collect();
+            let expect = match words.iter().position(|w| *w == "expect") {
+                Some(k) => {
+                    let v = parse_verdict(words.get(k + 1).copied().unwrap_or(""))?;
+                    words.truncate(k);
+                    Some(v)
+                }
+                None => None,
             };
+            let situate = match words.iter().position(|w| *w == "situate") {
+                Some(k) => {
+                    let ctx = words
+                        .get(k + 1)
+                        .copied()
+                        .ok_or("expected `situate CONTEXT`")?;
+                    let ctx = ident(ctx)?.to_string();
+                    words.truncate(k);
+                    Some(ctx)
+                }
+                None => None,
+            };
+            let spec = words.join(" ");
             let spec = spec.as_str();
             let atom = parse_atom(lit.trim())?;
             let plane = parse_spec(prog, spec)?;
             prog.queries.push(Query {
                 atom,
                 plane,
+                situate,
                 expect,
                 line: 0,
             });

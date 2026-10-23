@@ -189,6 +189,12 @@ pub fn plane_to_spec(p: &Plane) -> String {
     parts.join(" + ")
 }
 
+impl Program {
+    pub fn axes_count(&self) -> usize {
+        self.axes.count()
+    }
+}
+
 impl Rule {
     /// The rule in the case notation, parseable back.
     pub fn to_source(&self) -> String {
@@ -260,6 +266,9 @@ impl fmt::Display for Verdict {
 pub struct Query {
     pub atom: Atom,
     pub plane: Plane,
+    /// `situate CONTEXT`: the plane is narrowed by the `situated` facts the
+    /// program derives about this context, before the query is answered.
+    pub situate: Option<String>,
     pub expect: Option<Verdict>,
     pub line: usize,
 }

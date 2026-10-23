@@ -3,13 +3,15 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::eval::{self, ConflictKind, Outcome};
+use crate::eval::{self, ConflictKind};
 use crate::lint::{self, Diag, Level};
 use crate::model::*;
 
 #[derive(Debug)]
 pub struct QueryResult {
     pub query: Query,
+    /// The plane the query was answered in: its own, narrowed by `situate`.
+    pub plane: Plane,
     pub verdict: Verdict,
     pub explanation: String,
 }
@@ -118,8 +120,88 @@ fn scan_conflicts(prog: &Program) -> (Vec<FoundConflict>, BTreeSet<String>) {
     (found.into_values().map(|(_, f)| f).collect(), errors)
 }
 
+/// Where a context belongs, found by the program itself.
+pub struct Situation {
+    pub plane: Plane,
+    /// Grounds of every `situated` fact that narrowed the plane.
+    pub grounds: String,
+}
+
+/// Narrows `base` by the `situated(context, axis, value)` atoms derived for
+/// `context`, again and again until the plane stops changing. Narrowing only
+/// makes more rules visible, and each axis can be fixed once, so this ends.
+/// A context situated in two disjoint values of one axis is an error.
+pub fn situate(prog: &Program, base: &Plane, context: &str) -> Result<Situation, String> {
+    let mut plane = base.clone();
+    let rounds = prog.axes_count() + 2;
+    for _ in 0..rounds {
+        let out = eval::evaluate(prog, &plane);
+        let mut next = plane.clone();
+        let mut grounds = String::new();
+        for (key, (atom, _)) in &out.db {
+            if atom.rel != "situated" || atom.neg {
+                continue;
+            }
+            let get = |role: &str| {
+                atom.args
+                    .iter()
+                    .find(|(r, _)| r == role)
+                    .map(|(_, t)| t.to_string())
+            };
+            if get("context").as_deref() != Some(context) {
+                continue;
+            }
+            let (Some(axis), Some(value)) = (get("axis"), get("value")) else {
+                return Err(format!("`{key}` needs roles axis and value"));
+            };
+            if !prog.axes.has_value(&axis, &value) {
+                return Err(format!("`{key}` names undeclared `{axis}:{value}`"));
+            }
+            let part = Plane::from([(axis.clone(), value.clone())]);
+            next = prog.axes.plane_meet(&next, &part).ok_or_else(|| {
+                format!(
+                    "`{context}` is situated in disjoint planes: {} and {axis}:{value}",
+                    plane_to_string(&next)
+                )
+            })?;
+            grounds.push_str(&eval::explain(&out, key));
+        }
+        if next == plane {
+            return Ok(Situation { plane, grounds });
+        }
+        plane = next;
+    }
+    Err(format!("situating `{context}` did not settle"))
+}
+
+/// The plane a query is answered in.
+pub fn effective_plane(prog: &Program, q: &Query) -> Plane {
+    match &q.situate {
+        Some(ctx) => situate(prog, &q.plane, ctx).map_or_else(|_| q.plane.clone(), |s| s.plane),
+        None => q.plane.clone(),
+    }
+}
+
 fn answer(prog: &Program, q: &Query, errors: &mut BTreeSet<String>) -> QueryResult {
-    let out = eval::evaluate(prog, &q.plane);
+    let (plane, prelude) = match &q.situate {
+        None => (q.plane.clone(), String::new()),
+        Some(ctx) => match situate(prog, &q.plane, ctx) {
+            Ok(s) => {
+                let head = format!("`{ctx}` is situated in {}:\n", plane_to_string(&s.plane));
+                let grounds: String = s.grounds.lines().map(|l| format!("  {l}\n")).collect();
+                (s.plane, format!("{head}{grounds}so, in that plane:\n"))
+            }
+            Err(e) => {
+                return QueryResult {
+                    query: q.clone(),
+                    plane: q.plane.clone(),
+                    verdict: Verdict::Conflict,
+                    explanation: format!("{e}\n"),
+                };
+            }
+        },
+    };
+    let out = eval::evaluate(prog, &plane);
     errors.extend(out.errors.iter().cloned());
     let key = q.atom.key();
     let ckey = q.atom.complement().key();
@@ -142,7 +224,7 @@ fn answer(prog: &Program, q: &Query, errors: &mut BTreeSet<String>) -> QueryResu
         (Verdict::Yes, eval::explain(&out, &key))
     } else if out.db.contains_key(&ckey) {
         (Verdict::No, eval::explain(&out, &ckey))
-    } else if let Some(g) = gap_for(prog, q, &out) {
+    } else if let Some(g) = gap_for(prog, q, &plane) {
         (Verdict::Gap, g)
     } else {
         let why = out
@@ -154,15 +236,16 @@ fn answer(prog: &Program, q: &Query, errors: &mut BTreeSet<String>) -> QueryResu
     };
     QueryResult {
         query: q.clone(),
+        plane,
         verdict,
-        explanation,
+        explanation: format!("{prelude}{explanation}"),
     }
 }
 
-fn gap_for(prog: &Program, q: &Query, _out: &Outcome) -> Option<String> {
+fn gap_for(prog: &Program, q: &Query, plane: &Plane) -> Option<String> {
     let g = prog.gaps.get(&q.atom.rel)?;
     match &g.resolved_by {
-        Some(axis) if q.plane.contains_key(axis) => None,
+        Some(axis) if plane.contains_key(axis) => None,
         Some(axis) => Some(format!(
             "gap `{}` ({}): resolved by choosing a value on axis `{axis}`\n",
             q.atom.rel, g.kind
@@ -204,7 +287,7 @@ pub fn render(report: &Report) -> String {
             format!(
                 "query {} @ {} -> {}\n{}",
                 q.query.atom,
-                plane_to_string(&q.query.plane),
+                plane_to_string(&q.plane),
                 q.verdict,
                 q.explanation
             )

@@ -147,10 +147,34 @@ pub fn gen_program(seed: u64) -> Program {
             line: 0,
         });
     }
+    // Contexts situated by facts or by rules, sometimes into disjoint values.
+    let contexts = ["k0", "k1"];
+    for i in 0..rng.below(3) {
+        let ctx = rng.pick(&contexts).to_string();
+        let value = rng.pick(&VALUES).to_string();
+        let atom = Atom::new(
+            "situated".into(),
+            vec![
+                ("context".into(), Term::Sym(ctx)),
+                ("axis".into(), Term::Sym("w".into())),
+                ("value".into(), Term::Sym(value)),
+            ],
+            false,
+        );
+        prog.facts.push(Fact {
+            id: format!("sit{i}"),
+            atom,
+            plane: gen_plane(&mut rng),
+            status: "given".into(),
+            line: 0,
+        });
+    }
     for _ in 0..(3 + rng.below(6)) {
+        let situate = rng.chance(1, 3).then(|| rng.pick(&contexts).to_string());
         prog.queries.push(Query {
             atom: gen_atom(&mut rng, &[]),
             plane: gen_plane(&mut rng),
+            situate,
             expect: None,
             line: 0,
         });

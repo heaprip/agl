@@ -207,3 +207,43 @@ fn metabolism_and_oxygen_physiology_answer_together() {
         respiring.explanation
     );
 }
+
+#[test]
+fn a_context_is_situated_by_the_program_itself() {
+    let src = "
+axis oxygen
+value oxygen present
+value oxygen absent
+fact d: delivery(context: c, value: 1.9[L/min]) @
+fact n: need(context: c, value: 3[L/min]) @
+rule short strict @: situated(context: ?x, axis: oxygen, value: absent) <-
+    delivery(context: ?x, value: ?d), need(context: ?x, value: ?m), ?d < ?m
+fact o2: available(species: o2) @ oxygen:present
+query available(species: o2) @ situate c expect unknown
+query available(species: o2) @ oxygen:present expect yes
+";
+    let report = agl::run(&agl::parse(src).unwrap());
+    assert!(report.failed_queries().next().is_none());
+    let q = &report.queries[0];
+    assert_eq!(agl::model::plane_to_string(&q.plane), "{oxygen:absent}");
+    assert!(
+        q.explanation.contains("`c` is situated in {oxygen:absent}"),
+        "{}",
+        q.explanation
+    );
+}
+
+#[test]
+fn a_context_situated_in_disjoint_planes_is_a_conflict() {
+    let src = "
+axis oxygen
+value oxygen present
+value oxygen absent
+fact a: situated(context: c, axis: oxygen, value: absent) @
+fact b: situated(context: c, axis: oxygen, value: present) @
+query anything(x: y) @ situate c expect conflict
+";
+    let report = agl::run(&agl::parse(src).unwrap());
+    assert!(report.failed_queries().next().is_none());
+    assert!(report.queries[0].explanation.contains("disjoint planes"));
+}

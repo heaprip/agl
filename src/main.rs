@@ -54,11 +54,17 @@ fn main() -> ExitCode {
                 .expect
                 .map(|e| format!(" (expected {e})"))
                 .unwrap_or_default();
+            let situated = r
+                .query
+                .situate
+                .as_ref()
+                .map(|c| format!(" (situate {c})"))
+                .unwrap_or_default();
             println!(
-                "{status} line {}: {} @ {} → {}{expect}",
+                "{status} line {}: {} @ {}{situated} → {}{expect}",
                 r.query.line,
                 r.query.atom,
-                plane_to_string(&r.query.plane),
+                plane_to_string(&r.plane),
                 r.verdict
             );
             if verbose || status == "FAIL" {

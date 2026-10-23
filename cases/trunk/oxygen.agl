@@ -109,3 +109,40 @@ rule normox strict @: ¬hypoxemic(site: ?s) <- saturation(site: ?s, value: ?S), 
 
 query hypoxemic(site: sea_level) @     expect no
 query hypoxemic(site: everest_8400m) @ expect yes
+
+# Мост: от высоты и нагрузки к кислороду в мышце (уравнение Фика). Плоскость
+# кислорода больше не задаётся запросом — ядро выводит её из данных.
+# Упрощение: дефицит доставки моделируется как отсутствие O₂ для покрытия
+# избытка потребности; смешанный режим не разбирается.
+fact hu:   hufner(value: 1.34[mL/g]) @ [textbook]
+fact hbc:  hemoglobin(value: 15[g/dL]) @ [textbook]
+fact co_r: cardiac_output(level: rest, value: 5[L/min]) @ [textbook]
+fact co_m: cardiac_output(level: maximal, value: 25[L/min]) @ [textbook]
+fact dm_r: o2_demand(level: rest, value: 0.25[L/min]) @ [textbook]
+fact dm_m: o2_demand(level: maximal, value: 3[L/min]) @ [textbook]
+fact ext:  max_extraction(value: 0.85) @ [textbook]
+
+rule content strict @: o2_content(site: ?s, value: ?c) <-
+    saturation(site: ?s, value: ?S), hufner(value: ?k), hemoglobin(value: ?hb), ?c = ?k * ?hb * ?S
+rule deliver strict @: o2_delivery(context: ?x, value: ?d) <-
+    at_site(context: ?x, site: ?s), exertion(context: ?x, level: ?l),
+    o2_content(site: ?s, value: ?c), cardiac_output(level: ?l, value: ?q), max_extraction(value: ?e),
+    ?d = ?q * ?c * ?e
+rule need strict @: o2_need(context: ?x, value: ?m) <- exertion(context: ?x, level: ?l), o2_demand(level: ?l, value: ?m)
+rule short strict @: situated(context: ?x, axis: oxygen, value: absent) <-
+    o2_delivery(context: ?x, value: ?d), o2_need(context: ?x, value: ?m), ?d < ?m
+rule enough strict @: situated(context: ?x, axis: oxygen, value: present) <-
+    o2_delivery(context: ?x, value: ?d), o2_need(context: ?x, value: ?m), ?d >= ?m
+
+fact cx1: at_site(context: everest_sprint, site: everest_8400m) @ [scenario]
+fact cx2: exertion(context: everest_sprint, level: maximal) @ [scenario]
+fact cx3: at_site(context: everest_rest, site: everest_8400m) @ [scenario]
+fact cx4: exertion(context: everest_rest, level: rest) @ [scenario]
+fact cx5: at_site(context: sea_sprint, site: sea_level) @ [scenario]
+fact cx6: exertion(context: sea_sprint, level: maximal) @ [scenario]
+
+query viable(system: fermenting) @ situate everest_sprint expect yes
+query viable(system: respiring) @ situate everest_sprint  expect no
+query viable(system: respiring) @ situate everest_rest    expect yes
+query viable(system: respiring) @ situate sea_sprint      expect yes
+query sys_net(system: fermenting, species: CHEBI_16651, value: 2) @ situate everest_sprint expect yes
