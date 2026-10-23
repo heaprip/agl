@@ -1,0 +1,152 @@
+//! Planes as axis constraints over value trees.
+//!
+//! On one axis, a value is within its ancestors. Siblings are disjoint unless
+//! an overlap is declared between them or their ancestors; the meet of two
+//! overlapping values is the composite `a∩b`, which is within both.
+
+use std::collections::{BTreeMap, BTreeSet};
+
+use crate::model::Plane;
+
+const MEET: char = '∩';
+
+#[derive(Default, Debug, Clone)]
+pub struct Axes {
+    /// axis -> value -> parent
+    values: BTreeMap<String, BTreeMap<String, Option<String>>>,
+    /// (axis, a, b) with a < b
+    overlaps: BTreeSet<(String, String, String)>,
+}
+
+impl Axes {
+    pub fn declare_axis(&mut self, axis: &str) {
+        self.values.entry(axis.to_string()).or_default();
+    }
+
+    pub fn has_axis(&self, axis: &str) -> bool {
+        self.values.contains_key(axis)
+    }
+
+    pub fn declare_value(
+        &mut self,
+        axis: &str,
+        value: &str,
+        parent: Option<&str>,
+    ) -> Result<(), String> {
+        let vals = self
+            .values
+            .get_mut(axis)
+            .ok_or_else(|| format!("unknown axis `{axis}`"))?;
+        if let Some(p) = parent
+            && !vals.contains_key(p)
+        {
+            return Err(format!("unknown parent `{p}` on axis `{axis}`"));
+        }
+        vals.insert(value.to_string(), parent.map(str::to_string));
+        Ok(())
+    }
+
+    pub fn declare_overlap(&mut self, axis: &str, a: &str, b: &str) -> Result<(), String> {
+        if !self.has_value(axis, a) || !self.has_value(axis, b) {
+            return Err(format!("overlap on `{axis}` names an undeclared value"));
+        }
+        let (x, y) = if a < b { (a, b) } else { (b, a) };
+        self.overlaps
+            .insert((axis.to_string(), x.to_string(), y.to_string()));
+        Ok(())
+    }
+
+    pub fn has_value(&self, axis: &str, value: &str) -> bool {
+        let Some(vals) = self.values.get(axis) else {
+            return false;
+        };
+        value.split(MEET).all(|v| vals.contains_key(v))
+    }
+
+    fn ancestors(&self, axis: &str, value: &str) -> Vec<String> {
+        let mut out = vec![value.to_string()];
+        let Some(vals) = self.values.get(axis) else {
+            return out;
+        };
+        let mut cur = value;
+        while let Some(Some(parent)) = vals.get(cur) {
+            out.push(parent.clone());
+            cur = parent;
+        }
+        out
+    }
+
+    /// `a` is within `b` on `axis`.
+    pub fn value_within(&self, axis: &str, a: &str, b: &str) -> bool {
+        if b.contains(MEET) {
+            return b.split(MEET).all(|part| self.value_within(axis, a, part));
+        }
+        if a.contains(MEET) {
+            return a.split(MEET).any(|part| self.value_within(axis, part, b));
+        }
+        self.ancestors(axis, a).iter().any(|x| x == b)
+    }
+
+    fn overlap_declared(&self, axis: &str, a: &str, b: &str) -> bool {
+        let aa = self.ancestors(axis, a);
+        let bb = self.ancestors(axis, b);
+        aa.iter().any(|x| {
+            bb.iter().any(|y| {
+                let (p, q) = if x < y { (x, y) } else { (y, x) };
+                self.overlaps
+                    .contains(&(axis.to_string(), p.clone(), q.clone()))
+            })
+        })
+    }
+
+    pub fn value_meet(&self, axis: &str, a: &str, b: &str) -> Option<String> {
+        if self.value_within(axis, a, b) {
+            return Some(a.to_string());
+        }
+        if self.value_within(axis, b, a) {
+            return Some(b.to_string());
+        }
+        let parts_a: Vec<&str> = a.split(MEET).collect();
+        let parts_b: Vec<&str> = b.split(MEET).collect();
+        let all_overlap = parts_a.iter().all(|x| {
+            parts_b.iter().all(|y| {
+                self.value_within(axis, x, y)
+                    || self.value_within(axis, y, x)
+                    || self.overlap_declared(axis, x, y)
+            })
+        });
+        if !all_overlap {
+            return None;
+        }
+        let mut parts: Vec<&str> = parts_a.into_iter().chain(parts_b).collect();
+        parts.sort();
+        parts.dedup();
+        Some(parts.join(&MEET.to_string()))
+    }
+
+    /// Context `c` lies within plane `p`: every constraint of `p` is met by `c`.
+    pub fn plane_within(&self, c: &Plane, p: &Plane) -> bool {
+        p.iter()
+            .all(|(axis, v)| c.get(axis).is_some_and(|cv| self.value_within(axis, cv, v)))
+    }
+
+    pub fn strictly_within(&self, a: &Plane, b: &Plane) -> bool {
+        self.plane_within(a, b) && !self.plane_within(b, a)
+    }
+
+    /// Intersection of two planes, or `None` if they are disjoint.
+    pub fn plane_meet(&self, a: &Plane, b: &Plane) -> Option<Plane> {
+        let mut out = a.clone();
+        for (axis, vb) in b {
+            match a.get(axis) {
+                None => {
+                    out.insert(axis.clone(), vb.clone());
+                }
+                Some(va) => {
+                    out.insert(axis.clone(), self.value_meet(axis, va, vb)?);
+                }
+            }
+        }
+        Some(out)
+    }
+}

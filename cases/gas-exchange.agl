@@ -1,0 +1,39 @@
+# Газообмен — исполняемый срез docs/cases/gas-exchange.md:
+# таксоны как вложенные плоскости и «инертный» азот как утверждение с границей.
+
+axis taxon
+value taxon Animalia
+value taxon Insecta in Animalia
+value taxon Chironomidae_larvae in Insecta
+value taxon Mammalia in Animalia
+
+axis pressure
+value pressure any
+value pressure p1atm in any
+value pressure hyperbaric in any
+
+plane insects = taxon:Insecta
+plane chiro   = taxon:Chironomidae_larvae
+plane mammals = taxon:Mammalia
+
+# Насекомые: гемолимфа кислород не переносит — по умолчанию для всего таксона.
+fact h1: has_fluid(fluid: hemolymph) @ insects [textbook]
+rule r_ins defeasible @ insects: ¬transports_o2(fluid: hemolymph) <- has_fluid(fluid: hemolymph)
+
+# Исключение: личинки звонцов, гемоглобин. Более узкая плоскость побеждает.
+fact h2: has_protein(fluid: hemolymph, protein: hemoglobin) @ chiro [textbook]
+rule ex1 defeasible @ chiro: transports_o2(fluid: hemolymph) <-
+    has_fluid(fluid: hemolymph), has_protein(fluid: hemolymph, protein: hemoglobin)
+
+query transports_o2(fluid: hemolymph) @ insects expect no
+query transports_o2(fluid: hemolymph) @ chiro   expect yes
+query transports_o2(fluid: hemolymph) @ mammals expect unknown
+
+# Азот: инертен при 1 атм, при повышенном давлении — наркоз.
+fact g1: gas(name: n2) @ pressure:any [textbook]
+rule n1 defeasible @ pressure:p1atm: inert(gas: ?g) <- gas(name: ?g)
+rule n2 defeasible @ pressure:hyperbaric: ¬inert(gas: ?g) <- gas(name: ?g)
+
+query inert(gas: n2) @ pressure:p1atm      expect yes
+query inert(gas: n2) @ pressure:hyperbaric expect no
+query inert(gas: n2) @ pressure:any        expect unknown

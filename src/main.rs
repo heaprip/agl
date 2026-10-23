@@ -1,0 +1,79 @@
+use std::process::ExitCode;
+
+use agl::model::plane_to_string;
+
+fn main() -> ExitCode {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let verbose = args.iter().any(|a| a == "-v");
+    let files: Vec<&String> = args.iter().filter(|a| !a.starts_with('-')).collect();
+    if files.is_empty() {
+        eprintln!("usage: agl [-v] FILE.agl...");
+        return ExitCode::from(2);
+    }
+    let mut ok = true;
+    for path in files {
+        println!("== {path}");
+        let src = match std::fs::read_to_string(path) {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("{path}: {e}");
+                ok = false;
+                continue;
+            }
+        };
+        let prog = match agl::parse(&src) {
+            Ok(p) => p,
+            Err(e) => {
+                println!("parse error: {e}");
+                ok = false;
+                continue;
+            }
+        };
+        let report = agl::run(&prog);
+        for d in &report.diags {
+            println!("{:?} line {} [{}]: {}", d.level, d.line, d.code, d.msg);
+        }
+        for c in &report.conflicts {
+            println!(
+                "conflict {:?} on {} in {}: for {} / against {}",
+                c.conflict.kind,
+                c.conflict.positive,
+                plane_to_string(&c.context),
+                c.conflict.sources_pos.join(", "),
+                c.conflict.sources_neg.join(", ")
+            );
+        }
+        for r in &report.queries {
+            let status = match r.query.expect {
+                Some(e) if e == r.verdict => "PASS",
+                Some(_) => "FAIL",
+                None => "    ",
+            };
+            let expect = r
+                .query
+                .expect
+                .map(|e| format!(" (expected {e})"))
+                .unwrap_or_default();
+            println!(
+                "{status} line {}: {} @ {} → {}{expect}",
+                r.query.line,
+                r.query.atom,
+                plane_to_string(&r.query.plane),
+                r.verdict
+            );
+            if verbose || status == "FAIL" {
+                for l in r.explanation.lines() {
+                    println!("       {l}");
+                }
+            }
+        }
+        if report.has_errors() || report.failed_queries().next().is_some() {
+            ok = false;
+        }
+    }
+    if ok {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
+    }
+}

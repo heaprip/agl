@@ -1,0 +1,9 @@
+[package]
+name = "agl"
+version = "0.1.0"
+edition = "2024"
+description = "Artificial General Logic — PoC of the v0 metakernel"
+license = "MIT"
+publish = false
+
+[dependencies]
