@@ -119,3 +119,30 @@ fn real_cases_do_not_depend_on_statement_order() {
         }
     }
 }
+
+#[test]
+fn diagnosis_is_deterministic_and_order_independent() {
+    let n: u64 = std::env::var("AGL_SIM_SEEDS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(500)
+        .min(300);
+    let seeds: Vec<u64> = match std::env::var("AGL_SEED") {
+        Ok(s) => vec![s.parse().unwrap()],
+        Err(_) => (0..n).collect(),
+    };
+    for seed in seeds {
+        let prog = gen_program(seed);
+        let base = agl::reflect::render(&agl::reflect::diagnose(&prog));
+        assert_eq!(
+            base,
+            agl::reflect::render(&agl::reflect::diagnose(&prog)),
+            "seed {seed}: two runs differ"
+        );
+        let other = agl::reflect::render(&agl::reflect::diagnose(&permute(&prog, seed + 7)));
+        assert_eq!(
+            base, other,
+            "seed {seed}: diagnosis depends on statement order"
+        );
+    }
+}

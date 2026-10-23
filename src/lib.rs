@@ -12,6 +12,7 @@ pub mod lint;
 pub mod model;
 pub mod parse;
 pub mod plane;
+pub mod reflect;
 pub mod sim;
 pub mod units;
 

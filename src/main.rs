@@ -5,9 +5,10 @@ use agl::model::plane_to_string;
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let verbose = args.iter().any(|a| a == "-v");
+    let diagnose = args.iter().any(|a| a == "--diagnose");
     let files: Vec<&String> = args.iter().filter(|a| !a.starts_with('-')).collect();
     if files.is_empty() {
-        eprintln!("usage: agl [-v] FILE.agl...");
+        eprintln!("usage: agl [-v] [--diagnose] FILE.agl...");
         return ExitCode::from(2);
     }
     let mut ok = true;
@@ -68,6 +69,14 @@ fn main() -> ExitCode {
                 for l in r.explanation.lines() {
                     println!("       {l}");
                 }
+            }
+        }
+        if diagnose {
+            let ds = agl::reflect::diagnose(&prog);
+            if ds.is_empty() {
+                println!("diagnosis: nothing to diagnose");
+            } else {
+                print!("{}", agl::reflect::render(&ds));
             }
         }
         if report.has_errors() || report.failed_queries().next().is_some() {
