@@ -1,0 +1,189 @@
+include ../../../../cases/trunk/lib.agl
+
+# Кислородные контексты.
+axis oxygen
+value oxygen present
+value oxygen absent
+plane aerobic = oxygen:present
+plane anaerobic = oxygen:absent
+
+# Новые вещества: ацетальдегид, этанол, углекислый газ.
+fact co_15343_C: composition(species: CHEBI_15343, element: C, n: 2) @ [llm_proposal]
+fact co_15343_H: composition(species: CHEBI_15343, element: H, n: 4) @ [llm_proposal]
+fact co_15343_O: composition(species: CHEBI_15343, element: O, n: 1) @ [llm_proposal]
+fact co_15343_charge: composition(species: CHEBI_15343, element: charge, n: 0) @ [llm_proposal]
+fact fk_15343: formula_known(species: CHEBI_15343) @ [llm_proposal]
+fact top_15343: top(species: CHEBI_15343) @ [llm_proposal]
+
+fact co_16236_C: composition(species: CHEBI_16236, element: C, n: 2) @ [llm_proposal]
+fact co_16236_H: composition(species: CHEBI_16236, element: H, n: 6) @ [llm_proposal]
+fact co_16236_O: composition(species: CHEBI_16236, element: O, n: 1) @ [llm_proposal]
+fact co_16236_charge: composition(species: CHEBI_16236, element: charge, n: 0) @ [llm_proposal]
+fact fk_16236: formula_known(species: CHEBI_16236) @ [llm_proposal]
+fact top_16236: top(species: CHEBI_16236) @ [llm_proposal]
+
+fact co_16526_C: composition(species: CHEBI_16526, element: C, n: 1) @ [llm_proposal]
+fact co_16526_O: composition(species: CHEBI_16526, element: O, n: 2) @ [llm_proposal]
+fact co_16526_charge: composition(species: CHEBI_16526, element: charge, n: 0) @ [llm_proposal]
+fact fk_16526: formula_known(species: CHEBI_16526) @ [llm_proposal]
+fact top_16526: top(species: CHEBI_16526) @ [llm_proposal]
+
+# Пируватдекарбоксилаза: пируват + H+ -> ацетальдегид + CO2.
+fact rx_pdc: reaction(id: pdc) @ [llm_proposal]
+fact pdc_pyr: participates(reaction: pdc, species: CHEBI_15361, side: left, coeff: 1) @ [llm_proposal]
+fact pdc_h: participates(reaction: pdc, species: CHEBI_15378, side: left, coeff: 1) @ [llm_proposal]
+fact pdc_aa: participates(reaction: pdc, species: CHEBI_15343, side: right, coeff: 1) @ [llm_proposal]
+fact pdc_co2: participates(reaction: pdc, species: CHEBI_16526, side: right, coeff: 1) @ [llm_proposal]
+
+# Алкогольдегидрогеназа: ацетальдегид + NADH + H+ -> этанол + NAD+.
+fact rx_adh: reaction(id: adh_ethanol) @ [llm_proposal]
+fact adh_aa: participates(reaction: adh_ethanol, species: CHEBI_15343, side: left, coeff: 1) @ [llm_proposal]
+fact adh_nadh: participates(reaction: adh_ethanol, species: CHEBI_57945, side: left, coeff: 1) @ [llm_proposal]
+fact adh_h: participates(reaction: adh_ethanol, species: CHEBI_15378, side: left, coeff: 1) @ [llm_proposal]
+fact adh_etoh: participates(reaction: adh_ethanol, species: CHEBI_16236, side: right, coeff: 1) @ [llm_proposal]
+fact adh_nad: participates(reaction: adh_ethanol, species: CHEBI_57540, side: right, coeff: 1) @ [llm_proposal]
+
+# Дыхательная цепь, укрупнённо: 2 NADH + 2 H+ + O2 -> 2 NAD+ + 2 H2O.
+fact rx_etc: reaction(id: etc_llm) @ [llm_proposal]
+fact etc_nadh: participates(reaction: etc_llm, species: CHEBI_57945, side: left, coeff: 2) @ [llm_proposal]
+fact etc_h: participates(reaction: etc_llm, species: CHEBI_15378, side: left, coeff: 2) @ [llm_proposal]
+fact etc_o2: participates(reaction: etc_llm, species: CHEBI_15379, side: left, coeff: 1) @ [llm_proposal]
+fact etc_nad: participates(reaction: etc_llm, species: CHEBI_57540, side: right, coeff: 2) @ [llm_proposal]
+fact etc_w: participates(reaction: etc_llm, species: CHEBI_15377, side: right, coeff: 2) @ [llm_proposal]
+
+# Пути и шаги.
+fact pw_lf: pathway(id: lactate_fermentation) @ [llm_proposal]
+fact lf1: step(pathway: lactate_fermentation, reaction: RHEA_23444, direction: reverse, times: 1) @ [llm_proposal]
+
+fact pw_pdc: pathway(id: pyruvate_decarboxylation) @ [llm_proposal]
+fact pdc1: step(pathway: pyruvate_decarboxylation, reaction: pdc, direction: forward, times: 1) @ [llm_proposal]
+
+fact pw_adh: pathway(id: ethanol_reduction) @ [llm_proposal]
+fact adh1: step(pathway: ethanol_reduction, reaction: adh_ethanol, direction: forward, times: 1) @ [llm_proposal]
+
+fact pw_etc: pathway(id: respiratory_chain) @ aerobic [llm_proposal]
+fact st_etc: step(pathway: respiratory_chain, reaction: etc_llm, direction: forward, times: 1) @ aerobic [llm_proposal]
+
+# Системы-кандидаты.
+fact sy_g: system(id: glycolysis_only) @ [llm_proposal]
+fact u_g1: uses(system: glycolysis_only, pathway: glycolysis, times: 1) @ [llm_proposal]
+
+fact sy_lf: system(id: lactate_fermentation_system) @ [llm_proposal]
+fact u_lf1: uses(system: lactate_fermentation_system, pathway: glycolysis, times: 1) @ [llm_proposal]
+fact u_lf2: uses(system: lactate_fermentation_system, pathway: lactate_fermentation, times: 2) @ [llm_proposal]
+
+fact sy_af: system(id: alcohol_fermentation_system) @ [llm_proposal]
+fact u_af1: uses(system: alcohol_fermentation_system, pathway: glycolysis, times: 1) @ [llm_proposal]
+fact u_af2: uses(system: alcohol_fermentation_system, pathway: pyruvate_decarboxylation, times: 2) @ [llm_proposal]
+fact u_af3: uses(system: alcohol_fermentation_system, pathway: ethanol_reduction, times: 2) @ [llm_proposal]
+
+# Утверждения текста.
+fact map_lf: fermentation_system(kind: lactate_fermentation, system: lactate_fermentation_system) @ [llm_proposal]
+fact map_af: fermentation_system(kind: alcohol_fermentation, system: alcohol_fermentation_system) @ [llm_proposal]
+
+fact um: uses_fermentation(organism: muscle, kind: lactate_fermentation) @ anaerobic [llm_proposal]
+fact uy: uses_fermentation(organism: yeast, kind: alcohol_fermentation) @ anaerobic [llm_proposal]
+
+fact ro_lf: requires_oxygen(kind: lactate_fermentation, value: no) @ [llm_proposal]
+fact ro_af: requires_oxygen(kind: alcohol_fermentation, value: no) @ [llm_proposal]
+
+fact rn_etc: reoxidizes_nadh(species: CHEBI_57945, by: respiratory_chain) @ aerobic [llm_proposal]
+
+fact glycolysis_atp: glycolysis_atp(value: 2) @ [llm_proposal]
+
+# Стехиометрия системы.
+rule sys_net strict @: sys_net(system: ?s, species: ?x, value: ?v) <-
+    system(id: ?s), top(species: ?x),
+    ?v = sum(?u * ?d * ?t * ?sv * ?c) over (uses(system: ?s, pathway: ?p, times: ?u),
+                                           member(species: ?y, of: ?x),
+                                           step(pathway: ?p, reaction: ?r, direction: ?dir, times: ?t),
+                                           dir_value(direction: ?dir, value: ?d),
+                                           participates(reaction: ?r, species: ?y, side: ?side, coeff: ?c),
+                                           side_value(side: ?side, value: ?sv))
+
+rule atp_yield strict @: atp_yield(system: ?s, value: ?v) <-
+    sys_net(system: ?s, species: CHEBI_30616, value: ?v)
+
+rule no_extra_atp strict @: yields_atp_beyond_glycolysis(kind: ?k, value: ?z) <-
+    fermentation_system(kind: ?k, system: ?s),
+    atp_yield(system: ?s, value: ?v),
+    glycolysis_atp(value: ?g),
+    ?z = ?v - ?g
+
+rule regen_nad strict @ anaerobic: regenerates_nad(kind: ?k) <-
+    fermentation_system(kind: ?k, system: ?s),
+    sys_net(system: ?s, species: CHEBI_57540, value: 0),
+    sys_net(system: ?s, species: CHEBI_57945, value: 0)
+
+# Баланс объявленных реакций.
+query balanced_all(reaction: RHEA_23444) @ expect yes
+query balanced_all(reaction: pdc) @ expect yes
+query balanced_all(reaction: adh_ethanol) @ expect yes
+query balanced_all(reaction: etc_llm) @ expect yes
+
+# Направления шагов.
+query step(pathway: lactate_fermentation, reaction: RHEA_23444, direction: reverse, times: 1) @ expect yes
+query step(pathway: pyruvate_decarboxylation, reaction: pdc, direction: forward, times: 1) @ expect yes
+query step(pathway: ethanol_reduction, reaction: adh_ethanol, direction: forward, times: 1) @ expect yes
+query step(pathway: respiratory_chain, reaction: etc_llm, direction: forward, times: 1) @ aerobic expect yes
+
+# Участники новых реакций.
+query participates(reaction: pdc, species: CHEBI_16526, side: right, coeff: 1) @ expect yes
+query participates(reaction: pdc, species: CHEBI_15343, side: right, coeff: 1) @ expect yes
+query participates(reaction: adh_ethanol, species: CHEBI_16236, side: right, coeff: 1) @ expect yes
+query participates(reaction: adh_ethanol, species: CHEBI_15343, side: left, coeff: 1) @ expect yes
+query participates(reaction: RHEA_23444, species: CHEBI_16651, side: left, coeff: 1) @ expect yes
+query participates(reaction: RHEA_23444, species: CHEBI_15361, side: right, coeff: 1) @ expect yes
+query participates(reaction: etc_llm, species: CHEBI_15379, side: left, coeff: 1) @ expect yes
+query participates(reaction: etc_llm, species: CHEBI_15377, side: right, coeff: 2) @ expect yes
+
+# Гликолиз: одна глюкоза -> два пирувата, +2 ATP.
+query sys_net(system: glycolysis_only, species: CHEBI_4167, value: -1) @ expect yes
+query sys_net(system: glycolysis_only, species: CHEBI_15361, value: 2) @ expect yes
+query sys_net(system: glycolysis_only, species: CHEBI_30616, value: 2) @ expect yes
+
+# Лактатная ферментация: два лактата на глюкозу, NAD+ регенерирован, +2 ATP.
+query sys_net(system: lactate_fermentation_system, species: CHEBI_16651, value: 2) @ anaerobic expect yes
+query sys_net(system: lactate_fermentation_system, species: CHEBI_30616, value: 2) @ anaerobic expect yes
+query sys_net(system: lactate_fermentation_system, species: CHEBI_4167, value: -1) @ anaerobic expect yes
+query sys_net(system: lactate_fermentation_system, species: CHEBI_57540, value: 0) @ anaerobic expect yes
+query sys_net(system: lactate_fermentation_system, species: CHEBI_57945, value: 0) @ anaerobic expect yes
+query sys_net(system: lactate_fermentation_system, species: CHEBI_15361, value: 0) @ anaerobic expect yes
+query sys_net(system: lactate_fermentation_system, species: CHEBI_15378, value: 0) @ anaerobic expect yes
+
+# Алкогольная ферментация: этанол + CO2, NAD+ регенерирован, +2 ATP.
+query sys_net(system: alcohol_fermentation_system, species: CHEBI_16236, value: 2) @ anaerobic expect yes
+query sys_net(system: alcohol_fermentation_system, species: CHEBI_16526, value: 2) @ anaerobic expect yes
+query sys_net(system: alcohol_fermentation_system, species: CHEBI_30616, value: 2) @ anaerobic expect yes
+query sys_net(system: alcohol_fermentation_system, species: CHEBI_4167, value: -1) @ anaerobic expect yes
+query sys_net(system: alcohol_fermentation_system, species: CHEBI_57540, value: 0) @ anaerobic expect yes
+query sys_net(system: alcohol_fermentation_system, species: CHEBI_57945, value: 0) @ anaerobic expect yes
+query sys_net(system: alcohol_fermentation_system, species: CHEBI_15343, value: 0) @ anaerobic expect yes
+query sys_net(system: alcohol_fermentation_system, species: CHEBI_15361, value: 0) @ anaerobic expect yes
+
+# Доход ATP.
+query atp_yield(system: lactate_fermentation_system, value: 2) @ anaerobic expect yes
+query atp_yield(system: alcohol_fermentation_system, value: 2) @ anaerobic expect yes
+query yields_atp_beyond_glycolysis(kind: lactate_fermentation, value: 0) @ expect yes
+query yields_atp_beyond_glycolysis(kind: alcohol_fermentation, value: 0) @ expect yes
+
+# Регенерация NAD+.
+query regenerates_nad(kind: lactate_fermentation) @ anaerobic expect yes
+query regenerates_nad(kind: alcohol_fermentation) @ anaerobic expect yes
+
+# Кислород не нужен ни одной ферментации.
+query requires_oxygen(kind: lactate_fermentation, value: no) @ expect yes
+query requires_oxygen(kind: alcohol_fermentation, value: no) @ expect yes
+
+# Организмы.
+query uses_fermentation(organism: muscle, kind: lactate_fermentation) @ anaerobic expect yes
+query uses_fermentation(organism: yeast, kind: alcohol_fermentation) @ anaerobic expect yes
+
+# При кислороде NADH окисляется дыхательной цепью.
+query reoxidizes_nadh(species: CHEBI_57945, by: respiratory_chain) @ aerobic expect yes
+query reoxidizes_nadh(species: CHEBI_57945, by: respiratory_chain) @ anaerobic expect unknown
+
+# --- harness: balance of every declared reaction ---
+query balanced_all(reaction: adh_ethanol) @ expect yes
+query balanced_all(reaction: etc_llm) @ expect yes
+query balanced_all(reaction: pdc) @ expect yes

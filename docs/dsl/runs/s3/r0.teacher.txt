@@ -1,0 +1,10 @@
+{
+ "claims": {
+  "lactate_fermentation": null,
+  "alcohol_fermentation": null,
+  "respiratory_chain": null
+ },
+ "trouble": [
+  "parse error: line 427: expected `over (ATOMS)`"
+ ]
+}

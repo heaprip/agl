@@ -1,0 +1,221 @@
+include ../../../../cases/trunk/lib.agl
+
+# Молочнокислое и спиртовое брожение: возврат NAD+ без кислорода.
+# Клетки (мышца, дрожжи) отдельно не моделируются — проверяется биохимия:
+# пути, системы, стехиометрия, баланс и жизнеспособность в плоскостях.
+# Всё, что утверждаю сам, — [llm_proposal].
+
+axis oxygen
+value oxygen present
+value oxygen absent
+
+plane aerobic   = oxygen:present
+plane anaerobic = oxygen:absent
+
+# ---------- Новые вещества ----------
+# Ацетальдегид (этаналь), CHEBI:15343: C2H4O.
+fact x_ac_C: composition(species: CHEBI_15343, element: C, n: 2) @ [llm_proposal]
+fact x_ac_H: composition(species: CHEBI_15343, element: H, n: 4) @ [llm_proposal]
+fact x_ac_O: composition(species: CHEBI_15343, element: O, n: 1) @ [llm_proposal]
+fact x_ac_q: composition(species: CHEBI_15343, element: charge, n: 0) @ [llm_proposal]
+fact x_ac_f: formula_known(species: CHEBI_15343) @ [llm_proposal]
+fact x_ac_t: top(species: CHEBI_15343) @ [llm_proposal]
+
+# Этанол, CHEBI:16236: C2H6O.
+fact x_et_C: composition(species: CHEBI_16236, element: C, n: 2) @ [llm_proposal]
+fact x_et_H: composition(species: CHEBI_16236, element: H, n: 6) @ [llm_proposal]
+fact x_et_O: composition(species: CHEBI_16236, element: O, n: 1) @ [llm_proposal]
+fact x_et_q: composition(species: CHEBI_16236, element: charge, n: 0) @ [llm_proposal]
+fact x_et_f: formula_known(species: CHEBI_16236) @ [llm_proposal]
+fact x_et_t: top(species: CHEBI_16236) @ [llm_proposal]
+
+# Углекислый газ, CHEBI:16526: CO2.
+fact x_co2_C: composition(species: CHEBI_16526, element: C, n: 1) @ [llm_proposal]
+fact x_co2_O: composition(species: CHEBI_16526, element: O, n: 2) @ [llm_proposal]
+fact x_co2_q: composition(species: CHEBI_16526, element: charge, n: 0) @ [llm_proposal]
+fact x_co2_f: formula_known(species: CHEBI_16526) @ [llm_proposal]
+fact x_co2_t: top(species: CHEBI_16526) @ [llm_proposal]
+
+# ---------- Новые реакции ----------
+# Пируватдекарбоксилаза (EC 4.1.1.1), укрупнённо:
+# пируват + H+ -> ацетальдегид + CO2.
+fact x_pdc_rx: reaction(id: pdc_lumped) @ [llm_proposal]
+fact x_pdc_1: participates(reaction: pdc_lumped, species: CHEBI_15361, side: left, coeff: 1) @ [llm_proposal]
+fact x_pdc_2: participates(reaction: pdc_lumped, species: CHEBI_15378, side: left, coeff: 1) @ [llm_proposal]
+fact x_pdc_3: participates(reaction: pdc_lumped, species: CHEBI_15343, side: right, coeff: 1) @ [llm_proposal]
+fact x_pdc_4: participates(reaction: pdc_lumped, species: CHEBI_16526, side: right, coeff: 1) @ [llm_proposal]
+
+# Алкогольдегидрогеназа (EC 1.1.1.1), укрупнённо:
+# ацетальдегид + NADH + H+ -> этанол + NAD+.
+fact x_adh_rx: reaction(id: adh_lumped) @ [llm_proposal]
+fact x_adh_1: participates(reaction: adh_lumped, species: CHEBI_15343, side: left, coeff: 1) @ [llm_proposal]
+fact x_adh_2: participates(reaction: adh_lumped, species: CHEBI_57945, side: left, coeff: 1) @ [llm_proposal]
+fact x_adh_3: participates(reaction: adh_lumped, species: CHEBI_15378, side: left, coeff: 1) @ [llm_proposal]
+fact x_adh_4: participates(reaction: adh_lumped, species: CHEBI_16236, side: right, coeff: 1) @ [llm_proposal]
+fact x_adh_5: participates(reaction: adh_lumped, species: CHEBI_57540, side: right, coeff: 1) @ [llm_proposal]
+
+# Дыхательная цепь, укрупнённо: 2 NADH + 2 H+ + O2 -> 2 NAD+ + 2 H2O.
+fact x_etc_rx: reaction(id: etc_lumped) @ [llm_proposal]
+fact x_etc_1: participates(reaction: etc_lumped, species: CHEBI_57945, side: left, coeff: 2) @ [llm_proposal]
+fact x_etc_2: participates(reaction: etc_lumped, species: CHEBI_15378, side: left, coeff: 2) @ [llm_proposal]
+fact x_etc_3: participates(reaction: etc_lumped, species: CHEBI_15379, side: left, coeff: 1) @ [llm_proposal]
+fact x_etc_4: participates(reaction: etc_lumped, species: CHEBI_57540, side: right, coeff: 2) @ [llm_proposal]
+fact x_etc_5: participates(reaction: etc_lumped, species: CHEBI_15377, side: right, coeff: 2) @ [llm_proposal]
+
+# ---------- Пути ----------
+# Молочнокислое брожение: ЛДГ (RHEA_23444) в обратную сторону,
+# пируват + NADH + H+ -> лактат + NAD+.
+fact x_pw_lf: pathway(id: lactate_fermentation) @ [llm_proposal]
+fact x_st_lf: step(pathway: lactate_fermentation, reaction: RHEA_23444, direction: reverse, times: 1) @ [llm_proposal]
+
+# Спиртовое брожение: декарбоксилирование, затем восстановление.
+fact x_pw_pdc: pathway(id: pyruvate_decarboxylation) @ [llm_proposal]
+fact x_st_pdc: step(pathway: pyruvate_decarboxylation, reaction: pdc_lumped, direction: forward, times: 1) @ [llm_proposal]
+fact x_pw_adh: pathway(id: acetaldehyde_reduction) @ [llm_proposal]
+fact x_st_adh: step(pathway: acetaldehyde_reduction, reaction: adh_lumped, direction: forward, times: 1) @ [llm_proposal]
+
+# Окисление NADH дыхательной цепью.
+fact x_pw_etc: pathway(id: nadh_oxidation) @ [llm_proposal]
+fact x_st_etc: step(pathway: nadh_oxidation, reaction: etc_lumped, direction: forward, times: 1) @ [llm_proposal]
+
+# ---------- Системы ----------
+# Только гликолиз: NAD+ расходуется и не возвращается.
+fact x_sy_g: system(id: glycolysis_only) @ [llm_proposal]
+fact x_u_g: uses(system: glycolysis_only, pathway: glycolysis, times: 1) @ [llm_proposal]
+
+# Гликолиз + молочнокислое брожение (две ЛДГ на глюкозу).
+fact x_sy_lf: system(id: lactate_fermenting) @ [llm_proposal]
+fact x_u_lf1: uses(system: lactate_fermenting, pathway: glycolysis, times: 1) @ [llm_proposal]
+fact x_u_lf2: uses(system: lactate_fermenting, pathway: lactate_fermentation, times: 2) @ [llm_proposal]
+
+# Гликолиз + спиртовое брожение (две ПДК и две АДГ на глюкозу).
+fact x_sy_af: system(id: alcohol_fermenting) @ [llm_proposal]
+fact x_u_af1: uses(system: alcohol_fermenting, pathway: glycolysis, times: 1) @ [llm_proposal]
+fact x_u_af2: uses(system: alcohol_fermenting, pathway: pyruvate_decarboxylation, times: 2) @ [llm_proposal]
+fact x_u_af3: uses(system: alcohol_fermenting, pathway: acetaldehyde_reduction, times: 2) @ [llm_proposal]
+
+# Гликолиз + дыхательная цепь.
+fact x_sy_r: system(id: respiring) @ [llm_proposal]
+fact x_u_r1: uses(system: respiring, pathway: glycolysis, times: 1) @ [llm_proposal]
+fact x_u_r2: uses(system: respiring, pathway: nadh_oxidation, times: 1) @ [llm_proposal]
+
+# ---------- Доступность из среды ----------
+fact x_av_glc: available(species: CHEBI_4167) @ [llm_proposal]
+fact x_av_adp: available(species: CHEBI_456216) @ [llm_proposal]
+fact x_av_pi:  available(species: CHEBI_43474) @ [llm_proposal]
+fact x_av_h:   available(species: CHEBI_15378) @ [llm_proposal]
+fact x_av_w:   available(species: CHEBI_15377) @ [llm_proposal]
+fact x_av_o2:  available(species: CHEBI_15379) @ aerobic [llm_proposal]
+
+# ---------- Правила ----------
+# Нетто-стехиометрия одного пути.
+rule path_net strict @: path_net(pathway: ?p, species: ?x, value: ?v) <-
+    pathway(id: ?p), top(species: ?x),
+    ?v = sum(?d * ?t * ?sv * ?c) over (step(pathway: ?p, reaction: ?r, direction: ?dir, times: ?t),
+        dir_value(direction: ?dir, value: ?d),
+        participates(reaction: ?r, species: ?y, side: ?side, coeff: ?c),
+        side_value(side: ?side, value: ?sv),
+        member(species: ?y, of: ?x))
+
+# Нетто-стехиометрия системы: набор путей с кратностями.
+rule sys_net strict @: sys_net(system: ?s, species: ?x, value: ?v) <-
+    system(id: ?s), top(species: ?x),
+    ?v = sum(?u * ?d * ?t * ?sv * ?c) over (uses(system: ?s, pathway: ?p, times: ?u),
+        step(pathway: ?p, reaction: ?r, direction: ?dir, times: ?t),
+        dir_value(direction: ?dir, value: ?d),
+        participates(reaction: ?r, species: ?y, side: ?side, coeff: ?c),
+        side_value(side: ?side, value: ?sv),
+        member(species: ?y, of: ?x))
+
+rule consumed strict @: consumed(system: ?s, species: ?x) <-
+    sys_net(system: ?s, species: ?x, value: ?v), ?v < 0
+
+# Вещество потребляется, но системой не производится и в среде отсутствует.
+rule lacking strict @: lacking(system: ?s, species: ?x) <-
+    consumed(system: ?s, species: ?x),
+    ?k = count(?x) over (available(species: ?x)), ?k = 0
+
+rule supplied strict @: supplied(system: ?s, species: ?x) <-
+    consumed(system: ?s, species: ?x), available(species: ?x)
+
+rule viable strict @: viable(system: ?s) <-
+    system(id: ?s),
+    ?c = count(?x) over (consumed(system: ?s, species: ?x)),
+    ?a = count(?x) over (supplied(system: ?s, species: ?x)),
+    ?c = ?a
+
+rule not_viable strict @: ¬viable(system: ?s) <- lacking(system: ?s, species: ?x)
+
+# ---------- Запросы: баланс реакций ----------
+query balanced_all(reaction: RHEA_17825) @ expect yes
+query balanced_all(reaction: RHEA_23444) @ expect yes
+query balanced_all(reaction: pdc_lumped) @ expect yes
+query balanced_all(reaction: adh_lumped) @ expect yes
+query balanced_all(reaction: etc_lumped) @ expect yes
+
+# ---------- Запросы: направления шагов ----------
+query step(pathway: lactate_fermentation, reaction: RHEA_23444, direction: reverse, times: 1) @ expect yes
+query step(pathway: pyruvate_decarboxylation, reaction: pdc_lumped, direction: forward, times: 1) @ expect yes
+query step(pathway: acetaldehyde_reduction, reaction: adh_lumped, direction: forward, times: 1) @ expect yes
+
+# ---------- Запросы: гликолиз ----------
+query path_net(pathway: glycolysis, species: CHEBI_4167, value: -1) @ expect yes
+query path_net(pathway: glycolysis, species: CHEBI_15361, value: 2) @ expect yes
+query path_net(pathway: glycolysis, species: CHEBI_30616, value: 2) @ expect yes
+
+# ---------- Запросы: молочнокислое брожение ----------
+query path_net(pathway: lactate_fermentation, species: CHEBI_15361, value: -1) @ expect yes
+query path_net(pathway: lactate_fermentation, species: CHEBI_16651, value: 1) @ expect yes
+query path_net(pathway: lactate_fermentation, species: CHEBI_57945, value: -1) @ expect yes
+query path_net(pathway: lactate_fermentation, species: CHEBI_57540, value: 1) @ expect yes
+query path_net(pathway: lactate_fermentation, species: CHEBI_30616, value: 0) @ expect yes
+query path_net(pathway: lactate_fermentation, species: CHEBI_15379, value: 0) @ expect yes
+
+query sys_net(system: lactate_fermenting, species: CHEBI_4167, value: -1) @ anaerobic expect yes
+query sys_net(system: lactate_fermenting, species: CHEBI_16651, value: 2) @ anaerobic expect yes
+query sys_net(system: lactate_fermenting, species: CHEBI_30616, value: 2) @ anaerobic expect yes
+query sys_net(system: lactate_fermenting, species: CHEBI_57540, value: 0) @ anaerobic expect yes
+query sys_net(system: lactate_fermenting, species: CHEBI_57945, value: 0) @ anaerobic expect yes
+query sys_net(system: lactate_fermenting, species: CHEBI_15361, value: 0) @ anaerobic expect yes
+
+# ---------- Запросы: спиртовое брожение ----------
+query path_net(pathway: pyruvate_decarboxylation, species: CHEBI_15361, value: -1) @ expect yes
+query path_net(pathway: pyruvate_decarboxylation, species: CHEBI_15343, value: 1) @ expect yes
+query path_net(pathway: pyruvate_decarboxylation, species: CHEBI_16526, value: 1) @ expect yes
+query path_net(pathway: pyruvate_decarboxylation, species: CHEBI_30616, value: 0) @ expect yes
+
+query path_net(pathway: acetaldehyde_reduction, species: CHEBI_15343, value: -1) @ expect yes
+query path_net(pathway: acetaldehyde_reduction, species: CHEBI_16236, value: 1) @ expect yes
+query path_net(pathway: acetaldehyde_reduction, species: CHEBI_57945, value: -1) @ expect yes
+query path_net(pathway: acetaldehyde_reduction, species: CHEBI_57540, value: 1) @ expect yes
+query path_net(pathway: acetaldehyde_reduction, species: CHEBI_30616, value: 0) @ expect yes
+
+query sys_net(system: alcohol_fermenting, species: CHEBI_4167, value: -1) @ anaerobic expect yes
+query sys_net(system: alcohol_fermenting, species: CHEBI_16236, value: 2) @ anaerobic expect yes
+query sys_net(system: alcohol_fermenting, species: CHEBI_16526, value: 2) @ anaerobic expect yes
+query sys_net(system: alcohol_fermenting, species: CHEBI_30616, value: 2) @ anaerobic expect yes
+query sys_net(system: alcohol_fermenting, species: CHEBI_57540, value: 0) @ anaerobic expect yes
+query sys_net(system: alcohol_fermenting, species: CHEBI_57945, value: 0) @ anaerobic expect yes
+query sys_net(system: alcohol_fermenting, species: CHEBI_15361, value: 0) @ anaerobic expect yes
+query sys_net(system: alcohol_fermenting, species: CHEBI_15343, value: 0) @ anaerobic expect yes
+
+# ---------- Запросы: дыхательная цепь ----------
+query sys_net(system: respiring, species: CHEBI_57945, value: 0) @ aerobic expect yes
+query sys_net(system: respiring, species: CHEBI_57540, value: 0) @ aerobic expect yes
+query sys_net(system: respiring, species: CHEBI_15379, value: -1) @ aerobic expect yes
+query consumed(system: respiring, species: CHEBI_15379) @ aerobic expect yes
+
+# ---------- Запросы: жизнеспособность ----------
+query viable(system: lactate_fermenting) @ anaerobic expect yes
+query viable(system: alcohol_fermenting) @ anaerobic expect yes
+query viable(system: lactate_fermenting) @ aerobic expect yes
+query viable(system: alcohol_fermenting) @ aerobic expect yes
+query viable(system: respiring) @ anaerobic expect no
+query viable(system: respiring) @ aerobic expect yes
+query viable(system: glycolysis_only) @ anaerobic expect no
+query viable(system: glycolysis_only) @ aerobic expect no
+
+# --- harness: balance of every declared reaction ---
+query balanced_all(reaction: adh_lumped) @ expect yes
+query balanced_all(reaction: etc_lumped) @ expect yes
+query balanced_all(reaction: pdc_lumped) @ expect yes

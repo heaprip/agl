@@ -1,0 +1,8 @@
+{
+ "claims": {
+  "lactate_fermentation": "{}",
+  "alcohol_fermentation": "{}",
+  "respiratory_chain": null
+ },
+ "trouble": []
+}
