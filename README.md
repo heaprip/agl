@@ -14,7 +14,7 @@ Relation-first система представления смысла. Отно�
 | --- | --- | --- |
 | [vision](docs/vision.md) | зачем проект и что считать успехом | автор |
 | [decisions](docs/decisions.md) | принятые решения | только автор |
-| [hypotheses](docs/hypotheses.md) | рабочие гипотезы H0–H27 | помощник, **не принято** |
+| [hypotheses](docs/hypotheses.md) | рабочие гипотезы H0–H28 | помощник, **не принято** |
 | [open-questions](docs/open-questions.md) | вопросы, которые решает только автор | — |
 | [cases/newton](docs/cases/newton.md) | первый казус и журнал нагрузки на ядро | помощник, черновик |
 | [cases/glycolysis-hexokinase](docs/cases/glycolysis-hexokinase.md) | второй казус: первый шаг гликолиза | помощник, черновик |
