@@ -95,9 +95,10 @@ fn adding_a_fact_in_a_disjoint_plane_changes_nothing() {
 
 #[test]
 fn real_cases_do_not_depend_on_statement_order() {
-    let mut paths: Vec<_> = std::fs::read_dir("cases")
-        .unwrap()
-        .map(|e| e.unwrap().path())
+    let mut paths: Vec<_> = ["cases", "cases/reflection"]
+        .iter()
+        .flat_map(|d| std::fs::read_dir(d).unwrap().map(|e| e.unwrap().path()))
+        .filter(|p| p.extension().is_some_and(|e| e == "agl"))
         .collect();
     paths.sort();
     let n: u64 = std::env::var("AGL_SIM_SEEDS")
@@ -144,5 +145,59 @@ fn diagnosis_is_deterministic_and_order_independent() {
             base, other,
             "seed {seed}: diagnosis depends on statement order"
         );
+    }
+}
+
+#[test]
+fn proposals_never_make_expectations_worse_and_do_not_depend_on_order() {
+    let n: u64 = std::env::var("AGL_SIM_SEEDS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(500)
+        .min(150);
+    let seeds: Vec<u64> = match std::env::var("AGL_SEED") {
+        Ok(s) => vec![s.parse().unwrap()],
+        Err(_) => (0..n).collect(),
+    };
+    for seed in seeds {
+        // Expectations: the current answer, flipped for some queries, so that
+        // there is something to repair.
+        let mut prog = gen_program(seed);
+        let mut rng = Rng::new(seed ^ 0x5EED);
+        let answers: Vec<Verdict> = agl::run(&prog).queries.iter().map(|q| q.verdict).collect();
+        for (q, v) in prog.queries.iter_mut().zip(answers) {
+            q.expect = Some(if rng.chance(1, 3) {
+                match v {
+                    Verdict::Yes => Verdict::No,
+                    Verdict::No | Verdict::Unknown | Verdict::Conflict => Verdict::Yes,
+                    Verdict::Gap => Verdict::Gap,
+                }
+            } else {
+                v
+            });
+        }
+        let (ps, notes) = agl::propose::propose(&prog);
+        let base = agl::propose::render(&ps, &notes);
+        let (ps2, notes2) = agl::propose::propose(&permute(&prog, seed + 3));
+        assert_eq!(
+            base,
+            agl::propose::render(&ps2, &notes2),
+            "seed {seed}: proposals depend on statement order"
+        );
+        let before = agl::run(&prog);
+        for p in &ps {
+            let after = agl::run(&agl::propose::apply(&prog, &p.op).unwrap());
+            for (b, a) in before.queries.iter().zip(&after.queries) {
+                if b.query.expect == Some(b.verdict) {
+                    assert_eq!(
+                        a.query.expect,
+                        Some(a.verdict),
+                        "seed {seed}: {:?} broke a met expectation",
+                        p.op
+                    );
+                }
+            }
+            assert!(p.after >= p.before, "seed {seed}: {:?}", p.op);
+        }
     }
 }

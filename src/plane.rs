@@ -56,6 +56,39 @@ impl Axes {
         Ok(())
     }
 
+    /// Direct children of `value` on `axis`, in canonical order.
+    pub fn children(&self, axis: &str, value: &str) -> Vec<String> {
+        self.values
+            .get(axis)
+            .map(|vals| {
+                vals.iter()
+                    .filter(|(_, p)| p.as_deref() == Some(value))
+                    .map(|(v, _)| v.clone())
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    pub fn parent(&self, axis: &str, value: &str) -> Option<String> {
+        self.values.get(axis)?.get(value)?.clone()
+    }
+
+    /// Moves `value` under `new_parent`, which must exist and not lie below it.
+    pub fn reparent(&mut self, axis: &str, value: &str, new_parent: &str) -> Result<(), String> {
+        if self.value_within(axis, new_parent, value) {
+            return Err(format!("`{new_parent}` lies within `{value}`"));
+        }
+        let vals = self
+            .values
+            .get_mut(axis)
+            .ok_or_else(|| format!("unknown axis `{axis}`"))?;
+        if !vals.contains_key(new_parent) || !vals.contains_key(value) {
+            return Err(format!("unknown value on axis `{axis}`"));
+        }
+        vals.insert(value.to_string(), Some(new_parent.to_string()));
+        Ok(())
+    }
+
     pub fn has_value(&self, axis: &str, value: &str) -> bool {
         let Some(vals) = self.values.get(axis) else {
             return false;

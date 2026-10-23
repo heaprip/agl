@@ -6,9 +6,10 @@ fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let verbose = args.iter().any(|a| a == "-v");
     let diagnose = args.iter().any(|a| a == "--diagnose");
+    let propose = args.iter().any(|a| a == "--propose");
     let files: Vec<&String> = args.iter().filter(|a| !a.starts_with('-')).collect();
     if files.is_empty() {
-        eprintln!("usage: agl [-v] [--diagnose] FILE.agl...");
+        eprintln!("usage: agl [-v] [--diagnose] [--propose] FILE.agl...");
         return ExitCode::from(2);
     }
     let mut ok = true;
@@ -77,6 +78,14 @@ fn main() -> ExitCode {
                 println!("diagnosis: nothing to diagnose");
             } else {
                 print!("{}", agl::reflect::render(&ds));
+            }
+        }
+        if propose {
+            let (ps, notes) = agl::propose::propose(&prog);
+            if ps.is_empty() && notes.is_empty() {
+                println!("proposals: none");
+            } else {
+                print!("{}", agl::propose::render(&ps, &notes));
             }
         }
         if report.has_errors() || report.failed_queries().next().is_some() {

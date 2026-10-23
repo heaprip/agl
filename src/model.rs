@@ -136,6 +136,77 @@ pub enum Strength {
 /// Axis constraints: axis name to value.
 pub type Plane = BTreeMap<String, String>;
 
+impl fmt::Display for Expr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Expr::Term(t) => write!(f, "{t}"),
+            Expr::Bin(l, op, r) => write!(f, "({l} {op} {r})"),
+        }
+    }
+}
+
+impl fmt::Display for CmpOp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            CmpOp::Lt => "<",
+            CmpOp::Le => "<=",
+            CmpOp::Gt => ">",
+            CmpOp::Ge => ">=",
+            CmpOp::Eq => "=",
+            CmpOp::Ne => "!=",
+        };
+        write!(f, "{s}")
+    }
+}
+
+impl fmt::Display for Lit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Lit::Atom(a) => write!(f, "{a}"),
+            Lit::Cmp(l, op, r) => write!(f, "{l} {op} {r}"),
+            Lit::Agg {
+                var,
+                func,
+                expr,
+                over,
+            } => {
+                let name = match func {
+                    AggFn::Sum => "sum",
+                    AggFn::Count => "count",
+                    AggFn::Min => "min",
+                    AggFn::Max => "max",
+                };
+                let over: Vec<String> = over.iter().map(Atom::to_string).collect();
+                write!(f, "?{var} = {name}({expr}) over ({})", over.join(", "))
+            }
+        }
+    }
+}
+
+/// A plane as it is written after `@`: `axis:value + axis:value`.
+pub fn plane_to_spec(p: &Plane) -> String {
+    let parts: Vec<String> = p.iter().map(|(a, v)| format!("{a}:{v}")).collect();
+    parts.join(" + ")
+}
+
+impl Rule {
+    /// The rule in the case notation, parseable back.
+    pub fn to_source(&self) -> String {
+        let strength = match self.strength {
+            Strength::Strict => "strict",
+            Strength::Defeasible => "defeasible",
+        };
+        let body: Vec<String> = self.body.iter().map(Lit::to_string).collect();
+        format!(
+            "rule {} {strength} @ {}: {} <- {}",
+            self.id,
+            plane_to_spec(&self.plane),
+            self.head,
+            body.join(", ")
+        )
+    }
+}
+
 pub fn plane_to_string(p: &Plane) -> String {
     if p.is_empty() {
         return "{}".into();
@@ -210,7 +281,7 @@ pub struct Unique {
     pub line: usize,
 }
 
-#[derive(Default, Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct Program {
     pub axes: Axes,
     pub planes: BTreeMap<String, Plane>,

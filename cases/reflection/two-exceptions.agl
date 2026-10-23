@@ -1,0 +1,20 @@
+# Приёмка рефлексии R2: исключение лежит слишком широко.
+# Ожидания заданы в узких плоскостях; правило-исключение — во всём таксоне.
+# Правильный ответ рефлексии: промежуточная плоскость над звонцами и веснянками.
+
+axis taxon
+value taxon Insecta
+value taxon Chironomidae_larvae in Insecta    # гемоглобин
+value taxon Plecoptera in Insecta             # гемоцианин
+value taxon Orthoptera in Insecta             # пигмента нет
+
+plane insects = taxon:Insecta
+
+fact h1: has_fluid(fluid: hemolymph) @ insects
+rule r_ins defeasible @ insects: ¬transports_o2(fluid: hemolymph) <- has_fluid(fluid: hemolymph)
+rule ex1 defeasible @ insects: transports_o2(fluid: hemolymph) <- has_fluid(fluid: hemolymph)
+
+query transports_o2(fluid: hemolymph) @ taxon:Chironomidae_larvae expect yes
+query transports_o2(fluid: hemolymph) @ taxon:Plecoptera          expect yes
+query transports_o2(fluid: hemolymph) @ taxon:Orthoptera          expect no
+query transports_o2(fluid: hemolymph) @ insects                   expect no
