@@ -14,11 +14,12 @@ Relation-first система представления смысла. Отно�
 | --- | --- | --- |
 | [vision](docs/vision.md) | зачем проект и что считать успехом | автор |
 | [decisions](docs/decisions.md) | принятые решения | только автор |
-| [hypotheses](docs/hypotheses.md) | рабочие гипотезы H0–H30 | помощник, **не принято** |
+| [hypotheses](docs/hypotheses.md) | рабочие гипотезы H0–H31 | помощник, **не принято** |
 | [open-questions](docs/open-questions.md) | вопросы, которые решает только автор | — |
 | [cases/newton](docs/cases/newton.md) | первый казус и журнал нагрузки на ядро | помощник, черновик |
 | [cases/glycolysis-hexokinase](docs/cases/glycolysis-hexokinase.md) | второй казус: первый шаг гликолиза | помощник, черновик |
 | [cases/gas-exchange](docs/cases/gas-exchange.md) | третий казус: газообмен у человека, рыбы, насекомого, птицы | помощник, черновик |
+| [cases/les-justes](docs/cases/les-justes.md) | четвёртый казус: «Праведные», первый моральный | помощник, черновик |
 | [blind/comparison](docs/blind/comparison.md) | слепой прогон (Тесей, Хемингуэй) против метаядра agl | помощник, черновик |
 | [lessons/neuro](docs/lessons/neuro.md) | прочитанные статьи по нейронауке и что из них взято | помощник |
 | [review/2026-10-23](docs/review/2026-10-23-analysis.md) | критический разбор обсуждения | агент-рецензент |
