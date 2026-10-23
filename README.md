@@ -29,6 +29,7 @@ cargo run --release -- cases/trunk/glycolysis.agl`. Где мы — [roadmap](do
 | [blind/comparison](docs/blind/comparison.md) | слепой прогон (Тесей, Хемингуэй) против метаядра agl | помощник, черновик |
 | [roadmap](docs/roadmap.md) | путь к первому самостоятельному стволу и где мы на нём | помощник |
 | [impl/poc](docs/impl/poc.md) | реализация PoC: нотация, семантика, детерминизм, симуляционные тесты | помощник |
+| [lessons/education](docs/lessons/education.md) | методологии обучения XX века и чего agl не хватает как ученику | помощник |
 | [lessons/neuro](docs/lessons/neuro.md) | прочитанные статьи по нейронауке и что из них взято | помощник |
 | [review/2026-10-23](docs/review/2026-10-23-analysis.md) | критический разбор обсуждения | агент-рецензент |
 | [origin](docs/origin/relation-first-system.md) | исходные заметки, не редактируются | автор |
