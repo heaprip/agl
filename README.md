@@ -10,6 +10,9 @@ Relation-first система представления смысла. Отно�
 детерминированные симуляционные тесты по seed. Семантика и ограничения —
 [impl/poc](docs/impl/poc.md).
 
+**Первый ствол — гликолиз** из Rhea и ChEBI: `python3 tools/trunk.py build &&
+cargo run --release -- cases/trunk/glycolysis.agl`. Где мы — [roadmap](docs/roadmap.md).
+
 ## Документы
 
 | Документ | Что в нём | Кто автор |
@@ -24,6 +27,7 @@ Relation-first система представления смысла. Отно�
 | [cases/les-justes](docs/cases/les-justes.md) | четвёртый казус: «Праведные», первый моральный | помощник, черновик |
 | [blind/models-comparison](docs/blind/models-comparison.md) | тот же слепой прогон на DeepSeek V4 Pro, Beam 1.0, Ling 3.1 Flash, LFM2.5 | помощник, черновик |
 | [blind/comparison](docs/blind/comparison.md) | слепой прогон (Тесей, Хемингуэй) против метаядра agl | помощник, черновик |
+| [roadmap](docs/roadmap.md) | путь к первому самостоятельному стволу и где мы на нём | помощник |
 | [impl/poc](docs/impl/poc.md) | реализация PoC: нотация, семантика, детерминизм, симуляционные тесты | помощник |
 | [lessons/neuro](docs/lessons/neuro.md) | прочитанные статьи по нейронауке и что из них взято | помощник |
 | [review/2026-10-23](docs/review/2026-10-23-analysis.md) | критический разбор обсуждения | агент-рецензент |

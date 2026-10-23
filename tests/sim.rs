@@ -105,7 +105,7 @@ fn adding_a_fact_in_a_disjoint_plane_changes_nothing() {
 
 #[test]
 fn real_cases_do_not_depend_on_statement_order() {
-    let mut paths: Vec<_> = ["cases", "cases/reflection"]
+    let mut paths: Vec<_> = ["cases", "cases/reflection", "cases/trunk"]
         .iter()
         .flat_map(|d| std::fs::read_dir(d).unwrap().map(|e| e.unwrap().path()))
         .filter(|p| p.extension().is_some_and(|e| e == "agl"))
@@ -117,8 +117,14 @@ fn real_cases_do_not_depend_on_statement_order() {
         .unwrap_or(500)
         .min(50);
     for path in paths {
-        let prog = agl::parse(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        let prog = agl::parse_file(&path).unwrap();
         let base = agl::render(&agl::run(&prog));
+        // Large programs (the trunk) are slow to permute: a few seeds by default.
+        let n = if prog.facts.len() > 100 && std::env::var("AGL_SIM_SEEDS").is_err() {
+            3
+        } else {
+            n
+        };
         for seed in 0..n {
             let other = agl::render(&agl::run(&permute(&prog, seed)));
             assert_eq!(

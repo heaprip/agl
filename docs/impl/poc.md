@@ -28,6 +28,7 @@ defeats WINNER LOSER
 unique REL(role) by (key, key, ...)
 status MOST_TRUSTED > ... > LEAST_TRUSTED
 forbid LITERAL @ SPEC
+include RELATIVE/PATH.agl          # подставляется на месте; номера строк — в развёрнутом тексте
 query LITERAL @ SPEC [expect yes|no|unknown|conflict|gap]
 ```
 

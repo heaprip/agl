@@ -1,0 +1,114 @@
+# Ствол: гликолиз. Момент истины.
+#
+# Данные — из Rhea и ChEBI (data/glycolysis.agl, собирается tools/trunk.py).
+# Здесь — учебное знание, которого в базах нет: порядок шагов, направление в
+# клетке, кратность и учебный итог пути (Lehninger, Principles of Biochemistry).
+#
+# Три проверки:
+#   1. каждая из 10 реакций сбалансирована по атомам и заряду — по данным ChEBI;
+#   2. сумма шагов с направлением и кратностью совпадает с учебным итогом;
+#   3. в итоге нет необъяснённых веществ — промежуточные продукты сокращаются.
+
+include ../../data/glycolysis.agl
+
+fact sv_l: side_value(side: left, value: -1) @ [textbook]
+fact sv_r: side_value(side: right, value: 1) @ [textbook]
+fact dv_f: dir_value(direction: forward, value: 1) @ [textbook]
+fact dv_r: dir_value(direction: reverse, value: -1) @ [textbook]
+
+fact el_C: checked(element: C) @ [textbook]
+fact el_H: checked(element: H) @ [textbook]
+fact el_N: checked(element: N) @ [textbook]
+fact el_O: checked(element: O) @ [textbook]
+fact el_P: checked(element: P) @ [textbook]
+fact el_q: checked(element: charge) @ [textbook]
+
+# 1. Баланс каждой реакции. Реакция проверяется, только если состав известен у
+# всех её участников: неполный состав — это «неизвестно», а не ноль.
+rule complete strict @: complete(reaction: ?r) <-
+    reaction(id: ?r),
+    ?n = count(?sp) over (participates(reaction: ?r, species: ?sp)),
+    ?k = count(?sp) over (participates(reaction: ?r, species: ?sp), formula_known(species: ?sp)),
+    ?n = ?k
+rule net strict @: net(reaction: ?r, element: ?e, value: ?v) <-
+    complete(reaction: ?r), checked(element: ?e),
+    ?v = sum(?s * ?c * ?n) over (participates(reaction: ?r, species: ?sp, side: ?side, coeff: ?c),
+                                 side_value(side: ?side, value: ?s),
+                                 composition(species: ?sp, element: ?e, n: ?n))
+rule bal strict @: balanced(reaction: ?r, element: ?e) <- net(reaction: ?r, element: ?e, value: ?v), ?v = 0
+rule unbal strict @: ¬balanced(reaction: ?r, element: ?e) <- net(reaction: ?r, element: ?e, value: ?v), ?v != 0
+forbid ¬balanced(reaction: ?r, element: ?e) @
+rule all_bal strict @: balanced_all(reaction: ?r) <-
+    reaction(id: ?r),
+    ?k = count(?e) over (balanced(reaction: ?r, element: ?e)),
+    ?m = count(?e) over (checked(element: ?e)),
+    ?k = ?m
+
+query balanced_all(reaction: RHEA_17825) @ expect yes
+query balanced_all(reaction: RHEA_11816) @ expect yes
+query balanced_all(reaction: RHEA_16109) @ expect yes
+query balanced_all(reaction: RHEA_14729) @ expect yes
+query balanced_all(reaction: RHEA_18585) @ expect yes
+query balanced_all(reaction: RHEA_10300) @ expect yes
+query balanced_all(reaction: RHEA_14801) @ expect yes
+query balanced_all(reaction: RHEA_15901) @ expect yes
+query balanced_all(reaction: RHEA_10164) @ expect yes
+query balanced_all(reaction: RHEA_18157) @ expect yes
+
+# 2. Путь: шаги в клетке. Четыре реакции Rhea записаны в сторону глюконеогенеза.
+fact pw: pathway(id: glycolysis) @ [textbook]
+fact st01: step(pathway: glycolysis, reaction: RHEA_17825, direction: forward, times: 1) @ [textbook]
+fact st02: step(pathway: glycolysis, reaction: RHEA_11816, direction: forward, times: 1) @ [textbook]
+fact st03: step(pathway: glycolysis, reaction: RHEA_16109, direction: forward, times: 1) @ [textbook]
+fact st04: step(pathway: glycolysis, reaction: RHEA_14729, direction: forward, times: 1) @ [textbook]
+fact st05: step(pathway: glycolysis, reaction: RHEA_18585, direction: reverse, times: 1) @ [textbook]
+fact st06: step(pathway: glycolysis, reaction: RHEA_10300, direction: forward, times: 2) @ [textbook]
+fact st07: step(pathway: glycolysis, reaction: RHEA_14801, direction: reverse, times: 2) @ [textbook]
+fact st08: step(pathway: glycolysis, reaction: RHEA_15901, direction: reverse, times: 2) @ [textbook]
+fact st09: step(pathway: glycolysis, reaction: RHEA_10164, direction: forward, times: 2) @ [textbook]
+fact st10: step(pathway: glycolysis, reaction: RHEA_18157, direction: reverse, times: 2) @ [textbook]
+
+# Тождество классов: вещество входит в свой класс и в классы-предки по is_a из ChEBI.
+rule mem_self strict @: member(species: ?y, of: ?y) <- participates(species: ?y)
+rule mem_isa strict @: member(species: ?y, of: ?q) <- is_a(species: ?y, parent: ?p), member(species: ?p, of: ?q)
+
+rule produced strict @: produced(pathway: ?p, species: ?x, value: ?v) <-
+    pathway(id: ?p), top(species: ?x),
+    ?v = sum(?d * ?t * ?s * ?c) over (member(species: ?y, of: ?x),
+                                      step(pathway: ?p, reaction: ?r, direction: ?dir, times: ?t),
+                                      dir_value(direction: ?dir, value: ?d),
+                                      participates(reaction: ?r, species: ?y, side: ?side, coeff: ?c),
+                                      side_value(side: ?side, value: ?s))
+
+# Учебный итог: глюкоза + 2 NAD⁺ + 2 ADP + 2 Pᵢ → 2 пируват + 2 NADH + 2 ATP + 2 H₂O + 2 H⁺.
+fact tn01: net_textbook(pathway: glycolysis, species: CHEBI_4167, value: -1) @ [textbook]
+fact tn02: net_textbook(pathway: glycolysis, species: CHEBI_57540, value: -2) @ [textbook]
+fact tn03: net_textbook(pathway: glycolysis, species: CHEBI_456216, value: -2) @ [textbook]
+fact tn04: net_textbook(pathway: glycolysis, species: CHEBI_43474, value: -2) @ [textbook]
+fact tn05: net_textbook(pathway: glycolysis, species: CHEBI_15361, value: 2) @ [textbook]
+fact tn06: net_textbook(pathway: glycolysis, species: CHEBI_57945, value: 2) @ [textbook]
+fact tn07: net_textbook(pathway: glycolysis, species: CHEBI_30616, value: 2) @ [textbook]
+fact tn08: net_textbook(pathway: glycolysis, species: CHEBI_15377, value: 2) @ [textbook]
+fact tn09: net_textbook(pathway: glycolysis, species: CHEBI_15378, value: 2) @ [textbook]
+
+rule agree strict @: net_matches(pathway: ?p, species: ?x) <-
+    net_textbook(pathway: ?p, species: ?x, value: ?e), produced(pathway: ?p, species: ?x, value: ?v), ?v = ?e
+rule disagree strict @: ¬net_matches(pathway: ?p, species: ?x) <-
+    net_textbook(pathway: ?p, species: ?x, value: ?e), produced(pathway: ?p, species: ?x, value: ?v), ?v != ?e
+forbid ¬net_matches(pathway: ?p, species: ?x) @
+
+# 3. Необъяснённое: класс с ненулевым итогом, которого нет в учебном итоге.
+rule unexplained strict @: ¬explained(pathway: ?p, species: ?x) <-
+    produced(pathway: ?p, species: ?x, value: ?v), ?v != 0,
+    ?k = count(?e) over (net_textbook(pathway: ?p, species: ?x, value: ?e)), ?k = 0
+forbid ¬explained(pathway: ?p, species: ?x) @
+
+query net_matches(pathway: glycolysis, species: CHEBI_4167) @ expect yes
+query net_matches(pathway: glycolysis, species: CHEBI_57540) @ expect yes
+query net_matches(pathway: glycolysis, species: CHEBI_456216) @ expect yes
+query net_matches(pathway: glycolysis, species: CHEBI_43474) @ expect yes
+query net_matches(pathway: glycolysis, species: CHEBI_15361) @ expect yes
+query net_matches(pathway: glycolysis, species: CHEBI_57945) @ expect yes
+query net_matches(pathway: glycolysis, species: CHEBI_30616) @ expect yes
+query net_matches(pathway: glycolysis, species: CHEBI_15377) @ expect yes
+query net_matches(pathway: glycolysis, species: CHEBI_15378) @ expect yes

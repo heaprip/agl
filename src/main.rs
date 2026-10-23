@@ -15,15 +15,7 @@ fn main() -> ExitCode {
     let mut ok = true;
     for path in files {
         println!("== {path}");
-        let src = match std::fs::read_to_string(path) {
-            Ok(s) => s,
-            Err(e) => {
-                eprintln!("{path}: {e}");
-                ok = false;
-                continue;
-            }
-        };
-        let prog = match agl::parse(&src) {
+        let prog = match agl::parse_file(std::path::Path::new(path)) {
             Ok(p) => p,
             Err(e) => {
                 println!("parse error: {e}");

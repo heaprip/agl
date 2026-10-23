@@ -21,6 +21,39 @@
 use crate::model::*;
 use crate::units::{Dim, parse_unit};
 
+/// Reads a file, expanding `include PATH` lines (relative to the including
+/// file) in place, and parses the result. Line numbers in errors refer to the
+/// expanded text.
+pub fn parse_file(path: &std::path::Path) -> Result<Program, String> {
+    let mut stack = Vec::new();
+    let src = expand(path, &mut stack)?;
+    parse(&src)
+}
+
+fn expand(path: &std::path::Path, stack: &mut Vec<std::path::PathBuf>) -> Result<String, String> {
+    let canon = path
+        .canonicalize()
+        .map_err(|e| format!("{}: {e}", path.display()))?;
+    if stack.contains(&canon) {
+        return Err(format!("include cycle through {}", path.display()));
+    }
+    stack.push(canon);
+    let src = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    let dir = path.parent().unwrap_or_else(|| std::path::Path::new("."));
+    let mut out = String::new();
+    for line in src.lines() {
+        match line.trim().strip_prefix("include ") {
+            Some(rel) => out.push_str(&expand(&dir.join(rel.trim()), stack)?),
+            None => {
+                out.push_str(line);
+                out.push('\n');
+            }
+        }
+    }
+    stack.pop();
+    Ok(out)
+}
+
 pub fn parse(src: &str) -> Result<Program, String> {
     let mut prog = Program::default();
     for (line_no, stmt) in statements(src) {
