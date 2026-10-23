@@ -1,0 +1,69 @@
+# Корабль Тесея с продолжением Гоббса: тождество по критерию и единственность.
+# Абсурд Гоббса — настоящее противоречие только там, где тождество объявлено
+# единственным и без критерия.
+
+axis view
+value view criterial      # тождество всегда по критерию
+value view absolute       # одно тождество на всё: схлопывание Гоббса
+
+plane crit = view:criterial
+plane abs  = view:absolute
+
+relation same(criterion, x, of, at)
+relation same_ship(x, of, at)
+unique same(x) by (criterion, of, at)
+unique same_ship(x) by (of, at)
+
+fact o0: origin(ship: s0) @ [scenario]
+fact e0: exists_at(ship: s0, t: t0) @ [scenario]
+fact e1: exists_at(ship: s_gradual, t: t_end) @ [scenario]
+fact e2: exists_at(ship: s_rebuilt, t: t_end) @ [scenario]
+
+fact a1: part(plank: p1, ship: s0) @
+fact a2: part(plank: p2, ship: s0) @
+fact a3: part(plank: p3, ship: s0) @
+fact a4: part(plank: p4, ship: s0) @
+fact o1: original(plank: p1) @
+fact o2: original(plank: p2) @
+fact o3: original(plank: p3) @
+fact o4: original(plank: p4) @
+fact b1: part(plank: q1, ship: s_gradual) @
+fact b2: part(plank: q2, ship: s_gradual) @
+fact b3: part(plank: q3, ship: s_gradual) @
+fact b4: part(plank: q4, ship: s_gradual) @
+fact d1: part(plank: p1, ship: s_rebuilt) @
+fact d2: part(plank: p2, ship: s_rebuilt) @
+fact d3: part(plank: p3, ship: s_rebuilt) @
+fact d4: part(plank: p4, ship: s_rebuilt) @
+
+fact n1: continuous(from: s0, to: s_gradual) @ [scenario]
+fact w0: owner(ship: s0, who: athenians) @ [scenario]
+fact w1: owner(ship: s_gradual, who: athenians) @ [scenario]
+fact w2: owner(ship: s_rebuilt, who: collector) @ [assumption]
+
+# Доля исходных досок — агрегацией.
+rule share strict @: share(ship: ?s, value: ?v) <-
+    exists_at(ship: ?s, t: ?t),
+    ?o = count(?p) over (part(plank: ?p, ship: ?s), original(plank: ?p)),
+    ?n = count(?p) over (part(plank: ?p, ship: ?s)),
+    ?v = ?o / ?n
+
+rule mat strict @: same(criterion: material, x: ?s, of: ?o, at: ?t) <-
+    origin(ship: ?o), exists_at(ship: ?s, t: ?t), ?t != t0, share(ship: ?s, value: ?v), ?v >= 0.5
+rule mat_no strict @: ¬same(criterion: material, x: ?s, of: ?o, at: ?t) <-
+    origin(ship: ?o), exists_at(ship: ?s, t: ?t), ?t != t0, share(ship: ?s, value: ?v), ?v < 0.5
+rule cont strict @: same(criterion: continuity, x: ?s, of: ?o, at: ?t) <-
+    origin(ship: ?o), continuous(from: ?o, to: ?s), exists_at(ship: ?s, t: ?t)
+rule law strict @: same(criterion: law, x: ?s, of: ?o, at: ?t) <-
+    origin(ship: ?o), owner(ship: ?o, who: ?w), owner(ship: ?s, who: ?w), exists_at(ship: ?s, t: ?t), ?t != t0
+
+# Схлопывание: «тот же корабль» без критерия.
+rule collapse strict @ abs: same_ship(x: ?s, of: ?o, at: ?t) <- same(criterion: ?c, x: ?s, of: ?o, at: ?t)
+
+query same(criterion: material, x: s_rebuilt, of: s0, at: t_end) @ crit   expect yes
+query same(criterion: material, x: s_gradual, of: s0, at: t_end) @ crit   expect no
+query same(criterion: continuity, x: s_gradual, of: s0, at: t_end) @ crit expect yes
+query same(criterion: continuity, x: s_rebuilt, of: s0, at: t_end) @ crit expect unknown
+query same(criterion: law, x: s_gradual, of: s0, at: t_end) @ crit        expect yes
+query same_ship(x: s_rebuilt, of: s0, at: t_end) @ abs                    expect yes
+query same_ship(x: s_gradual, of: s0, at: t_end) @ abs                    expect yes

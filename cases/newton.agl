@@ -15,8 +15,8 @@ plane narr = discourse:narrative
 # Рассказ — со статусом анекдота, в своей плоскости.
 fact a1: fall(object: apple1, toward: earth) @ narr [anecdote]
 
-fact g1: g(value: 9.81) @ phys [measurement]
-fact m1: observed(quantity: a_moon, value: 0.00272) @ phys [measurement]
+fact g1: g(value: 9.81[m/s^2]) @ phys [measurement]
+fact m1: observed(quantity: a_moon, value: 0.00272[m/s^2]) @ phys [measurement]
 fact tc: tolerance(rel: 0.02) @ precision:coarse
 fact tf: tolerance(rel: 0.000001) @ precision:fine
 

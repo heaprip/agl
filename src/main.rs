@@ -33,6 +33,9 @@ fn main() -> ExitCode {
         for d in &report.diags {
             println!("{:?} line {} [{}]: {}", d.level, d.line, d.code, d.msg);
         }
+        for e in &report.errors {
+            println!("error: {e}");
+        }
         for c in &report.conflicts {
             println!(
                 "conflict {:?} on {} in {}: for {} / against {}",

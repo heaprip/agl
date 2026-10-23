@@ -1,7 +1,7 @@
 //! Whole-program check: lint, contradiction scan over plane intersections,
 //! and queries with their expected verdicts.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::eval::{self, ConflictKind, Outcome};
 use crate::lint::{self, Diag, Level};
@@ -23,6 +23,8 @@ pub struct FoundConflict {
 #[derive(Debug)]
 pub struct Report {
     pub diags: Vec<Diag>,
+    /// Evaluation errors, such as dimension mismatches, from any context.
+    pub errors: Vec<String>,
     pub conflicts: Vec<FoundConflict>,
     pub queries: Vec<QueryResult>,
 }
@@ -35,16 +37,21 @@ impl Report {
     }
 
     pub fn has_errors(&self) -> bool {
-        self.diags.iter().any(|d| d.level == Level::Error)
+        self.diags.iter().any(|d| d.level == Level::Error) || !self.errors.is_empty()
     }
 }
 
 pub fn run(prog: &Program) -> Report {
     let diags = lint::lint(prog);
-    let conflicts = scan_conflicts(prog);
-    let queries = prog.queries.iter().map(|q| answer(prog, q)).collect();
+    let (conflicts, mut errors) = scan_conflicts(prog);
+    let queries: Vec<QueryResult> = prog
+        .queries
+        .iter()
+        .map(|q| answer(prog, q, &mut errors))
+        .collect();
     Report {
         diags,
+        errors: errors.into_iter().collect(),
         conflicts,
         queries,
     }
@@ -76,13 +83,15 @@ fn contexts(prog: &Program) -> Vec<Plane> {
 /// A distinct conflict: atom, kind and both source sets.
 type ConflictId = (String, String, Vec<String>, Vec<String>);
 
-fn scan_conflicts(prog: &Program) -> Vec<FoundConflict> {
+fn scan_conflicts(prog: &Program) -> (Vec<FoundConflict>, BTreeSet<String>) {
     // One entry per distinct conflict (atom, kind, both source sets); for each,
     // the canonically smallest context in which it shows. Independent of the
     // order of statements and of contexts.
     let mut found: BTreeMap<ConflictId, (String, FoundConflict)> = BTreeMap::new();
+    let mut errors = BTreeSet::new();
     for ctx in contexts(prog) {
         let out = eval::evaluate(prog, &ctx);
+        errors.extend(out.errors.iter().cloned());
         for (key, c) in out.conflicts {
             let id = (
                 key,
@@ -106,11 +115,12 @@ fn scan_conflicts(prog: &Program) -> Vec<FoundConflict> {
             }
         }
     }
-    found.into_values().map(|(_, f)| f).collect()
+    (found.into_values().map(|(_, f)| f).collect(), errors)
 }
 
-fn answer(prog: &Program, q: &Query) -> QueryResult {
+fn answer(prog: &Program, q: &Query, errors: &mut BTreeSet<String>) -> QueryResult {
     let out = eval::evaluate(prog, &q.plane);
+    errors.extend(out.errors.iter().cloned());
     let key = q.atom.key();
     let ckey = q.atom.complement().key();
     let pos_key = if q.atom.neg { &ckey } else { &key };
@@ -169,6 +179,7 @@ pub fn render(report: &Report) -> String {
         .diags
         .iter()
         .map(|d| format!("diag {:?} [{}] {}", d.level, d.code, d.msg))
+        .chain(report.errors.iter().map(|e| format!("error {e}")))
         .collect();
     lines.sort();
     let mut conflicts: Vec<String> = report

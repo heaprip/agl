@@ -152,6 +152,11 @@ pub fn permute(prog: &Program, seed: u64) -> Program {
     rng.shuffle(&mut queries);
     for r in &mut rules {
         rng.shuffle(&mut r.body);
+        for lit in &mut r.body {
+            if let Lit::Agg { over, .. } = lit {
+                rng.shuffle(over);
+            }
+        }
     }
     Program {
         facts,
@@ -164,5 +169,6 @@ pub fn permute(prog: &Program, seed: u64) -> Program {
         normative_axes: prog.normative_axes.clone(),
         relations: prog.relations.clone(),
         gaps: prog.gaps.clone(),
+        uniques: prog.uniques.clone(),
     }
 }

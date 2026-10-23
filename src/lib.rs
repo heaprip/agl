@@ -13,6 +13,7 @@ pub mod model;
 pub mod parse;
 pub mod plane;
 pub mod sim;
+pub mod units;
 
 pub use check::{Report, render, run};
 pub use parse::parse;

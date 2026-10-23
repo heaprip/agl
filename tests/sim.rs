@@ -92,3 +92,30 @@ fn adding_a_fact_in_a_disjoint_plane_changes_nothing() {
         );
     }
 }
+
+#[test]
+fn real_cases_do_not_depend_on_statement_order() {
+    let mut paths: Vec<_> = std::fs::read_dir("cases")
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .collect();
+    paths.sort();
+    let n: u64 = std::env::var("AGL_SIM_SEEDS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(500)
+        .min(50);
+    for path in paths {
+        let prog = agl::parse(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        let base = agl::render(&agl::run(&prog));
+        for seed in 0..n {
+            let other = agl::render(&agl::run(&permute(&prog, seed)));
+            assert_eq!(
+                base,
+                other,
+                "{} seed {seed}: report depends on statement order",
+                path.display()
+            );
+        }
+    }
+}

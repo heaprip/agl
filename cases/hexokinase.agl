@@ -1,0 +1,115 @@
+# Гексокиназа — исполняемый срез docs/cases/glycolysis-hexokinase.md:
+# баланс атомов и заряда агрегацией, резервуары плоскости, размерности.
+
+axis level
+value level chem          # химические частицы
+value level biochem       # биохимические реагенты: суммы форм при данном pH
+
+axis cond
+value cond standard
+value cond cell
+
+plane chem    = level:chem
+plane biochem = level:biochem
+
+relation participates(reaction, species, side, coeff)
+relation composition(species, element, n)
+
+# Состав частиц. Заряд считается как ещё один «элемент».
+fact c01: composition(species: glucose, element: C, n: 6) @
+fact c02: composition(species: glucose, element: H, n: 12) @
+fact c03: composition(species: glucose, element: O, n: 6) @
+fact c11: composition(species: ATP4, element: C, n: 10) @
+fact c12: composition(species: ATP4, element: H, n: 12) @
+fact c13: composition(species: ATP4, element: N, n: 5) @
+fact c14: composition(species: ATP4, element: O, n: 13) @
+fact c15: composition(species: ATP4, element: P, n: 3) @
+fact c16: composition(species: ATP4, element: charge, n: -4) @
+fact c21: composition(species: G6P2, element: C, n: 6) @
+fact c22: composition(species: G6P2, element: H, n: 11) @
+fact c23: composition(species: G6P2, element: O, n: 9) @
+fact c24: composition(species: G6P2, element: P, n: 1) @
+fact c25: composition(species: G6P2, element: charge, n: -2) @
+fact c31: composition(species: ADP3, element: C, n: 10) @
+fact c32: composition(species: ADP3, element: H, n: 12) @
+fact c33: composition(species: ADP3, element: N, n: 5) @
+fact c34: composition(species: ADP3, element: O, n: 10) @
+fact c35: composition(species: ADP3, element: P, n: 2) @
+fact c36: composition(species: ADP3, element: charge, n: -3) @
+fact c41: composition(species: H1, element: H, n: 1) @
+fact c42: composition(species: H1, element: charge, n: 1) @
+
+# Реагенты биохимической записи: состав без H и заряда — они зависят от pH.
+fact b11: composition(species: ATP, element: C, n: 10) @
+fact b12: composition(species: ATP, element: N, n: 5) @
+fact b13: composition(species: ATP, element: O, n: 13) @
+fact b14: composition(species: ATP, element: P, n: 3) @
+fact b21: composition(species: G6P, element: C, n: 6) @
+fact b22: composition(species: G6P, element: O, n: 9) @
+fact b23: composition(species: G6P, element: P, n: 1) @
+fact b31: composition(species: ADP, element: C, n: 10) @
+fact b32: composition(species: ADP, element: N, n: 5) @
+fact b33: composition(species: ADP, element: O, n: 10) @
+fact b34: composition(species: ADP, element: P, n: 2) @
+
+fact s1: sign(side: in, value: 1) @
+fact s2: sign(side: out, value: -1) @
+
+# Уровень частиц: проверяется всё. Ошибочная запись — без H⁺.
+fact r1: reaction(id: hk) @ chem [textbook]
+fact p1: participates(reaction: hk, species: glucose, side: in, coeff: 1) @ chem
+fact p2: participates(reaction: hk, species: ATP4, side: in, coeff: 1) @ chem
+fact p3: participates(reaction: hk, species: G6P2, side: out, coeff: 1) @ chem
+fact p4: participates(reaction: hk, species: ADP3, side: out, coeff: 1) @ chem
+fact p5: participates(reaction: hk, species: H1, side: out, coeff: 1) @ chem
+fact r2: reaction(id: hk_bad) @ chem [llm_proposal]
+fact q1: participates(reaction: hk_bad, species: glucose, side: in, coeff: 1) @ chem
+fact q2: participates(reaction: hk_bad, species: ATP4, side: in, coeff: 1) @ chem
+fact q3: participates(reaction: hk_bad, species: G6P2, side: out, coeff: 1) @ chem
+fact q4: participates(reaction: hk_bad, species: ADP3, side: out, coeff: 1) @ chem
+fact k1: checked(element: C) @ chem
+fact k2: checked(element: H) @ chem
+fact k3: checked(element: N) @ chem
+fact k4: checked(element: O) @ chem
+fact k5: checked(element: P) @ chem
+fact k6: checked(element: charge) @ chem
+
+# Биохимический уровень: H⁺ и заряд — резервуар плоскости (pH держится буфером),
+# поэтому их баланс здесь не проверяется.
+fact r3: reaction(id: hk_bio) @ biochem [textbook]
+fact w1: participates(reaction: hk_bio, species: glucose, side: in, coeff: 1) @ biochem
+fact w2: participates(reaction: hk_bio, species: ATP, side: in, coeff: 1) @ biochem
+fact w3: participates(reaction: hk_bio, species: G6P, side: out, coeff: 1) @ biochem
+fact w4: participates(reaction: hk_bio, species: ADP, side: out, coeff: 1) @ biochem
+fact j1: checked(element: C) @ biochem
+fact j2: checked(element: N) @ biochem
+fact j3: checked(element: O) @ biochem
+fact j4: checked(element: P) @ biochem
+
+rule net strict @: net(reaction: ?r, element: ?e, value: ?v) <-
+    reaction(id: ?r), checked(element: ?e),
+    ?v = sum(?s * ?c * ?n) over (participates(reaction: ?r, species: ?sp, side: ?side, coeff: ?c),
+                                 sign(side: ?side, value: ?s),
+                                 composition(species: ?sp, element: ?e, n: ?n))
+rule bal strict @: balanced(reaction: ?r, element: ?e) <- net(reaction: ?r, element: ?e, value: ?v), ?v = 0
+rule unbal strict @: ¬balanced(reaction: ?r, element: ?e) <- net(reaction: ?r, element: ?e, value: ?v), ?v != 0
+
+query balanced(reaction: hk, element: H) @ chem          expect yes
+query balanced(reaction: hk, element: charge) @ chem     expect yes
+query balanced(reaction: hk_bad, element: H) @ chem      expect no
+query balanced(reaction: hk_bad, element: charge) @ chem expect no
+query balanced(reaction: hk_bad, element: C) @ chem      expect yes
+query balanced(reaction: hk_bio, element: C) @ biochem   expect yes
+query balanced(reaction: hk_bio, element: P) @ biochem   expect yes
+query balanced(reaction: hk_bio, element: H) @ biochem   expect unknown
+
+# «Необратимо» — не свойство реакции, а свойство при условиях.
+fact g1: dG(reaction: hk_bio, value: -16.7[kJ/mol]) @ biochem + cond:standard [measurement]
+fact g2: dG(reaction: hk_bio, value: -33[kJ/mol]) @ biochem + cond:cell [measurement]
+fact th: threshold(value: -20[kJ/mol]) @
+rule irr strict @ biochem: irreversible(reaction: ?r) <- dG(reaction: ?r, value: ?g), threshold(value: ?t), ?g < ?t
+rule rev strict @ biochem: ¬irreversible(reaction: ?r) <- dG(reaction: ?r, value: ?g), threshold(value: ?t), ?g >= ?t
+
+query irreversible(reaction: hk_bio) @ biochem + cond:cell     expect yes
+query irreversible(reaction: hk_bio) @ biochem + cond:standard expect no
+query irreversible(reaction: hk_bio) @ biochem                 expect unknown

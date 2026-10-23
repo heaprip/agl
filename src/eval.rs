@@ -1,15 +1,18 @@
 //! Evaluation of a program in a context plane.
 //!
 //! A fact or rule is visible in context `c` when `c` lies within its plane;
-//! this gives inheritance down nested planes. Evaluation is a naive fixpoint
-//! that may derive both `p` and `¬p`; conflicts are then resolved:
-//! strict beats defeasible, then a declared `defeats`, then the more specific
-//! plane. Losers are blocked and the fixpoint is recomputed without them.
-//! Unresolved and strict-vs-strict conflicts block both sides and are reported.
+//! this gives inheritance down nested planes. Evaluation is a naive fixpoint,
+//! stratum by stratum (an aggregate needs its relations complete), that may
+//! derive both `p` and `¬p`; conflicts are then resolved: strict beats
+//! defeasible, then a declared `defeats`, then the more specific plane. Losers
+//! are blocked and the fixpoint is recomputed without them. Unresolved and
+//! strict-vs-strict conflicts block both sides and are reported, as are
+//! violations of `unique` declarations.
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::model::*;
+use crate::units::Dim;
 
 /// Upper bound on derived atoms, against runaway arithmetic recursion.
 const MAX_ATOMS: usize = 100_000;
@@ -29,6 +32,8 @@ pub enum ConflictKind {
     Hard,
     /// Both defeasible with no priority and no specificity: localized conflict.
     Unresolved,
+    /// Two values where a `unique` declaration allows one.
+    Uniqueness,
 }
 
 #[derive(Clone, Debug)]
@@ -45,6 +50,8 @@ pub struct Outcome {
     pub conflicts: BTreeMap<String, Conflict>,
     /// loser key -> reason
     pub defeated: BTreeMap<String, String>,
+    /// Evaluation errors, such as adding quantities of different dimensions.
+    pub errors: BTreeSet<String>,
     pub truncated: bool,
 }
 
@@ -59,10 +66,11 @@ pub fn evaluate(prog: &Program, ctx: &Plane) -> Outcome {
         .iter()
         .filter(|r| prog.axes.plane_within(ctx, &r.plane))
         .collect();
+    let (strata, _) = strata(&prog.rules);
     let mut out = Outcome::default();
     let mut blocked: BTreeSet<String> = BTreeSet::new();
     loop {
-        let (db, truncated) = closure(&facts, &rules, &blocked);
+        let (db, truncated) = closure(&facts, &rules, &strata, &blocked, &mut out.errors);
         out.truncated |= truncated;
         let mut newly = Vec::new();
         for (key, (atom, derivs)) in &db {
@@ -106,6 +114,7 @@ pub fn evaluate(prog: &Program, ctx: &Plane) -> Outcome {
         let before = blocked.len();
         blocked.extend(newly);
         if blocked.len() == before {
+            check_uniques(prog, &db, &mut out.conflicts);
             out.db = db;
             return out;
         }
@@ -158,9 +167,59 @@ fn resolve(prog: &Program, pos: &[Derivation], neg: &[Derivation]) -> Winner {
     }
 }
 
-type Db = BTreeMap<String, (Atom, Vec<Derivation>)>;
+/// Stratum of every derived relation: a head sits at or above its body
+/// relations and strictly above the relations it aggregates over. Returns the
+/// relations caught in a cycle through an aggregate, which cannot be
+/// stratified.
+pub fn strata(rules: &[Rule]) -> (BTreeMap<String, usize>, Vec<String>) {
+    let mut level: BTreeMap<String, usize> = BTreeMap::new();
+    let limit = rules.len() + 1;
+    for round in 0..=limit {
+        let mut changed = false;
+        for r in rules {
+            let mut need = 0;
+            for lit in &r.body {
+                match lit {
+                    Lit::Atom(a) => need = need.max(level.get(&a.rel).copied().unwrap_or(0)),
+                    Lit::Agg { over, .. } => {
+                        for a in over {
+                            need = need.max(level.get(&a.rel).copied().unwrap_or(0) + 1);
+                        }
+                    }
+                    Lit::Cmp(..) => {}
+                }
+            }
+            let cur = level.entry(r.head.rel.clone()).or_insert(0);
+            if need > *cur && need <= limit {
+                *cur = need;
+                changed = true;
+            }
+        }
+        if !changed {
+            return (level, vec![]);
+        }
+        if round == limit {
+            break;
+        }
+    }
+    let cyclic = level
+        .iter()
+        .filter(|(_, l)| **l >= limit)
+        .map(|(r, _)| r.clone())
+        .collect();
+    (level, cyclic)
+}
 
-fn closure(facts: &[&Fact], rules: &[&Rule], blocked: &BTreeSet<String>) -> (Db, bool) {
+type Db = BTreeMap<String, (Atom, Vec<Derivation>)>;
+type Binding = BTreeMap<String, Term>;
+
+fn closure(
+    facts: &[&Fact],
+    rules: &[&Rule],
+    strata: &BTreeMap<String, usize>,
+    blocked: &BTreeSet<String>,
+    errors: &mut BTreeSet<String>,
+) -> (Db, bool) {
     let mut db: Db = BTreeMap::new();
     for f in facts {
         let key = f.atom.key();
@@ -179,27 +238,46 @@ fn closure(facts: &[&Fact], rules: &[&Rule], blocked: &BTreeSet<String>) -> (Db,
             .1
             .push(d);
     }
+    let mut levels: Vec<usize> = rules
+        .iter()
+        .map(|r| strata.get(&r.head.rel).copied().unwrap_or(0))
+        .collect();
+    levels.sort();
+    levels.dedup();
+    for level in levels {
+        let layer: Vec<&Rule> = rules
+            .iter()
+            .copied()
+            .filter(|r| strata.get(&r.head.rel).copied().unwrap_or(0) == level)
+            .collect();
+        if fixpoint(&mut db, &layer, blocked, errors) {
+            return (db, true);
+        }
+    }
+    (db, false)
+}
+
+/// Saturates `db` with one stratum of rules; returns true if truncated.
+fn fixpoint(
+    db: &mut Db,
+    rules: &[&Rule],
+    blocked: &BTreeSet<String>,
+    errors: &mut BTreeSet<String>,
+) -> bool {
     loop {
         let mut added = false;
-        let mut by_rel: BTreeMap<(&str, bool), Vec<String>> = BTreeMap::new();
-        for (k, (a, _)) in &db {
-            by_rel
-                .entry((a.rel.as_str(), a.neg))
-                .or_default()
-                .push(k.clone());
-        }
+        let index = index_by_rel(db);
         let mut new: Vec<(Atom, Derivation)> = Vec::new();
         for r in rules {
             let mut matches = Vec::new();
-            match_body(
-                &r.body,
-                0,
-                &mut BTreeMap::new(),
-                &mut Vec::new(),
-                &db,
-                &by_rel,
-                &mut matches,
-            );
+            let mut ctx = Matcher {
+                db,
+                index: &index,
+                rule: &r.id,
+                errors: &mut *errors,
+            };
+            let body = schedule(r);
+            ctx.body(&body, 0, &mut Binding::new(), &mut Vec::new(), &mut matches);
             for (binding, mut premises) in matches {
                 // A body is a conjunction: its premises form a set, not a sequence.
                 premises.sort();
@@ -240,63 +318,298 @@ fn closure(facts: &[&Fact], rules: &[&Rule], blocked: &BTreeSet<String>) -> (Db,
             }
         }
         if db.len() > MAX_ATOMS {
-            return (db, true);
+            return true;
         }
         if !added {
-            return (db, false);
+            return false;
         }
     }
 }
 
-fn match_body(
-    lits: &[Lit],
-    i: usize,
-    binding: &mut BTreeMap<String, Term>,
-    premises: &mut Vec<String>,
-    db: &Db,
-    by_rel: &BTreeMap<(&str, bool), Vec<String>>,
-    out: &mut Vec<(BTreeMap<String, Term>, Vec<String>)>,
-) {
-    if i == lits.len() {
-        out.push((binding.clone(), premises.clone()));
-        return;
+fn expr_vars(e: &Expr, out: &mut BTreeSet<String>) {
+    match e {
+        Expr::Term(Term::Var(v)) => {
+            out.insert(v.clone());
+        }
+        Expr::Term(_) => {}
+        Expr::Bin(l, _, r) => {
+            expr_vars(l, out);
+            expr_vars(r, out);
+        }
     }
-    match &lits[i] {
-        Lit::Atom(pat) => {
-            let Some(keys) = by_rel.get(&(pat.rel.as_str(), pat.neg)) else {
-                return;
-            };
-            for k in keys {
-                let (ground, _) = &db[k];
-                let mut b = binding.clone();
-                if unify(pat, ground, &mut b) {
-                    premises.push(k.clone());
-                    match_body(lits, i + 1, &mut b, premises, db, by_rel, out);
+}
+
+/// Variables a literal mentions where the rest of the rule can see them. An
+/// aggregate's `over` variables are local; only its result is visible.
+fn visible_vars(lit: &Lit, out: &mut BTreeSet<String>) {
+    match lit {
+        Lit::Atom(a) => out.extend(a.vars().map(str::to_string)),
+        Lit::Cmp(l, _, r) => {
+            expr_vars(l, out);
+            expr_vars(r, out);
+        }
+        Lit::Agg { var, .. } => {
+            out.insert(var.clone());
+        }
+    }
+}
+
+/// Orders a rule body so that the result does not depend on how it was
+/// written. Atoms run first. A comparison runs once its variables are bound,
+/// and `?v = expr` binds `?v`. An aggregate runs once its grouping variables
+/// are bound: the variables it shares with the head and the other literals.
+fn schedule(r: &Rule) -> Vec<Lit> {
+    let mut order: Vec<Lit> = Vec::new();
+    let mut bound: BTreeSet<String> = BTreeSet::new();
+    let mut pending: Vec<usize> = Vec::new();
+    for (i, lit) in r.body.iter().enumerate() {
+        if let Lit::Atom(a) = lit {
+            bound.extend(a.vars().map(str::to_string));
+            order.push(lit.clone());
+        } else {
+            pending.push(i);
+        }
+    }
+    let requirement = |i: usize, bound: &BTreeSet<String>| -> (BTreeSet<String>, Option<String>) {
+        match &r.body[i] {
+            Lit::Cmp(Expr::Term(Term::Var(v)), CmpOp::Eq, rhs) if !bound.contains(v) => {
+                let mut need = BTreeSet::new();
+                expr_vars(rhs, &mut need);
+                (need, Some(v.clone()))
+            }
+            Lit::Cmp(l, _, rhs) => {
+                let mut need = BTreeSet::new();
+                expr_vars(l, &mut need);
+                expr_vars(rhs, &mut need);
+                (need, None)
+            }
+            Lit::Agg {
+                var, expr, over, ..
+            } => {
+                let mut inner = BTreeSet::new();
+                expr_vars(expr, &mut inner);
+                over.iter()
+                    .for_each(|a| inner.extend(a.vars().map(str::to_string)));
+                let mut outer: BTreeSet<String> = r.head.vars().map(str::to_string).collect();
+                for (j, other) in r.body.iter().enumerate() {
+                    if j != i {
+                        visible_vars(other, &mut outer);
+                    }
+                }
+                (
+                    inner.intersection(&outer).cloned().collect(),
+                    Some(var.clone()),
+                )
+            }
+            Lit::Atom(_) => (BTreeSet::new(), None),
+        }
+    };
+    while !pending.is_empty() {
+        let ready = pending
+            .iter()
+            .position(|&i| requirement(i, &bound).0.is_subset(&bound));
+        let Some(p) = ready else {
+            // Nothing is ready: the remaining literals cannot match.
+            order.extend(pending.iter().map(|&i| r.body[i].clone()));
+            break;
+        };
+        let i = pending.remove(p);
+        if let (_, Some(v)) = requirement(i, &bound) {
+            bound.insert(v);
+        }
+        order.push(r.body[i].clone());
+    }
+    order
+}
+
+fn index_by_rel(db: &Db) -> BTreeMap<(String, bool), Vec<String>> {
+    let mut index: BTreeMap<(String, bool), Vec<String>> = BTreeMap::new();
+    for (k, (a, _)) in db {
+        index
+            .entry((a.rel.clone(), a.neg))
+            .or_default()
+            .push(k.clone());
+    }
+    index
+}
+
+struct Matcher<'a> {
+    db: &'a Db,
+    index: &'a BTreeMap<(String, bool), Vec<String>>,
+    rule: &'a str,
+    errors: &'a mut BTreeSet<String>,
+}
+
+impl Matcher<'_> {
+    fn body(
+        &mut self,
+        lits: &[Lit],
+        i: usize,
+        binding: &mut Binding,
+        premises: &mut Vec<String>,
+        out: &mut Vec<(Binding, Vec<String>)>,
+    ) {
+        if i == lits.len() {
+            out.push((binding.clone(), premises.clone()));
+            return;
+        }
+        match &lits[i] {
+            Lit::Atom(pat) => {
+                for (b, k) in self.atom(pat, binding) {
+                    let mut b = b;
+                    premises.push(k);
+                    self.body(lits, i + 1, &mut b, premises, out);
                     premises.pop();
                 }
             }
-        }
-        Lit::Cmp(l, op, r) => {
-            if *op == CmpOp::Eq
-                && let Expr::Term(Term::Var(v)) = l
-                && !binding.contains_key(v)
-            {
-                if let Some(val) = eval_expr(r, binding) {
-                    binding.insert(v.clone(), val);
-                    match_body(lits, i + 1, binding, premises, db, by_rel, out);
-                    binding.remove(v);
+            Lit::Cmp(l, op, r) => {
+                if *op == CmpOp::Eq
+                    && let Expr::Term(Term::Var(v)) = l
+                    && !binding.contains_key(v)
+                {
+                    if let Some(val) = self.value(r, binding) {
+                        binding.insert(v.clone(), val);
+                        self.body(lits, i + 1, binding, premises, out);
+                        binding.remove(v);
+                    }
+                    return;
                 }
-                return;
+                let holds = match compare(l, *op, r, binding) {
+                    Ok(h) => h,
+                    Err(e) => {
+                        self.report(e);
+                        false
+                    }
+                };
+                if holds {
+                    self.body(lits, i + 1, binding, premises, out);
+                }
             }
-            if compare(l, *op, r, binding) == Some(true) {
-                match_body(lits, i + 1, binding, premises, db, by_rel, out);
+            Lit::Agg {
+                var,
+                func,
+                expr,
+                over,
+            } => {
+                let Some((val, used)) = self.aggregate(*func, expr, over, binding) else {
+                    return;
+                };
+                if let Some(bound) = binding.get(var) {
+                    if !term_eq(bound, &val) {
+                        return;
+                    }
+                    let n = premises.len();
+                    premises.extend(used);
+                    self.body(lits, i + 1, binding, premises, out);
+                    premises.truncate(n);
+                } else {
+                    binding.insert(var.clone(), val);
+                    let n = premises.len();
+                    premises.extend(used);
+                    self.body(lits, i + 1, binding, premises, out);
+                    premises.truncate(n);
+                    binding.remove(var);
+                }
             }
+        }
+    }
+
+    fn atom(&self, pat: &Atom, binding: &Binding) -> Vec<(Binding, String)> {
+        let Some(keys) = self.index.get(&(pat.rel.clone(), pat.neg)) else {
+            return vec![];
+        };
+        let mut out = Vec::new();
+        for k in keys {
+            let mut b = binding.clone();
+            if unify(pat, &self.db[k].0, &mut b) {
+                out.push((b, k.clone()));
+            }
+        }
+        out
+    }
+
+    /// Distinct solutions of `over` under `binding`, folded in a canonical
+    /// order (by solution) so that the result does not depend on statement
+    /// order, even for floating-point sums.
+    fn aggregate(
+        &mut self,
+        func: AggFn,
+        expr: &Expr,
+        over: &[Atom],
+        binding: &Binding,
+    ) -> Option<(Term, Vec<String>)> {
+        let mut solutions: Vec<(Binding, Vec<String>)> = vec![(binding.clone(), vec![])];
+        for pat in over {
+            let mut next = Vec::new();
+            for (b, used) in &solutions {
+                for (b2, k) in self.atom(pat, b) {
+                    let mut u = used.clone();
+                    u.push(k);
+                    next.push((b2, u));
+                }
+            }
+            solutions = next;
+        }
+        let mut distinct: BTreeMap<String, (Binding, Vec<String>)> = BTreeMap::new();
+        for (b, used) in solutions {
+            let key: Vec<String> = b.iter().map(|(k, v)| format!("{k}={v}")).collect();
+            distinct.entry(key.join(";")).or_insert((b, used));
+        }
+        let mut used_all: Vec<String> = distinct.values().flat_map(|(_, u)| u.clone()).collect();
+        used_all.sort();
+        used_all.dedup();
+        if func == AggFn::Count {
+            return Some((Term::Num(distinct.len() as f64, Dim::NONE), used_all));
+        }
+        let mut acc: Option<(f64, Dim)> = None;
+        for (b, _) in distinct.values() {
+            let (x, dim) = match self.value(expr, b)? {
+                Term::Num(x, d) => (x, d),
+                other => {
+                    self.report(EvalErr::NotNumber(other.to_string()));
+                    return None;
+                }
+            };
+            acc = Some(match acc {
+                None => (x, dim),
+                Some((_, ad)) if ad != dim => {
+                    self.report(EvalErr::Dim(format!("aggregating [{ad}] with [{dim}]")));
+                    return None;
+                }
+                Some((a, ad)) => match func {
+                    AggFn::Sum => (a + x, ad),
+                    AggFn::Min => (a.min(x), ad),
+                    AggFn::Max => (a.max(x), ad),
+                    AggFn::Count => unreachable!(),
+                },
+            });
+        }
+        match (func, acc) {
+            (_, Some((v, d))) => Some((Term::Num(v, d), used_all)),
+            (AggFn::Sum, None) => Some((Term::Num(0.0, Dim::NONE), used_all)),
+            _ => None,
+        }
+    }
+
+    fn value(&mut self, e: &Expr, b: &Binding) -> Option<Term> {
+        match eval_expr(e, b) {
+            Ok(v) => Some(v),
+            Err(err) => {
+                self.report(err);
+                None
+            }
+        }
+    }
+
+    fn report(&mut self, e: EvalErr) {
+        if let EvalErr::Dim(msg) | EvalErr::NotNumber(msg) = e {
+            self.errors.insert(format!("rule `{}`: {msg}", self.rule));
         }
     }
 }
 
 /// Pattern roles must all be present in the ground atom; the atom may have more.
-fn unify(pat: &Atom, ground: &Atom, b: &mut BTreeMap<String, Term>) -> bool {
+fn unify(pat: &Atom, ground: &Atom, b: &mut Binding) -> bool {
     for (role, pt) in &pat.args {
         let Some((_, gt)) = ground.args.iter().find(|(r, _)| r == role) else {
             return false;
@@ -318,12 +631,14 @@ fn unify(pat: &Atom, ground: &Atom, b: &mut BTreeMap<String, Term>) -> bool {
 
 fn term_eq(a: &Term, b: &Term) -> bool {
     match (a, b) {
-        (Term::Num(x), Term::Num(y)) => (x - y).abs() <= 1e-12 * x.abs().max(y.abs()).max(1.0),
+        (Term::Num(x, dx), Term::Num(y, dy)) => {
+            dx == dy && (x - y).abs() <= 1e-12 * x.abs().max(y.abs()).max(1.0)
+        }
         _ => a == b,
     }
 }
 
-pub fn subst(a: &Atom, b: &BTreeMap<String, Term>) -> Atom {
+pub fn subst(a: &Atom, b: &Binding) -> Atom {
     let args = a
         .args
         .iter()
@@ -342,45 +657,147 @@ pub fn subst(a: &Atom, b: &BTreeMap<String, Term>) -> Atom {
     }
 }
 
-fn eval_expr(e: &Expr, b: &BTreeMap<String, Term>) -> Option<Term> {
+enum EvalErr {
+    /// An unbound variable: the literal simply does not match.
+    Unbound,
+    /// A symbol where a number was needed.
+    NotNumber(String),
+    /// Quantities of incompatible dimensions.
+    Dim(String),
+}
+
+fn eval_expr(e: &Expr, b: &Binding) -> Result<Term, EvalErr> {
     match e {
-        Expr::Term(Term::Var(v)) => b.get(v).cloned(),
-        Expr::Term(t) => Some(t.clone()),
+        Expr::Term(Term::Var(v)) => b.get(v).cloned().ok_or(EvalErr::Unbound),
+        Expr::Term(t) => Ok(t.clone()),
         Expr::Bin(l, op, r) => {
-            let (Term::Num(x), Term::Num(y)) = (eval_expr(l, b)?, eval_expr(r, b)?) else {
-                return None;
+            let (lv, rv) = (eval_expr(l, b)?, eval_expr(r, b)?);
+            let (Term::Num(x, dx), Term::Num(y, dy)) = (&lv, &rv) else {
+                return Err(EvalErr::NotNumber(format!("{lv} {op} {rv}")));
             };
-            let v = match op {
-                '+' => x + y,
-                '-' => x - y,
-                '*' => x * y,
-                '/' if y != 0.0 => x / y,
+            let (x, y, dx, dy) = (*x, *y, *dx, *dy);
+            let same = |what: &str| {
+                if dx == dy {
+                    Ok(dx)
+                } else {
+                    Err(EvalErr::Dim(format!("{what} [{dx}] and [{dy}]")))
+                }
+            };
+            let (v, d) = match op {
+                '+' => (x + y, same("adding")?),
+                '-' => (x - y, same("subtracting")?),
+                '*' => (x * y, dx.times(dy)),
+                '/' if y != 0.0 => (x / y, dx.per(dy)),
+                '/' => return Err(EvalErr::NotNumber("division by zero".into())),
+                '^' if !dy.is_none() => {
+                    return Err(EvalErr::Dim(format!("exponent with dimension [{dy}]")));
+                }
                 // Integer powers stay bit-identical across platforms; `powf` goes through libm.
-                '^' if y.fract() == 0.0 && y.abs() <= i32::MAX as f64 => x.powi(y as i32),
-                '^' => x.powf(y),
-                _ => return None,
+                '^' if y.fract() == 0.0 && y.abs() <= 64.0 => {
+                    let n = y as i32;
+                    let d = dx
+                        .pow(n)
+                        .ok_or_else(|| EvalErr::Dim("dimension exponent overflow".into()))?;
+                    (x.powi(n), d)
+                }
+                '^' if dx.is_none() => (x.powf(y), Dim::NONE),
+                '^' => {
+                    return Err(EvalErr::Dim(format!(
+                        "non-integer power of a quantity with dimension [{dx}]"
+                    )));
+                }
+                _ => return Err(EvalErr::NotNumber(format!("operator {op}"))),
             };
-            Some(Term::Num(v))
+            Ok(Term::Num(v, d))
         }
     }
 }
 
-fn compare(l: &Expr, op: CmpOp, r: &Expr, b: &BTreeMap<String, Term>) -> Option<bool> {
+fn compare(l: &Expr, op: CmpOp, r: &Expr, b: &Binding) -> Result<bool, EvalErr> {
     let (x, y) = (eval_expr(l, b)?, eval_expr(r, b)?);
     match (&x, &y) {
-        (Term::Num(a), Term::Num(c)) => Some(match op {
-            CmpOp::Lt => a < c,
-            CmpOp::Le => a <= c,
-            CmpOp::Gt => a > c,
-            CmpOp::Ge => a >= c,
-            CmpOp::Eq => term_eq(&x, &y),
-            CmpOp::Ne => !term_eq(&x, &y),
-        }),
+        (Term::Num(a, da), Term::Num(c, dc)) => {
+            // Zero is comparable with any dimension: `?net = 0` reads naturally.
+            if da != dc && *a != 0.0 && *c != 0.0 {
+                return Err(EvalErr::Dim(format!("comparing [{da}] with [{dc}]")));
+            }
+            Ok(match op {
+                CmpOp::Lt => a < c,
+                CmpOp::Le => a <= c,
+                CmpOp::Gt => a > c,
+                CmpOp::Ge => a >= c,
+                CmpOp::Eq => (a - c).abs() <= 1e-12 * a.abs().max(c.abs()).max(1.0),
+                CmpOp::Ne => (a - c).abs() > 1e-12 * a.abs().max(c.abs()).max(1.0),
+            })
+        }
         _ => match op {
-            CmpOp::Eq => Some(x == y),
-            CmpOp::Ne => Some(x != y),
-            _ => None,
+            CmpOp::Eq => Ok(x == y),
+            CmpOp::Ne => Ok(x != y),
+            _ => Err(EvalErr::NotNumber(format!("ordering {x} and {y}"))),
         },
+    }
+}
+
+/// Reports every group that breaks a `unique` declaration, with the sources of
+/// the atoms involved.
+fn check_uniques(prog: &Program, db: &Db, conflicts: &mut BTreeMap<String, Conflict>) {
+    for u in &prog.uniques {
+        let mut groups: BTreeMap<Vec<String>, BTreeMap<String, Vec<String>>> = BTreeMap::new();
+        for (atom, derivs) in db.values() {
+            if atom.rel != u.rel || atom.neg {
+                continue;
+            }
+            let get = |role: &str| {
+                atom.args
+                    .iter()
+                    .find(|(r, _)| r == role)
+                    .map(|(_, t)| t.to_string())
+            };
+            let (Some(keys), Some(val)) = (
+                u.by.iter().map(|k| get(k)).collect::<Option<Vec<_>>>(),
+                get(&u.role),
+            ) else {
+                continue;
+            };
+            groups
+                .entry(keys)
+                .or_default()
+                .entry(val)
+                .or_default()
+                .extend(sources(derivs));
+        }
+        for (keys, vals) in groups {
+            if vals.len() < 2 {
+                continue;
+            }
+            let names: Vec<&String> = vals.keys().collect();
+            let desc = format!(
+                "unique {}({}) by ({}) = ({}): {}",
+                u.rel,
+                u.role,
+                u.by.join(", "),
+                keys.join(", "),
+                names
+                    .iter()
+                    .map(|s| s.as_str())
+                    .collect::<Vec<_>>()
+                    .join(" vs ")
+            );
+            let mut it = vals.into_values();
+            let first = it.next().unwrap_or_default();
+            let mut rest: Vec<String> = it.flatten().collect();
+            rest.sort();
+            rest.dedup();
+            conflicts.insert(
+                desc.clone(),
+                Conflict {
+                    positive: desc,
+                    kind: ConflictKind::Uniqueness,
+                    sources_pos: first,
+                    sources_neg: rest,
+                },
+            );
+        }
     }
 }
 

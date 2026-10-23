@@ -80,3 +80,55 @@ rule n2 defeasible @ pressure:hyperbaric: ¬inert(gas: ?g) <- gas(name: ?g)
     assert_eq!(overlapping.conflicts.len(), 1);
     assert_eq!(overlapping.conflicts[0].conflict.positive, "inert(gas: n2)");
 }
+
+#[test]
+fn dimension_mismatch_is_an_error() {
+    let src = "
+fact g: dG(value: -16.7[kJ/mol]) @
+fact t: temperature(value: 310[K]) @
+rule bad strict @: hot(x: ?g) <- dG(value: ?g), temperature(value: ?t), ?g < ?t
+";
+    let report = agl::run(&agl::parse(src).unwrap());
+    assert!(report.has_errors());
+    assert!(
+        report
+            .errors
+            .iter()
+            .any(|e| e.contains("rule `bad`") && e.contains("comparing")),
+        "{:?}",
+        report.errors
+    );
+}
+
+#[test]
+fn hobbes_collapse_is_a_uniqueness_conflict_only_in_the_absolute_view() {
+    let src = std::fs::read_to_string("cases/theseus.agl").unwrap();
+    let report = agl::run(&agl::parse(&src).unwrap());
+    let found: Vec<_> = report
+        .conflicts
+        .iter()
+        .map(|c| {
+            (
+                format!("{:?}", c.conflict.kind),
+                agl::model::plane_to_string(&c.context),
+            )
+        })
+        .collect();
+    assert_eq!(
+        found,
+        vec![("Uniqueness".to_string(), "{view:absolute}".to_string())]
+    );
+}
+
+#[test]
+fn units_convert_to_si() {
+    let src = "
+fact a: p(value: 760[mmHg]) @
+fact b: q(value: 1[atm]) @
+rule c strict @: close(x: 1) <- p(value: ?a), q(value: ?b), ((?a - ?b) / ?b)^2 < 0.0001
+query close(x: 1) @ expect yes
+";
+    let report = agl::run(&agl::parse(src).unwrap());
+    assert!(!report.has_errors(), "{:?}", report.errors);
+    assert!(report.failed_queries().next().is_none());
+}

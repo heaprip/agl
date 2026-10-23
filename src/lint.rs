@@ -56,6 +56,12 @@ pub fn lint(prog: &Program) -> Vec<Diag> {
                 Lit::Cmp(Expr::Term(Term::Var(v)), CmpOp::Eq, _) => {
                     bound.insert(v.as_str());
                 }
+                Lit::Agg { var, over, .. } => {
+                    // Variables inside `over` are local to the aggregate.
+                    over.iter()
+                        .for_each(|a| check_roles(prog, a, r.line, &mut out));
+                    bound.insert(var.as_str());
+                }
                 Lit::Cmp(..) => {}
             }
         }
@@ -79,6 +85,29 @@ pub fn lint(prog: &Program) -> Vec<Diag> {
                     r.id, r.head.rel
                 ),
             ));
+        }
+    }
+
+    let (_, cyclic) = crate::eval::strata(&prog.rules);
+    if !cyclic.is_empty() {
+        out.push(err(
+            0,
+            "aggregate-cycle",
+            format!("relations {cyclic:?} depend on their own aggregate and cannot be stratified"),
+        ));
+    }
+
+    for u in &prog.uniques {
+        if let Some(roles) = prog.relations.get(&u.rel) {
+            for role in std::iter::once(&u.role).chain(&u.by) {
+                if !roles.contains(role) {
+                    out.push(err(
+                        u.line,
+                        "unknown-role",
+                        format!("`unique {}` names unknown role `{role}`", u.rel),
+                    ));
+                }
+            }
         }
     }
 

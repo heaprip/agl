@@ -4,11 +4,13 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
 use crate::plane::Axes;
+use crate::units::Dim;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Term {
     Sym(String),
-    Num(f64),
+    /// A value in SI with its dimension.
+    Num(f64, Dim),
     Var(String),
 }
 
@@ -17,8 +19,17 @@ impl fmt::Display for Term {
         match self {
             Term::Sym(s) => write!(f, "{s}"),
             Term::Var(v) => write!(f, "?{v}"),
-            Term::Num(n) if n.fract() == 0.0 && n.abs() < 1e15 => write!(f, "{}", *n as i64),
-            Term::Num(n) => write!(f, "{n}"),
+            Term::Num(n, dim) => {
+                if n.fract() == 0.0 && n.abs() < 1e15 {
+                    write!(f, "{}", *n as i64)?;
+                } else {
+                    write!(f, "{n}")?;
+                }
+                if !dim.is_none() {
+                    write!(f, "[{dim}]")?;
+                }
+                Ok(())
+            }
         }
     }
 }
@@ -93,10 +104,27 @@ pub enum CmpOp {
     Ne,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum AggFn {
+    Sum,
+    Count,
+    Min,
+    Max,
+}
+
 #[derive(Clone, Debug)]
 pub enum Lit {
     Atom(Atom),
     Cmp(Expr, CmpOp, Expr),
+    /// `?var = func(expr) over (atoms)`: aggregates over the distinct solutions
+    /// of `over` under the current binding. Requires `over` to be complete,
+    /// so its relations sit in a lower stratum than the rule head.
+    Agg {
+        var: String,
+        func: AggFn,
+        expr: Expr,
+        over: Vec<Atom>,
+    },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -173,6 +201,15 @@ pub struct Gap {
     pub resolved_by: Option<String>,
 }
 
+/// `unique REL(role) by (keys)`: for fixed key values, at most one value of `role`.
+#[derive(Clone, Debug)]
+pub struct Unique {
+    pub rel: String,
+    pub role: String,
+    pub by: Vec<String>,
+    pub line: usize,
+}
+
 #[derive(Default, Debug)]
 pub struct Program {
     pub axes: Axes,
@@ -185,4 +222,5 @@ pub struct Program {
     pub relations: BTreeMap<String, Vec<String>>,
     pub gaps: BTreeMap<String, Gap>,
     pub queries: Vec<Query>,
+    pub uniques: Vec<Unique>,
 }
