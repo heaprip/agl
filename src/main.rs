@@ -47,6 +47,9 @@ fn main() -> ExitCode {
                 c.conflict.sources_pos.join(", "),
                 c.conflict.sources_neg.join(", ")
             );
+            if !c.conflict.blame.is_empty() {
+                println!("    least trusted: {}", c.conflict.blame.join(", "));
+            }
         }
         for r in &report.queries {
             let status = match r.query.expect {

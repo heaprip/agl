@@ -42,25 +42,35 @@ fn statement_order_does_not_matter() {
 }
 
 #[test]
-fn a_visible_fact_is_never_overturned_by_a_defeasible_rule() {
+fn a_visible_fact_is_overturned_only_by_a_more_trusted_strict_derivation() {
     for seed in seeds() {
         let prog = gen_program(seed);
         for f in &prog.facts {
-            let q = Query {
-                atom: f.atom.clone(),
-                plane: f.plane.clone(),
-                expect: None,
-                line: 0,
+            let p = permute(&prog, seed);
+            let out = agl::eval::evaluate(&p, &f.plane);
+            if out.db.contains_key(&f.atom.key()) {
+                continue;
+            }
+            let rank = |status: &str| p.status_rank.get(status).copied().unwrap_or(0);
+            if out.conflicts.contains_key(&if f.atom.neg {
+                f.atom.complement().key()
+            } else {
+                f.atom.key()
+            }) {
+                continue;
+            }
+            let Some((_, derivs)) = out.db.get(&f.atom.complement().key()) else {
+                panic!(
+                    "seed {seed}: fact {} vanished without being contradicted",
+                    f.id
+                );
             };
-            let mut p = permute(&prog, seed);
-            p.queries = vec![q];
-            let r = agl::run(&p);
-            let v = r.queries[0].verdict;
             assert!(
-                v == Verdict::Yes || v == Verdict::Conflict,
-                "seed {seed}: fact {} @ {} answered {v}",
+                derivs.iter().any(|d| d.strict && d.rank > rank(&f.status)),
+                "seed {seed}: fact {} @ {} overturned by {:?}",
                 f.id,
-                plane_to_string(&f.plane)
+                plane_to_string(&f.plane),
+                derivs
             );
         }
     }

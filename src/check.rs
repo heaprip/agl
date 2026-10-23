@@ -187,11 +187,12 @@ pub fn render(report: &Report) -> String {
         .iter()
         .map(|c| {
             format!(
-                "conflict {:?} {} for [{}] against [{}]",
+                "conflict {:?} {} for [{}] against [{}] blame [{}]",
                 c.conflict.kind,
                 c.conflict.positive,
                 c.conflict.sources_pos.join(", "),
-                c.conflict.sources_neg.join(", ")
+                c.conflict.sources_neg.join(", "),
+                c.conflict.blame.join(", ")
             )
         })
         .collect();

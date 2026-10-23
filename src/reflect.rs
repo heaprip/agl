@@ -93,20 +93,9 @@ fn support(out: &Outcome, key: &str) -> BTreeSet<String> {
 }
 
 fn without(prog: &Program, removed: &[String]) -> Program {
-    let keep = |id: &String| !removed.contains(id);
-    Program {
-        axes: prog.axes.clone(),
-        planes: prog.planes.clone(),
-        facts: prog.facts.clone(),
-        rules: prog.rules.iter().filter(|r| keep(&r.id)).cloned().collect(),
-        defeats: prog.defeats.clone(),
-        normative_preds: prog.normative_preds.clone(),
-        normative_axes: prog.normative_axes.clone(),
-        relations: prog.relations.clone(),
-        gaps: prog.gaps.clone(),
-        queries: prog.queries.clone(),
-        uniques: prog.uniques.clone(),
-    }
+    let mut p = prog.clone();
+    p.rules.retain(|r| !removed.contains(&r.id));
+    p
 }
 
 /// Minimal removal sets, smallest first: a set qualifies if `settled` holds

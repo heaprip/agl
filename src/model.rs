@@ -281,6 +281,14 @@ pub struct Unique {
     pub line: usize,
 }
 
+/// `forbid LITERAL @ SPEC`: an integrity constraint; deriving a match is a violation.
+#[derive(Clone, Debug)]
+pub struct Forbid {
+    pub atom: Atom,
+    pub plane: Plane,
+    pub line: usize,
+}
+
 #[derive(Clone, Default, Debug)]
 pub struct Program {
     pub axes: Axes,
@@ -294,4 +302,7 @@ pub struct Program {
     pub gaps: BTreeMap<String, Gap>,
     pub queries: Vec<Query>,
     pub uniques: Vec<Unique>,
+    /// Status -> rank, from `status A > B > C`; higher is more trusted.
+    pub status_rank: BTreeMap<String, usize>,
+    pub forbids: Vec<Forbid>,
 }

@@ -24,6 +24,8 @@ pub struct Derivation {
     pub strict: bool,
     pub plane: Plane,
     pub premises: Vec<String>,
+    /// Trust: a fact's status rank; for a rule, its weakest premise.
+    pub rank: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -34,6 +36,8 @@ pub enum ConflictKind {
     Unresolved,
     /// Two values where a `unique` declaration allows one.
     Uniqueness,
+    /// A derived atom matches a `forbid` constraint.
+    Violation,
 }
 
 #[derive(Clone, Debug)]
@@ -42,6 +46,8 @@ pub struct Conflict {
     pub kind: ConflictKind,
     pub sources_pos: Vec<String>,
     pub sources_neg: Vec<String>,
+    /// The least trusted facts it rests on, as `id [status]`, when statuses differ.
+    pub blame: Vec<String>,
 }
 
 #[derive(Default, Debug)]
@@ -67,10 +73,19 @@ pub fn evaluate(prog: &Program, ctx: &Plane) -> Outcome {
         .filter(|r| prog.axes.plane_within(ctx, &r.plane))
         .collect();
     let (strata, _) = strata(&prog.rules);
+    let top = prog.status_rank.values().copied().max().unwrap_or(0);
     let mut out = Outcome::default();
     let mut blocked: BTreeSet<String> = BTreeSet::new();
     loop {
-        let (db, truncated) = closure(&facts, &rules, &strata, &blocked, &mut out.errors);
+        let (db, truncated) = closure(
+            prog,
+            &facts,
+            &rules,
+            &strata,
+            &blocked,
+            top,
+            &mut out.errors,
+        );
         out.truncated |= truncated;
         let mut newly = Vec::new();
         for (key, (atom, derivs)) in &db {
@@ -104,6 +119,7 @@ pub fn evaluate(prog: &Program, ctx: &Plane) -> Outcome {
                             kind,
                             sources_pos: sources(derivs),
                             sources_neg: sources(cderivs),
+                            blame: vec![],
                         },
                     );
                     newly.push(key.clone());
@@ -115,6 +131,7 @@ pub fn evaluate(prog: &Program, ctx: &Plane) -> Outcome {
         blocked.extend(newly);
         if blocked.len() == before {
             check_uniques(prog, &db, &mut out.conflicts);
+            check_forbids(prog, ctx, &db, &mut out.conflicts);
             out.db = db;
             return out;
         }
@@ -134,14 +151,38 @@ enum Winner {
     None(ConflictKind),
 }
 
+fn best_rank(derivs: &[Derivation]) -> usize {
+    derivs.iter().map(|d| d.rank).max().unwrap_or(0)
+}
+
 fn resolve(prog: &Program, pos: &[Derivation], neg: &[Derivation]) -> Winner {
     let ps = pos.iter().any(|d| d.strict);
     let ns = neg.iter().any(|d| d.strict);
+    // Between two sides of the same strength, the more trusted one wins: an
+    // LLM proposal against a textbook is a rejected candidate, not a
+    // contradiction. Only derivations of the deciding strength count, so a
+    // defeasible derivation cannot lend its trust to a strict one.
+    let rank_of = |ds: &[Derivation], strict: bool| {
+        ds.iter()
+            .filter(|d| d.strict == strict)
+            .map(|d| d.rank)
+            .max()
+            .unwrap_or(0)
+    };
+    let by_rank = |strict: bool| match rank_of(pos, strict).cmp(&rank_of(neg, strict)) {
+        std::cmp::Ordering::Greater => Some(Winner::Pos),
+        std::cmp::Ordering::Less => Some(Winner::Neg),
+        std::cmp::Ordering::Equal => None,
+    };
     match (ps, ns) {
-        (true, true) => return Winner::None(ConflictKind::Hard),
+        (true, true) => return by_rank(true).unwrap_or(Winner::None(ConflictKind::Hard)),
         (true, false) => return Winner::Pos,
         (false, true) => return Winner::Neg,
-        (false, false) => {}
+        (false, false) => {
+            if let Some(w) = by_rank(false) {
+                return w;
+            }
+        }
     }
     let beats = |a: &[Derivation], b: &[Derivation]| {
         a.iter().any(|x| {
@@ -214,10 +255,12 @@ type Db = BTreeMap<String, (Atom, Vec<Derivation>)>;
 type Binding = BTreeMap<String, Term>;
 
 fn closure(
+    prog: &Program,
     facts: &[&Fact],
     rules: &[&Rule],
     strata: &BTreeMap<String, usize>,
     blocked: &BTreeSet<String>,
+    top: usize,
     errors: &mut BTreeSet<String>,
 ) -> (Db, bool) {
     let mut db: Db = BTreeMap::new();
@@ -232,6 +275,7 @@ fn closure(
             strict: true,
             plane: f.plane.clone(),
             premises: vec![],
+            rank: prog.status_rank.get(&f.status).copied().unwrap_or(0),
         };
         db.entry(key)
             .or_insert_with(|| (f.atom.clone(), vec![]))
@@ -250,7 +294,7 @@ fn closure(
             .copied()
             .filter(|r| strata.get(&r.head.rel).copied().unwrap_or(0) == level)
             .collect();
-        if fixpoint(&mut db, &layer, blocked, errors) {
+        if fixpoint(&mut db, &layer, blocked, top, errors) {
             return (db, true);
         }
     }
@@ -262,6 +306,7 @@ fn fixpoint(
     db: &mut Db,
     rules: &[&Rule],
     blocked: &BTreeSet<String>,
+    top: usize,
     errors: &mut BTreeSet<String>,
 ) -> bool {
     loop {
@@ -290,6 +335,11 @@ fn fixpoint(
                     && premises
                         .iter()
                         .all(|p| db.get(p).is_some_and(|(_, ds)| ds.iter().any(|d| d.strict)));
+                let rank = premises
+                    .iter()
+                    .map(|p| db.get(p).map_or(0, |(_, ds)| best_rank(ds)))
+                    .min()
+                    .unwrap_or(top);
                 new.push((
                     head,
                     Derivation {
@@ -298,6 +348,7 @@ fn fixpoint(
                         strict,
                         plane: r.plane.clone(),
                         premises,
+                        rank,
                     },
                 ));
             }
@@ -783,6 +834,22 @@ fn check_uniques(prog: &Program, db: &Db, conflicts: &mut BTreeMap<String, Confl
                     .collect::<Vec<_>>()
                     .join(" vs ")
             );
+            let ranks: Vec<usize> = vals
+                .values()
+                .map(|srcs| {
+                    srcs.iter()
+                        .map(|s| source_rank(prog, s, db))
+                        .max()
+                        .unwrap_or(0)
+                })
+                .collect();
+            let max = ranks.iter().copied().max().unwrap_or(0);
+            let blame: Vec<String> = vals
+                .iter()
+                .zip(&ranks)
+                .filter(|(_, r)| **r < max)
+                .flat_map(|((_, srcs), _)| srcs.iter().map(|s| labelled(prog, s)))
+                .collect();
             let mut it = vals.into_values();
             let first = it.next().unwrap_or_default();
             let mut rest: Vec<String> = it.flatten().collect();
@@ -795,6 +862,91 @@ fn check_uniques(prog: &Program, db: &Db, conflicts: &mut BTreeMap<String, Confl
                     kind: ConflictKind::Uniqueness,
                     sources_pos: first,
                     sources_neg: rest,
+                    blame,
+                },
+            );
+        }
+    }
+}
+
+/// Rank of a fact by id, or of a rule's best derivation in `db`.
+fn source_rank(prog: &Program, source: &str, db: &Db) -> usize {
+    if let Some(f) = prog.facts.iter().find(|f| f.id == source) {
+        return prog.status_rank.get(&f.status).copied().unwrap_or(0);
+    }
+    db.values()
+        .flat_map(|(_, ds)| ds.iter())
+        .filter(|d| d.source == source)
+        .map(|d| d.rank)
+        .max()
+        .unwrap_or(0)
+}
+
+fn labelled(prog: &Program, source: &str) -> String {
+    match prog.facts.iter().find(|f| f.id == source) {
+        Some(f) => format!("{} [{}]", f.id, f.status),
+        None => source.to_string(),
+    }
+}
+
+/// Facts the atom rests on, transitively, with their ranks.
+fn support_facts(prog: &Program, db: &Db, key: &str) -> Vec<(usize, String)> {
+    let mut out = BTreeSet::new();
+    let mut seen = BTreeSet::new();
+    let mut stack = vec![key.to_string()];
+    while let Some(k) = stack.pop() {
+        if !seen.insert(k.clone()) {
+            continue;
+        }
+        let Some((_, derivs)) = db.get(&k) else {
+            continue;
+        };
+        for d in derivs {
+            if d.is_fact {
+                out.insert((d.rank, labelled(prog, &d.source)));
+            }
+            stack.extend(d.premises.iter().cloned());
+        }
+    }
+    out.into_iter().collect()
+}
+
+/// Reports every derived atom that matches a visible `forbid`, blaming the
+/// least trusted facts it rests on when statuses differ.
+fn check_forbids(prog: &Program, ctx: &Plane, db: &Db, conflicts: &mut BTreeMap<String, Conflict>) {
+    for f in prog
+        .forbids
+        .iter()
+        .filter(|f| prog.axes.plane_within(ctx, &f.plane))
+    {
+        for (key, (atom, derivs)) in db {
+            if atom.rel != f.atom.rel
+                || atom.neg != f.atom.neg
+                || !unify(&f.atom, atom, &mut Binding::new())
+            {
+                continue;
+            }
+            let facts = support_facts(prog, db, key);
+            let min = facts.iter().map(|(r, _)| *r).min().unwrap_or(0);
+            let max = facts.iter().map(|(r, _)| *r).max().unwrap_or(0);
+            let blame = if min < max {
+                facts
+                    .into_iter()
+                    .filter(|(r, _)| *r == min)
+                    .map(|(_, l)| l)
+                    .collect()
+            } else {
+                vec![]
+            };
+            let desc = format!("forbidden {key}");
+            conflicts.insert(
+                desc.clone(),
+                Conflict {
+                    positive: desc,
+                    kind: ConflictKind::Violation,
+                    sources_pos: sources(derivs),
+                    sources_neg: vec![],
+                    blame,
                 },
             );
         }

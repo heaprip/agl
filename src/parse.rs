@@ -24,17 +24,19 @@ use crate::units::{Dim, parse_unit};
 pub fn parse(src: &str) -> Result<Program, String> {
     let mut prog = Program::default();
     for (line_no, stmt) in statements(src) {
-        let (nf, nr, nq, nu) = (
+        let (nf, nr, nq, nu, nb) = (
             prog.facts.len(),
             prog.rules.len(),
             prog.queries.len(),
             prog.uniques.len(),
+            prog.forbids.len(),
         );
         parse_statement(&mut prog, &stmt).map_err(|e| format!("line {line_no}: {e}"))?;
         prog.facts[nf..].iter_mut().for_each(|f| f.line = line_no);
         prog.rules[nr..].iter_mut().for_each(|r| r.line = line_no);
         prog.queries[nq..].iter_mut().for_each(|q| q.line = line_no);
         prog.uniques[nu..].iter_mut().for_each(|u| u.line = line_no);
+        prog.forbids[nb..].iter_mut().for_each(|b| b.line = line_no);
     }
     Ok(prog)
 }
@@ -179,6 +181,26 @@ fn parse_statement(prog: &mut Program, stmt: &str) -> Result<(), String> {
                 head,
                 body,
                 strength,
+                plane,
+                line: 0,
+            });
+        }
+        "status" => {
+            let names: Vec<&str> = rest.split('>').map(str::trim).collect();
+            if names.iter().any(|n| ident(n).is_err()) || names.len() < 2 {
+                return Err("expected `status A > B > ...`".into());
+            }
+            let n = names.len();
+            for (i, name) in names.into_iter().enumerate() {
+                prog.status_rank.insert(name.to_string(), n - i);
+            }
+        }
+        "forbid" => {
+            let (lit, spec) = split_at_plane(rest)?;
+            let atom = parse_atom(lit.trim())?;
+            let plane = parse_spec(prog, spec)?;
+            prog.forbids.push(Forbid {
+                atom,
                 plane,
                 line: 0,
             });

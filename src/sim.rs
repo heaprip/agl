@@ -85,13 +85,21 @@ pub fn gen_program(seed: u64) -> Program {
     prog.axes.declare_value("w", "y", Some("root")).unwrap();
     prog.axes.declare_overlap("w", "x2", "y").unwrap();
 
+    let statuses = ["hi", "mid", "lo", "given"];
+    if rng.chance(1, 2) {
+        prog.status_rank = [("hi", 3), ("mid", 2), ("lo", 1)]
+            .into_iter()
+            .map(|(s, r)| (s.to_string(), r))
+            .collect();
+    }
     for i in 0..(3 + rng.below(8)) {
         let atom = gen_atom(&mut rng, &[]);
+        let status = rng.pick(&statuses).to_string();
         prog.facts.push(Fact {
             id: format!("f{i}"),
             atom,
             plane: gen_plane(&mut rng),
-            status: "given".into(),
+            status,
             line: 0,
         });
     }
@@ -130,6 +138,15 @@ pub fn gen_program(seed: u64) -> Program {
             prog.defeats.insert((format!("r{w}"), format!("r{l}")));
         }
     }
+    if rng.chance(1, 3) {
+        let atom = gen_atom(&mut rng, &["X", "Y"]);
+        let plane = gen_plane(&mut rng);
+        prog.forbids.push(Forbid {
+            atom,
+            plane,
+            line: 0,
+        });
+    }
     for _ in 0..(3 + rng.below(6)) {
         prog.queries.push(Query {
             atom: gen_atom(&mut rng, &[]),
@@ -158,17 +175,9 @@ pub fn permute(prog: &Program, seed: u64) -> Program {
             }
         }
     }
-    Program {
-        facts,
-        rules,
-        queries,
-        axes: prog.axes.clone(),
-        planes: prog.planes.clone(),
-        defeats: prog.defeats.clone(),
-        normative_preds: prog.normative_preds.clone(),
-        normative_axes: prog.normative_axes.clone(),
-        relations: prog.relations.clone(),
-        gaps: prog.gaps.clone(),
-        uniques: prog.uniques.clone(),
-    }
+    let mut p = prog.clone();
+    p.facts = facts;
+    p.rules = rules;
+    p.queries = queries;
+    p
 }
