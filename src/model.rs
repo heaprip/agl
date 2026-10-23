@@ -270,6 +270,8 @@ pub struct Query {
     /// program derives about this context, before the query is answered.
     pub situate: Option<String>,
     pub expect: Option<Verdict>,
+    /// A held-out expectation: checked, but never used to fit a hypothesis.
+    pub heldout: bool,
     pub line: usize,
 }
 

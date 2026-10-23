@@ -8,6 +8,7 @@
 
 pub mod check;
 pub mod eval;
+pub mod learn;
 pub mod lint;
 pub mod model;
 pub mod parse;

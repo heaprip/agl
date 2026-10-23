@@ -7,9 +7,18 @@ fn main() -> ExitCode {
     let verbose = args.iter().any(|a| a == "-v");
     let diagnose = args.iter().any(|a| a == "--diagnose");
     let propose = args.iter().any(|a| a == "--propose");
-    let files: Vec<&String> = args.iter().filter(|a| !a.starts_with('-')).collect();
+    let learn = args
+        .iter()
+        .position(|a| a == "--learn")
+        .and_then(|i| args.get(i + 1).cloned());
+    let files: Vec<&String> = args
+        .iter()
+        .enumerate()
+        .filter(|(i, a)| !(a.starts_with('-') || *i > 0 && args[i - 1] == "--learn"))
+        .map(|(_, a)| a)
+        .collect();
     if files.is_empty() {
-        eprintln!("usage: agl [-v] [--diagnose] [--propose] FILE.agl...");
+        eprintln!("usage: agl [-v] [--diagnose] [--propose] [--learn REL] FILE.agl...");
         return ExitCode::from(2);
     }
     let mut ok = true;
@@ -80,6 +89,10 @@ fn main() -> ExitCode {
             } else {
                 print!("{}", agl::reflect::render(&ds));
             }
+        }
+        if let Some(target) = &learn {
+            let (hs, notes) = agl::learn::learn(&prog, target);
+            print!("{}", agl::learn::render(&hs, &notes));
         }
         if propose {
             let (ps, notes) = agl::propose::propose(&prog);

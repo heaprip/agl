@@ -176,6 +176,7 @@ pub fn gen_program(seed: u64) -> Program {
             plane: gen_plane(&mut rng),
             situate,
             expect: None,
+            heldout: false,
             line: 0,
         });
     }

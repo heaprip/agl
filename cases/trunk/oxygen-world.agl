@@ -1,0 +1,112 @@
+# Мир казуса кислорода без правил жизнеспособности и без запросов:
+# данные, системы, их итог, среда, физиология. Подключается казусом
+# cases/trunk/oxygen.agl (с правилами) и учебным cases/learning/viability.agl
+# (без них — правило ищется обучением).
+
+# Стык дисциплин: метаболизм и физиология кислорода.
+#
+# Вопрос: почему мышца без кислорода производит лактат, и сколько ATP она
+# получает на глюкозу? Ответа нет ни в стволе гликолиза, ни в физиологии — он
+# выводится из стыка.
+#
+#   - Гликолиз (ствол) потребляет 2 NAD⁺ на глюкозу.
+#   - Сохранение: в установившемся режиме система может потреблять из среды
+#     только то, что среда даёт. NAD⁺ среда не даёт — он должен сойтись в ноль.
+#   - Физиология: O₂ среда даёт только в плоскости oxygen:present.
+#
+# Ядро перебирает системы «гликолиз + способ вернуть NAD⁺» и в каждой плоскости
+# выводит, какие из них жизнеспособны и каков их итог.
+
+include lib.agl
+
+axis oxygen
+value oxygen present
+value oxygen absent
+
+plane aerobic   = oxygen:present
+plane anaerobic = oxygen:absent
+
+# Дыхательная цепь, укрупнённо (учебник): 2 NADH + 2 H⁺ + O₂ → 2 NAD⁺ + 2 H₂O.
+# Это не реакция Rhea, а сумма многих; её баланс ядро проверяет так же.
+fact etc_rx: reaction(id: etc_lumped) @ [textbook]
+fact etc_1: participates(reaction: etc_lumped, species: CHEBI_57945, side: left, coeff: 2) @ [textbook]
+fact etc_2: participates(reaction: etc_lumped, species: CHEBI_15378, side: left, coeff: 2) @ [textbook]
+fact etc_3: participates(reaction: etc_lumped, species: CHEBI_15379, side: left, coeff: 1) @ [textbook]
+fact etc_4: participates(reaction: etc_lumped, species: CHEBI_57540, side: right, coeff: 2) @ [textbook]
+fact etc_5: participates(reaction: etc_lumped, species: CHEBI_15377, side: right, coeff: 2) @ [textbook]
+
+# Способы вернуть NAD⁺.
+fact pw_lf: pathway(id: lactate_fermentation) @ [textbook]
+fact lf1: step(pathway: lactate_fermentation, reaction: RHEA_23444, direction: reverse, times: 1) @ [textbook]
+fact pw_no: pathway(id: nadh_oxidation) @ [textbook]
+fact no1: step(pathway: nadh_oxidation, reaction: etc_lumped, direction: forward, times: 1) @ [textbook]
+
+# Системы-кандидаты.
+fact sy1: system(id: glycolysis_only) @ [hypothesis]
+fact u11: uses(system: glycolysis_only, pathway: glycolysis, times: 1) @ [hypothesis]
+fact sy2: system(id: fermenting) @ [hypothesis]
+fact u21: uses(system: fermenting, pathway: glycolysis, times: 1) @ [hypothesis]
+fact u22: uses(system: fermenting, pathway: lactate_fermentation, times: 2) @ [hypothesis]
+fact sy3: system(id: respiring) @ [hypothesis]
+fact u31: uses(system: respiring, pathway: glycolysis, times: 1) @ [hypothesis]
+fact u32: uses(system: respiring, pathway: nadh_oxidation, times: 1) @ [hypothesis]
+
+# Что даёт среда. Кислород — только в аэробной плоскости.
+fact av_glc: available(species: CHEBI_4167) @ [textbook]
+fact av_adp: available(species: CHEBI_456216) @ [textbook]
+fact av_pi:  available(species: CHEBI_43474) @ [textbook]
+fact av_h:   available(species: CHEBI_15378) @ [textbook]
+fact av_w:   available(species: CHEBI_15377) @ [textbook]
+fact av_o2:  available(species: CHEBI_15379) @ aerobic [textbook]
+
+rule sys_net strict @: sys_net(system: ?s, species: ?x, value: ?v) <-
+    system(id: ?s), top(species: ?x),
+    ?v = sum(?u * ?d * ?t * ?sv * ?c) over (uses(system: ?s, pathway: ?p, times: ?u),
+                                           member(species: ?y, of: ?x),
+                                           step(pathway: ?p, reaction: ?r, direction: ?dir, times: ?t),
+                                           dir_value(direction: ?dir, value: ?d),
+                                           participates(reaction: ?r, species: ?y, side: ?side, coeff: ?c),
+                                           side_value(side: ?side, value: ?sv))
+
+rule consumed strict @: consumed(system: ?s, species: ?x) <- sys_net(system: ?s, species: ?x, value: ?v), ?v < 0
+
+# Физиология: насыщение гемоглобина по кривой Хилла.
+fact hb: hill(protein: HbA, p50: 26.8[mmHg], n: 2.7) @ [textbook]
+fact pa1: pao2(site: sea_level, value: 95[mmHg]) @ [textbook]
+fact pa2: pao2(site: everest_8400m, value: 24.6[mmHg]) @ [measurement]   # Grocott et al., NEJM 2009
+rule sat strict @: saturation(site: ?s, value: ?S) <-
+    pao2(site: ?s, value: ?p), hill(protein: HbA, p50: ?p50, n: ?n),
+    ?r = (?p / ?p50) ^ ?n, ?S = ?r / (1 + ?r)
+rule hypox strict @: hypoxemic(site: ?s) <- saturation(site: ?s, value: ?S), ?S < 0.9
+rule normox strict @: ¬hypoxemic(site: ?s) <- saturation(site: ?s, value: ?S), ?S >= 0.9
+
+# Мост: от высоты и нагрузки к кислороду в мышце (уравнение Фика). Плоскость
+# кислорода больше не задаётся запросом — ядро выводит её из данных.
+# Упрощение: дефицит доставки моделируется как отсутствие O₂ для покрытия
+# избытка потребности; смешанный режим не разбирается.
+fact hu:   hufner(value: 1.34[mL/g]) @ [textbook]
+fact hbc:  hemoglobin(value: 15[g/dL]) @ [textbook]
+fact co_r: cardiac_output(level: rest, value: 5[L/min]) @ [textbook]
+fact co_m: cardiac_output(level: maximal, value: 25[L/min]) @ [textbook]
+fact dm_r: o2_demand(level: rest, value: 0.25[L/min]) @ [textbook]
+fact dm_m: o2_demand(level: maximal, value: 3[L/min]) @ [textbook]
+fact ext:  max_extraction(value: 0.85) @ [textbook]
+
+rule content strict @: o2_content(site: ?s, value: ?c) <-
+    saturation(site: ?s, value: ?S), hufner(value: ?k), hemoglobin(value: ?hb), ?c = ?k * ?hb * ?S
+rule deliver strict @: o2_delivery(context: ?x, value: ?d) <-
+    at_site(context: ?x, site: ?s), exertion(context: ?x, level: ?l),
+    o2_content(site: ?s, value: ?c), cardiac_output(level: ?l, value: ?q), max_extraction(value: ?e),
+    ?d = ?q * ?c * ?e
+rule need strict @: o2_need(context: ?x, value: ?m) <- exertion(context: ?x, level: ?l), o2_demand(level: ?l, value: ?m)
+rule short strict @: situated(context: ?x, axis: oxygen, value: absent) <-
+    o2_delivery(context: ?x, value: ?d), o2_need(context: ?x, value: ?m), ?d < ?m
+rule enough strict @: situated(context: ?x, axis: oxygen, value: present) <-
+    o2_delivery(context: ?x, value: ?d), o2_need(context: ?x, value: ?m), ?d >= ?m
+
+fact cx1: at_site(context: everest_sprint, site: everest_8400m) @ [scenario]
+fact cx2: exertion(context: everest_sprint, level: maximal) @ [scenario]
+fact cx3: at_site(context: everest_rest, site: everest_8400m) @ [scenario]
+fact cx4: exertion(context: everest_rest, level: rest) @ [scenario]
+fact cx5: at_site(context: sea_sprint, site: sea_level) @ [scenario]
+fact cx6: exertion(context: sea_sprint, level: maximal) @ [scenario]

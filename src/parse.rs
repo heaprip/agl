@@ -273,6 +273,10 @@ fn parse_statement(prog: &mut Program, stmt: &str) -> Result<(), String> {
         "query" => {
             let (lit, spec) = split_at_plane(rest)?;
             let mut words: Vec<&str> = spec.split_whitespace().collect();
+            let heldout = words.last() == Some(&"heldout");
+            if heldout {
+                words.pop();
+            }
             let expect = match words.iter().position(|w| *w == "expect") {
                 Some(k) => {
                     let v = parse_verdict(words.get(k + 1).copied().unwrap_or(""))?;
@@ -302,6 +306,7 @@ fn parse_statement(prog: &mut Program, stmt: &str) -> Result<(), String> {
                 plane,
                 situate,
                 expect,
+                heldout,
                 line: 0,
             });
         }
