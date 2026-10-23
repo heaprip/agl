@@ -43,13 +43,34 @@ impl Report {
     }
 }
 
+/// Outcomes already evaluated, by plane. Evaluation is a pure function of the
+/// program and the plane, so the scan and every query in one plane share one.
+struct Evals<'a> {
+    prog: &'a Program,
+    done: BTreeMap<Plane, eval::Outcome>,
+}
+
+impl Evals<'_> {
+    fn get(&mut self, plane: &Plane) -> &eval::Outcome {
+        if !self.done.contains_key(plane) {
+            let out = eval::evaluate(self.prog, plane);
+            self.done.insert(plane.clone(), out);
+        }
+        &self.done[plane]
+    }
+}
+
 pub fn run(prog: &Program) -> Report {
     let diags = lint::lint(prog);
-    let (conflicts, mut errors) = scan_conflicts(prog);
+    let mut evals = Evals {
+        prog,
+        done: BTreeMap::new(),
+    };
+    let (conflicts, mut errors) = scan_conflicts(prog, &mut evals);
     let queries: Vec<QueryResult> = prog
         .queries
         .iter()
-        .map(|q| answer(prog, q, &mut errors))
+        .map(|q| answer(prog, q, &mut evals, &mut errors))
         .collect();
     Report {
         diags,
@@ -85,16 +106,16 @@ fn contexts(prog: &Program) -> Vec<Plane> {
 /// A distinct conflict: atom, kind and both source sets.
 type ConflictId = (String, String, Vec<String>, Vec<String>);
 
-fn scan_conflicts(prog: &Program) -> (Vec<FoundConflict>, BTreeSet<String>) {
+fn scan_conflicts(prog: &Program, evals: &mut Evals) -> (Vec<FoundConflict>, BTreeSet<String>) {
     // One entry per distinct conflict (atom, kind, both source sets); for each,
     // the canonically smallest context in which it shows. Independent of the
     // order of statements and of contexts.
     let mut found: BTreeMap<ConflictId, (String, FoundConflict)> = BTreeMap::new();
     let mut errors = BTreeSet::new();
     for ctx in contexts(prog) {
-        let out = eval::evaluate(prog, &ctx);
+        let out = evals.get(&ctx);
         errors.extend(out.errors.iter().cloned());
-        for (key, c) in out.conflicts {
+        for (key, c) in out.conflicts.clone() {
             let id = (
                 key,
                 format!("{:?}", c.kind),
@@ -182,7 +203,12 @@ pub fn effective_plane(prog: &Program, q: &Query) -> Plane {
     }
 }
 
-fn answer(prog: &Program, q: &Query, errors: &mut BTreeSet<String>) -> QueryResult {
+fn answer(
+    prog: &Program,
+    q: &Query,
+    evals: &mut Evals,
+    errors: &mut BTreeSet<String>,
+) -> QueryResult {
     let (plane, prelude) = match &q.situate {
         None => (q.plane.clone(), String::new()),
         Some(ctx) => match situate(prog, &q.plane, ctx) {
@@ -201,7 +227,7 @@ fn answer(prog: &Program, q: &Query, errors: &mut BTreeSet<String>) -> QueryResu
             }
         },
     };
-    let out = eval::evaluate(prog, &plane);
+    let out = evals.get(&plane);
     errors.extend(out.errors.iter().cloned());
     let key = q.atom.key();
     let ckey = q.atom.complement().key();
@@ -221,9 +247,9 @@ fn answer(prog: &Program, q: &Query, errors: &mut BTreeSet<String>) -> QueryResu
             ),
         )
     } else if out.db.contains_key(&key) {
-        (Verdict::Yes, eval::explain(&out, &key))
+        (Verdict::Yes, eval::explain(out, &key))
     } else if out.db.contains_key(&ckey) {
-        (Verdict::No, eval::explain(&out, &ckey))
+        (Verdict::No, eval::explain(out, &ckey))
     } else if let Some(g) = gap_for(prog, q, &plane) {
         (Verdict::Gap, g)
     } else {

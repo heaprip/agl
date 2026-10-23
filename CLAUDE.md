@@ -54,6 +54,7 @@ cargo run --release -- --diagnose FILE     # рефлексия R1
 cargo run --release -- --propose FILE      # рефлексия R2
 cargo run --release -- --learn viable cases/learning/viability.agl
 python3 tools/llm_dsl.py run 3              # LLM пишет .agl; вызовы воспроизводятся из docs/dsl/calls
+uv run --python 3.11 --with memote==0.17.0 --with cobra==0.32.1 tools/memote_ref.py build  # казусы memote
 python3 tools/trunk.py build               # ствол из data/raw (офлайн); fetch — из сети
 ```
 
