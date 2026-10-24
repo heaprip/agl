@@ -66,6 +66,7 @@ python3 tools/trunk.py build               # ствол и классы ChEBI и
 cargo run --release --example analogy      # прототип H51: недостающая реакция по аналогии
 cargo run --release --example bombelli     # веха Джанибекова, шаг 0: аномалия → плоскость пар (AGL_TRACE=1 — ход)
 cargo run --release --example cauchy       # H57 шаг 2: присоединение корня, выбор X² = s по аномалии
+cargo run --release --example adjoin -- cases/discovery/adjoin/imaginary.agl  # H57 шаг 3: один приём присоединения
 ```
 
 ## LLM через RouterAI

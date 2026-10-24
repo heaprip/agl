@@ -217,3 +217,142 @@ fn cauchy_does_not_depend_on_statement_order() {
         assert_eq!(base, sorted(&permute(&prog, seed)), "permutation {seed}");
     }
 }
+
+/// Step 3 of H57: the adjoining library, one problem at a time. Elements
+/// a + bX over the domain, multipliers |k| <= 5, probes among |a|, |b| <= 2
+/// (or 0..4 for the naturals); `adjoin` adds the plane where the equation is
+/// adjoined, whether or not it failed.
+fn adjoined(problem: &str) -> agl::model::Program {
+    let path = format!("cases/discovery/adjoin/{problem}.agl");
+    let mut src = agl::read_expanded(std::path::Path::new(&path)).unwrap();
+    let n = |x: i64| {
+        if x < 0 {
+            format!("m{}", -x)
+        } else {
+            x.to_string()
+        }
+    };
+    let (lo, hi, plo, phi) = if problem == "negatives" {
+        (0, 8, 0, 4)
+    } else {
+        (-4, 4, -2, 2)
+    };
+    let eq = agl::parse(&src)
+        .unwrap()
+        .facts
+        .iter()
+        .find(|f| f.atom.rel == "equation")
+        .unwrap()
+        .atom
+        .args[0]
+        .1
+        .to_string();
+    src.push_str(&format!(
+        "axis repr\nvalue repr adj\nplane adj = repr:adj\nfact adj: adjoined(eq: {eq}) @ adj\n"
+    ));
+    for a in lo..=hi {
+        for b in lo..=hi {
+            let p = format!("e_{}_{}", n(a), n(b));
+            src.push_str(&format!(
+                "fact {p}_0: coef(p: {p}, deg: 0, c: {a}) @\nfact {p}_1: coef(p: {p}, deg: 1, c: {b}) @\n"
+            ));
+        }
+    }
+    for a in -5..=5 {
+        for b in -5..=5 {
+            let u = format!("u_{}_{}", n(a), n(b));
+            src.push_str(&format!(
+                "fact {u}_0: mult(u: {u}, deg: 0, c: {a}) @\nfact {u}_1: mult(u: {u}, deg: 1, c: {b}) @\n"
+            ));
+        }
+    }
+    let small: Vec<String> = (plo..=phi)
+        .flat_map(|a| (plo..=phi).map(move |b| (a, b)))
+        .map(|(a, b)| format!("e_{}_{}", n(a), n(b)))
+        .collect();
+    for l in &small {
+        for r in &small {
+            src.push_str(&format!("fact pr_{l}_{r}: probe(l: {l}, r: {r}) @\n"));
+        }
+    }
+    agl::parse(&src).unwrap()
+}
+
+/// What the sieve sees in the adjoined plane: solutions, and the laws
+/// broken with how often.
+fn sieve(prog: &agl::model::Program) -> (Vec<String>, Vec<(String, usize)>) {
+    let out = evaluate(prog, &prog.planes["adj"]);
+    let sym = |a: &agl::model::Atom, role: &str| {
+        a.args
+            .iter()
+            .find(|(r, _)| r == role)
+            .unwrap()
+            .1
+            .to_string()
+    };
+    let sols = atoms(&out, "solution")
+        .iter()
+        .map(|a| sym(a, "p"))
+        .collect();
+    let mut laws = std::collections::BTreeMap::new();
+    for a in atoms(&out, "law_broken") {
+        *laws.entry(sym(&a, "law")).or_insert(0) += 1;
+    }
+    (sols, laws.into_iter().collect())
+}
+
+/// Declared before the run (H57, step 3): negatives and fractions pass the
+/// sieve; 1 : 0 breaks conservativity; a superfluous x² = 4 gives zero
+/// divisors; blind, on the frozen library, √2 and i pass with roots ±X.
+#[test]
+fn one_adjoining_mechanism_for_four_extensions() {
+    let s = |v: &[&str]| v.iter().map(|x| x.to_string()).collect::<Vec<_>>();
+    let none: Vec<(String, usize)> = vec![];
+    let cases = [
+        (
+            "negatives",
+            s(&["e_0_1", "e_2_2", "e_4_3", "e_6_4", "e_8_5"]),
+            none.clone(),
+        ),
+        ("fractions", s(&["e_0_1", "e_1_m2", "e_m1_4"]), none.clone()),
+        ("sqrt_two", s(&["e_0_1", "e_0_m1"]), none.clone()),
+        ("imaginary", s(&["e_0_1", "e_0_m1"]), none.clone()),
+    ];
+    for (p, sols, laws) in cases {
+        let prog = adjoined(p);
+        let failed: Vec<_> = agl::run(&prog)
+            .failed_queries()
+            .map(|q| q.plane.is_empty())
+            .collect();
+        assert_eq!(failed, [true], "{p}: the anomaly at the root");
+        assert_eq!(sieve(&prog), (sols, laws), "{p}");
+    }
+    let (_, laws) = sieve(&adjoined("divide_by_zero"));
+    assert_eq!(laws, [("conservative".to_string(), 60)]);
+    let prog = adjoined("square_four");
+    assert_eq!(
+        agl::run(&prog).failed_queries().count(),
+        0,
+        "x² = 4 solves already"
+    );
+    let (_, laws) = sieve(&prog);
+    assert_eq!(
+        laws.iter().map(|l| l.0.as_str()).collect::<Vec<_>>(),
+        ["cancellation"]
+    );
+}
+
+#[test]
+fn adjoining_does_not_depend_on_statement_order() {
+    for p in ["fractions", "square_four"] {
+        let prog = adjoined(p);
+        let base = sieve(&prog);
+        for seed in 0..2 {
+            assert_eq!(
+                base,
+                sieve(&permute(&prog, seed)),
+                "{p}, permutation {seed}"
+            );
+        }
+    }
+}

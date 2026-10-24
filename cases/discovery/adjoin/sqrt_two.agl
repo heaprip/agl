@@ -1,0 +1,11 @@
+# Слепая проверка (H57, шаг 3): √2. Уравнение x² = 2 не решается в целых.
+# Написано после заморозки библиотеки (f6cb9dc).
+
+fact eq: equation(eq: root_two) @ [textbook]
+fact l2: eq_coef(eq: root_two, side: left, deg: 2, c: 1) @ [textbook]
+fact r0: eq_coef(eq: root_two, side: right, deg: 0, c: 2) @ [textbook]
+fact dom: domain(lo: -4, hi: 4) @
+
+query solvable(eq: root_two) @ expect yes
+
+include ../../lib/adjoin.agl
