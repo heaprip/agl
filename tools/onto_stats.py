@@ -8,6 +8,10 @@ should be designed (docs/hypotheses.md, H61).
     tools/onto_stats.py edges FAMILY RELEASE
                                 offline: print is_a edges as "species<TAB>genus" lines,
                                 sorted (input of examples/labels.rs)
+    tools/onto_stats.py probe FAMILY RELEASE lazy|whole
+                                offline: print an .agl program with every is_a edge as a
+                                fact, a nesting over them and 20 + 10 questions drawn from
+                                seed 1 (H61, step 2b)
 
 What is measured, as distributions (percentiles), not means:
   - parents per term (is_a), and roles per term (has_role: a second axis);
@@ -337,6 +341,35 @@ def edges(family, rel):
     sys.stdout.write("".join(f"{t}\t{p}\n" for t, p in out))
 
 
+def probe(family, rel, kind):
+    import random
+    verified()
+    parents = {t: sorted(ps) for t, (ps, _) in load(family, rel).items()}
+    anc = ancestors(parents)
+    name = lambda s: "s" + s.replace("-", "_").replace(":", "_")
+    edges = sorted((t, p) for t, ps in parents.items() for p in ps)
+    nodes = sorted(t for t in parents if parents[t])
+    rng = random.Random(1)
+    yes, no = [], []
+    while len(yes) < 20:
+        x = rng.choice(nodes)
+        yes.append((x, rng.choice(sorted(anc[x]))))
+    while len(no) < 10:
+        x, y = rng.choice(nodes), rng.choice(nodes)
+        if y not in anc[x] and x != y:
+            no.append((x, y))
+    lazy = " lazy" if kind == "lazy" else ""
+    out = ["status source > question\n",
+           f"nesting k: kind_of(a, b) by is_a(species, genus){lazy}\n",
+           "rule found strict @: found(x: ?x, y: ?y) <- probe(x: ?x, y: ?y), kind_of(a: ?x, b: ?y)\n"]
+    out += [f"fact e{i}: is_a(species: {name(a)}, genus: {name(b)}) @ [source]\n" for i, (a, b) in enumerate(edges)]
+    out += [f"fact p{i}: probe(x: {name(a)}, y: {name(b)}) @ [question]\n" for i, (a, b) in enumerate(yes + no)]
+    # The kernel's world is open: what is not derived is unknown, not no.
+    out += [f"query found(x: {name(a)}, y: {name(b)}) @ expect yes\n" for a, b in yes]
+    out += [f"query found(x: {name(a)}, y: {name(b)}) @ expect unknown\n" for a, b in no]
+    sys.stdout.write("".join(out))
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd == "fetch":
@@ -345,5 +378,7 @@ if __name__ == "__main__":
         stats()
     elif cmd == "edges":
         edges(sys.argv[2], sys.argv[3])
+    elif cmd == "probe":
+        probe(sys.argv[2], sys.argv[3], sys.argv[4])
     else:
         print(__doc__)

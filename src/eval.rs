@@ -595,9 +595,21 @@ fn closure(
                     .any(|k| k.starts_with(&format!("{}(", n.rel)))
         })
         .collect();
+    // Lazy ones (step 2b): only rule bodies read N and the edges are facts.
+    let lazy: BTreeMap<String, Lazy> = nests
+        .iter()
+        .filter(|n| n.lazy && lazy_allowed(prog, n) && !rules.iter().any(|r| r.head.rel == n.edge))
+        .map(|n| (n.rel.clone(), Lazy::build(n, &db)))
+        .collect();
+    let nests: Vec<&Nesting> = nests
+        .into_iter()
+        .filter(|n| !lazy.contains_key(&n.rel))
+        .collect();
     let by_labels = |r: &Rule| {
         nests
             .iter()
+            .copied()
+            .chain(lazy.values().map(|l| &l.nest))
             .any(|n| r.id == n.base_id() || r.id == n.step_id())
     };
     for level in levels {
@@ -609,7 +621,7 @@ fn closure(
             .collect();
         let here: Vec<&Nesting> = nests.iter().copied().filter(|n| at(&n.rel)).collect();
         loop {
-            if fixpoint(&mut db, &layer, blocked, errors, naive) {
+            if fixpoint(&mut db, &layer, blocked, errors, naive, &lazy) {
                 settle(&mut db, top);
                 return (db, true);
             }
@@ -844,6 +856,231 @@ fn settle(db: &mut Db, top: usize) {
     }
 }
 
+/// May a nesting be lazy? Only if nothing but rule bodies reads N: no other
+/// rule derives N or its complement, no fact denies it, no aggregate, query,
+/// forbid, unique or compare reads it.
+fn lazy_allowed(prog: &Program, n: &Nesting) -> bool {
+    let own = |r: &Rule| r.id == n.base_id() || r.id == n.step_id();
+    let rel = n.rel.as_str();
+    !prog.rules.iter().any(|r| {
+        (r.head.rel == rel && !own(r))
+            || r.body.iter().any(|l| match l {
+                Lit::Agg { over, .. } => over.iter().any(|a| a.rel == rel),
+                _ => false,
+            })
+    }) && !prog.facts.iter().any(|f| f.atom.rel == rel && f.atom.neg)
+        && !prog.queries.iter().any(|q| q.atom.rel == rel)
+        && !prog.forbids.iter().any(|f| f.atom.rel == rel)
+        && !prog.uniques.iter().any(|u| u.rel == rel)
+        && !prog
+            .compares
+            .iter()
+            .any(|c| c.left.0 == rel || c.right.0 == rel)
+}
+
+/// A lazy nesting (H61, step 2b): labels over the edges, and the atoms of N
+/// made only for the pairs rule bodies match, each with its cone — every
+/// atom N(z, y) on a path from x to y — so that every atom made has the
+/// derivations of step 2a.
+pub(crate) struct Lazy {
+    nest: Nesting,
+    labels: crate::label::Labels,
+    terms: BTreeMap<String, Term>,
+    /// x -> (genus, key of the edge atom)
+    out: BTreeMap<String, Vec<(String, String)>>,
+    /// z -> (y, key) of N atoms from elsewhere
+    given: BTreeMap<String, Vec<(String, String)>>,
+}
+
+impl Lazy {
+    fn build(n: &Nesting, db: &Db) -> Self {
+        let pick = |a: &Atom, roles: &(String, String)| -> Option<(Term, Term)> {
+            let get = |r: &str| a.args.iter().find(|(x, _)| x == r).map(|(_, t)| t.clone());
+            Some((get(&roles.0)?, get(&roles.1)?))
+        };
+        let mut terms: BTreeMap<String, Term> = BTreeMap::new();
+        let mut out: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
+        let mut given: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
+        let mut graph: Vec<(String, String)> = Vec::new();
+        for (k, (a, _)) in db {
+            if a.neg {
+                continue;
+            }
+            if a.rel == n.edge
+                && let Some((x, y)) = pick(a, &n.edge_roles)
+            {
+                let (sx, sy) = (x.to_string(), y.to_string());
+                terms.insert(sx.clone(), x);
+                terms.insert(sy.clone(), y);
+                out.entry(sx.clone())
+                    .or_default()
+                    .push((sy.clone(), k.clone()));
+                graph.push((sx, sy));
+            } else if a.rel == n.rel
+                && let Some((z, y)) = pick(a, &n.roles)
+            {
+                let (sz, sy) = (z.to_string(), y.to_string());
+                terms.insert(sz.clone(), z);
+                terms.insert(sy.clone(), y);
+                given
+                    .entry(sz.clone())
+                    .or_default()
+                    .push((sy.clone(), k.clone()));
+                graph.push((sz, format!("\0{sy}")));
+            }
+        }
+        let labels =
+            crate::label::Labels::build(graph.iter().map(|(a, b)| (a.as_str(), b.as_str())));
+        Lazy {
+            nest: n.clone(),
+            labels,
+            terms,
+            out,
+            given,
+        }
+    }
+
+    /// Does N(x, y) follow from the edges: a path of edges to y, or of edges
+    /// and then a given N atom?
+    fn holds(&self, x: &str, y: &str) -> bool {
+        self.labels.reaches(x, y)
+            || self.out.get(x).is_some_and(|qs| {
+                let fresh = format!("\0{y}");
+                qs.iter().any(|(q, _)| self.labels.within(q, &fresh))
+            })
+    }
+
+    /// Pairs (x, y) where N holds, with x or y fixed when given.
+    fn pairs(&self, x: Option<&str>, y: Option<&str>, diagonal: bool) -> Vec<(String, String)> {
+        let real = |s: &str| !s.starts_with('\0');
+        let genus = |s: &str| s.strip_prefix('\0').unwrap_or(s).to_string();
+        let below = |y: &str| -> BTreeSet<String> {
+            let fresh = format!("\0{y}");
+            self.labels
+                .descendants(y)
+                .into_iter()
+                .chain(self.labels.descendants(&fresh))
+                .filter(|d| real(d))
+                .map(str::to_string)
+                .collect()
+        };
+        let mut out: BTreeSet<(String, String)> = BTreeSet::new();
+        match (x, y) {
+            (Some(x), Some(y)) => {
+                if self.holds(x, y) {
+                    out.insert((x.to_string(), y.to_string()));
+                }
+            }
+            (None, Some(y)) => {
+                for d in below(y) {
+                    if self.holds(&d, y) {
+                        out.insert((d, y.to_string()));
+                    }
+                }
+            }
+            (Some(x), None) => {
+                let ys: BTreeSet<String> =
+                    self.labels.ancestors(x).into_iter().map(genus).collect();
+                for y in ys {
+                    if self.holds(x, &y) {
+                        out.insert((x.to_string(), y));
+                    }
+                }
+            }
+            (None, None) if diagonal => {
+                for t in self.labels.names().filter(|t| real(t)) {
+                    if self.holds(t, t) {
+                        out.insert((t.to_string(), t.to_string()));
+                    }
+                }
+            }
+            (None, None) => {
+                let ys: BTreeSet<String> = self.labels.names().map(genus).collect();
+                for y in ys {
+                    for d in below(&y) {
+                        if self.holds(&d, &y) {
+                            out.insert((d, y.clone()));
+                        }
+                    }
+                }
+            }
+        }
+        out.into_iter().collect()
+    }
+
+    /// The two-role atom N(x, y).
+    fn atom(&self, x: &str, y: &str) -> Atom {
+        Atom::new(
+            self.nest.rel.clone(),
+            vec![
+                (self.nest.roles.0.clone(), self.terms[x].clone()),
+                (self.nest.roles.1.clone(), self.terms[y].clone()),
+            ],
+            false,
+        )
+    }
+
+    /// Makes N(x, y) and every N(z, y) on a path from x to y, each with the
+    /// derivations of its two rules.
+    fn cone(&self, x: &str, y: &str, db: &mut Db) {
+        let fresh = format!("\0{y}");
+        let mut cone: BTreeSet<&str> = self
+            .labels
+            .descendants(y)
+            .into_iter()
+            .chain(self.labels.descendants(&fresh))
+            .filter(|z| !z.starts_with('\0') && self.labels.within(x, z))
+            .collect();
+        cone.retain(|z| self.holds(z, y));
+        let derivation = |source: String, premises: Vec<String>| Derivation {
+            source,
+            is_fact: false,
+            strict: true,
+            plane: Plane::new(),
+            premises,
+            rank: 0,
+        };
+        for z in cone {
+            let head = self.atom(z, y);
+            let key = head.key();
+            let mut ds: Vec<Derivation> = Vec::new();
+            for (q, ek) in self.out.get(z).into_iter().flatten() {
+                if q == y {
+                    ds.push(derivation(self.nest.base_id(), vec![ek.clone()]));
+                }
+                let mut via: Vec<String> = Vec::new();
+                if self.holds(q, y) {
+                    via.push(self.atom(q, y).key());
+                }
+                via.extend(
+                    self.given
+                        .get(q.as_str())
+                        .into_iter()
+                        .flatten()
+                        .filter(|(w, _)| w == y)
+                        .map(|(_, k)| k.clone()),
+                );
+                for nk in via {
+                    let mut premises = vec![ek.clone(), nk];
+                    premises.sort();
+                    premises.dedup();
+                    ds.push(derivation(self.nest.step_id(), premises));
+                }
+            }
+            let entry = db.entry(key).or_insert_with(|| (head, vec![]));
+            for d in ds {
+                if !entry
+                    .1
+                    .iter()
+                    .any(|x| x.source == d.source && x.premises == d.premises)
+                {
+                    entry.1.push(d);
+                }
+            }
+        }
+    }
+}
+
 /// Saturates `db` with one stratum of rules; returns true if truncated.
 ///
 /// Semi-naive (H65): after the first round, a match must take at least one
@@ -857,6 +1094,7 @@ fn fixpoint(
     blocked: &BTreeSet<String>,
     errors: &mut BTreeSet<String>,
     naive: bool,
+    lazy: &BTreeMap<String, Lazy>,
 ) -> bool {
     // Atoms new in the last round; None in the first round: all are new.
     let mut fresh: Option<BTreeSet<String>> = None;
@@ -868,12 +1106,15 @@ fn fixpoint(
             .filter(|_| !naive)
             .map(|f| Index::new(db.iter().filter(|(k, _)| f.contains(*k))));
         let mut new: Vec<(Atom, Derivation)> = Vec::new();
+        let wanted: std::cell::RefCell<BTreeSet<(String, String, String)>> = Default::default();
         for r in rules {
             let mut matches = Vec::new();
             let body = schedule(r);
             let mut ctx = Matcher {
                 index: &index,
                 forced: None,
+                lazy,
+                wanted: &wanted,
                 rule: &r.id,
                 errors: &mut *errors,
             };
@@ -930,6 +1171,11 @@ fn fixpoint(
                 entry.1.push(d);
                 added = true;
             }
+        }
+        // Atoms of lazy nestings that matches rest on, with their cones. They
+        // held already, so they give no new match.
+        for (rel, x, y) in wanted.into_inner() {
+            lazy[&rel].cone(&x, &y, db);
         }
         if db.len() > MAX_ATOMS {
             return true;
@@ -1111,6 +1357,10 @@ struct Matcher<'a> {
     /// The atom literal at this position matches only atoms of this index
     /// (the last round's new atoms).
     forced: Option<(usize, &'a Index<'a>)>,
+    /// Lazy nestings by relation; matched from labels, not from the index.
+    lazy: &'a BTreeMap<String, Lazy>,
+    /// (relation, x, y) of lazy atoms matched in this round.
+    wanted: &'a std::cell::RefCell<BTreeSet<(String, String, String)>>,
     rule: &'a str,
     errors: &'a mut BTreeSet<String>,
 }
@@ -1130,11 +1380,15 @@ impl Matcher<'_> {
         }
         match &lits[i] {
             Lit::Atom(pat) => {
-                let index = match self.forced {
-                    Some((at, d)) if at == i => d,
-                    _ => self.index,
+                let lazy = (!pat.neg).then(|| self.lazy.get(&pat.rel)).flatten();
+                let found = match (self.forced, lazy) {
+                    // A lazy relation does not change within the stratum.
+                    (Some((at, _)), Some(_)) if at == i => return,
+                    (_, Some(l)) => self.lazy_atom(l, pat, binding),
+                    (Some((at, d)), None) if at == i => self.atom(d, pat, binding),
+                    _ => self.atom(self.index, pat, binding),
                 };
-                for (b, k) in self.atom(index, pat, binding) {
+                for (b, k) in found {
                     let mut b = b;
                     premises.push(k);
                     self.body(lits, i + 1, &mut b, premises, out);
@@ -1191,6 +1445,42 @@ impl Matcher<'_> {
                 }
             }
         }
+    }
+
+    /// Matches of `pat` on a lazy nesting: the pairs the labels give, each
+    /// as the two-role atom the rules would derive, and atoms of N already in
+    /// the database (facts, atoms made earlier).
+    fn lazy_atom(&self, l: &Lazy, pat: &Atom, binding: &Binding) -> Vec<(Binding, String)> {
+        let side = |role: &str| -> (Option<String>, Option<&str>) {
+            match pat.args.iter().find(|(r, _)| r == role).map(|(_, t)| t) {
+                Some(Term::Var(v)) => match binding.get(v) {
+                    Some(t) => (Some(t.to_string()), None),
+                    None => (None, Some(v.as_str())),
+                },
+                Some(t) => (Some(t.to_string()), None),
+                None => (None, None),
+            }
+        };
+        let ((x, vx), (y, vy)) = (side(&l.nest.roles.0), side(&l.nest.roles.1));
+        let diagonal = vx.is_some() && vx == vy;
+        let mut out = Vec::new();
+        let mut seen: BTreeSet<String> = BTreeSet::new();
+        for (a, b) in l.pairs(x.as_deref(), y.as_deref(), diagonal) {
+            let ground = l.atom(&a, &b);
+            let mut bind = binding.clone();
+            if unify(pat, &ground, &mut bind) {
+                let key = ground.key();
+                seen.insert(key.clone());
+                self.wanted.borrow_mut().insert((l.nest.rel.clone(), a, b));
+                out.push((bind, key));
+            }
+        }
+        out.extend(
+            self.atom(self.index, pat, binding)
+                .into_iter()
+                .filter(|(_, k)| !seen.contains(k)),
+        );
+        out
     }
 
     fn atom(&self, index: &Index, pat: &Atom, binding: &Binding) -> Vec<(Binding, String)> {

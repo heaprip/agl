@@ -68,6 +68,7 @@ python3 tools/llm_geometry.py fetch       # матрицы выхода Qwen2.5 
 uv run --python 3.12 --with numpy==2.2.6 tools/llm_geometry.py run [noise]  # H62: векторы понятий против WordNet (~5 мин)
 cargo run --release --example labels -- target/scratch/chebi255.tsv  # H61: метки вложенности; рёбра — tools/onto_stats.py edges chebi 255
 AGL_SIM_SEEDS=20000 cargo test --release --test nesting  # `nesting` против двух правил: отчёты побайтно
+python3 tools/onto_stats.py probe wordnet 2025 lazy > target/scratch/wn.agl && cargo run --release -- target/scratch/wn.agl  # WordNet в ядре (H61, 2б)
 cargo run --release --example analogy      # прототип H51: недостающая реакция по аналогии
 cargo run --release --example bombelli     # веха Джанибекова, шаг 0: аномалия → плоскость пар (AGL_TRACE=1 — ход)
 cargo run --release --example cauchy       # H57 шаг 2: присоединение корня, выбор X² = s по аномалии

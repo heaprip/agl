@@ -148,3 +148,119 @@ fn nesting_equals_its_rules_on_kinship() {
         .replace(anc2, "\n");
     same(&rules, &nesting, "kinship");
 }
+
+/// A program where only rule bodies read `n` (step 2b): no queries, forbids
+/// or denials of `n`. Edges are facts, except on some seeds, where a rule
+/// derives them and the nesting must fall back to being whole.
+fn lazy_program(seed: u64, closure: &str) -> String {
+    let mut rng = Rng::new(seed);
+    let k = 2 + rng.below(9);
+    let node = |rng: &mut Rng| format!("v{}", rng.below(k));
+    let mut s = String::from(
+        "status hi > mid > lo\naxis w\nvalue w p\nvalue w q\nplane pp = w:p\nplane qq = w:q\n",
+    );
+    s += closure;
+    s += "\n";
+    let planes = ["@", "@ w:p", "@ w:q"];
+    let statuses = ["hi", "mid", "lo"];
+    for i in 0..rng.below(16) {
+        let (a, b) = (node(&mut rng), node(&mut rng));
+        let neg = if rng.chance(1, 8) { "¬" } else { "" };
+        let plane = rng.pick(&planes);
+        let status = rng.pick(&statuses);
+        s += &format!("fact e{i}: {neg}e(x: {a}, y: {b}) {plane} [{status}]\n");
+    }
+    for i in 0..rng.below(3) {
+        let (a, b) = (node(&mut rng), node(&mut rng));
+        let extra = if rng.chance(1, 3) { ", via: w1" } else { "" };
+        s += &format!("fact g{i}: n(a: {a}, b: {b}{extra}) @ [mid]\n");
+    }
+    if rng.chance(1, 4) {
+        s += "fact f0: f(x: v0, y: v1) @ [lo]\nrule fe defeasible @: e(x: ?a, y: ?b) <- f(x: ?a, y: ?b)\n";
+    }
+    let (v, w) = (node(&mut rng), node(&mut rng));
+    s += &format!("rule up strict @: top(x: ?a) <- n(a: ?a, b: {v})\n");
+    s += &format!("rule down defeasible @ w:p: low(x: ?b) <- n(a: {w}, b: ?b)\n");
+    s += &format!("rule both strict @: pair(x: ?a) <- n(a: ?a, b: {v}), n(a: {w}, b: ?a)\n");
+    if rng.chance(1, 2) {
+        s += "rule self strict @: loop(x: ?a) <- n(a: ?a, b: ?a)\nforbid loop(x: ?a) @\n";
+    }
+    if rng.chance(1, 3) {
+        s += "rule via strict @: routed(x: ?a) <- n(a: ?a, b: ?b, via: w1)\n";
+    }
+    if rng.chance(1, 4) {
+        s += "rule all strict @: linked(x: ?a, y: ?b) <- n(a: ?a, b: ?b)\n";
+    }
+    for _ in 0..3 {
+        let a = node(&mut rng);
+        let plane = rng.pick(&["pp", "qq", ""]);
+        s += &format!("query top(x: {a}) @ {plane}\nquery pair(x: {a}) @ {plane}\n");
+    }
+    s
+}
+
+/// Closures of the lazy program: every atom made equals the whole version's,
+/// and every atom other than `n` is the same in both. Returns the atoms of
+/// `n` derived, lazy and whole.
+fn lazy_matches_whole(lazy: &str, whole: &str, what: &str) -> (usize, usize) {
+    let (pl, pw) = (agl::parse(lazy).unwrap(), agl::parse(whole).unwrap());
+    let mut planes: Vec<Plane> = vec![Plane::new()];
+    planes.extend(pw.planes.values().cloned());
+    let (mut made, mut all) = (0, 0);
+    for p in planes {
+        let (ol, ow) = (evaluate(&pl, &p), evaluate(&pw, &p));
+        let show = |ds: &Vec<agl::eval::Derivation>| {
+            let mut v: Vec<String> = ds
+                .iter()
+                .map(|d| format!("{} {} {} {:?}", d.source, d.strict, d.rank, d.premises))
+                .collect();
+            v.sort();
+            v
+        };
+        for (k, (a, ds)) in &ow.db {
+            match ol.db.get(k) {
+                // A given atom of `n` no rule asked for keeps only its fact.
+                Some((_, dl)) if a.rel == "n" && dl.iter().all(|d| d.is_fact) => {}
+                Some((_, dl)) => assert_eq!(show(dl), show(ds), "{what}: {k} in {p:?}"),
+                None => assert_eq!(a.rel, "n", "{what}: {k} missing in {p:?}"),
+            }
+        }
+        assert!(
+            ol.db.keys().all(|k| ow.db.contains_key(k)),
+            "{what}: extra atom in {p:?}"
+        );
+        assert_eq!(
+            ol.conflicts.keys().collect::<Vec<_>>(),
+            ow.conflicts.keys().collect::<Vec<_>>(),
+            "{what}"
+        );
+        assert_eq!(ol.errors, ow.errors, "{what}");
+        made += ol
+            .db
+            .values()
+            .filter(|(a, ds)| a.rel == "n" && ds.iter().any(|d| !d.is_fact))
+            .count();
+        all += ow.db.values().filter(|(a, _)| a.rel == "n").count();
+    }
+    (made, all)
+}
+
+#[test]
+fn lazy_nesting_equals_whole_where_only_rules_read_it() {
+    let (mut made, mut all, mut runs) = (0, 0, 0);
+    for seed in seeds() {
+        let lazy = lazy_program(seed, "nesting nt: n(a, b) by e(x, y) lazy\n");
+        let whole = lazy_program(seed, NESTING);
+        assert_eq!(
+            agl::render(&agl::run(&agl::parse(&lazy).unwrap())),
+            agl::render(&agl::run(&agl::parse(&whole).unwrap())),
+            "seed {seed}: reports differ"
+        );
+        let (m, a) = lazy_matches_whole(&lazy, &whole, &format!("seed {seed}"));
+        made += m;
+        all += a;
+        runs += 1;
+    }
+    eprintln!("lazy: {made} atoms of n made against {all} whole, {runs} programs");
+    assert!(made < all, "laziness never saved an atom");
+}

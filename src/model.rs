@@ -374,6 +374,9 @@ pub struct Nesting {
     pub edge: String,
     /// (species role, genus role) of E
     pub edge_roles: (String, String),
+    /// `... lazy`: atoms of N are made only when a rule body asks for them
+    /// (H61, step 2b), if nothing else reads N; see `eval`.
+    pub lazy: bool,
     pub line: usize,
 }
 

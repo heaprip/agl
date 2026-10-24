@@ -296,7 +296,11 @@ fn parse_statement(prog: &mut Program, u: &Units, stmt: &str) -> Result<(), Stri
             });
         }
         "nesting" => {
-            let bad = "expected `nesting ID: N(a, b) by E(x, y)`";
+            let bad = "expected `nesting ID: N(a, b) by E(x, y) [lazy]`";
+            let (rest, lazy) = match rest.strip_suffix("lazy") {
+                Some(r) if r.ends_with(char::is_whitespace) => (r.trim_end(), true),
+                _ => (rest, false),
+            };
             let (id, rest) = rest.split_once(':').ok_or(bad)?;
             let (n, e) = rest.split_once(" by ").ok_or(bad)?;
             let pair = |s: &str| -> Result<(String, (String, String)), String> {
@@ -319,6 +323,7 @@ fn parse_statement(prog: &mut Program, u: &Units, stmt: &str) -> Result<(), Stri
                 roles,
                 edge,
                 edge_roles,
+                lazy,
                 line: 0,
             };
             prog.rules.extend(nest.rules());
