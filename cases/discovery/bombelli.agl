@@ -1,0 +1,53 @@
+# Бомбелли, 1572: x³ = 15x + 4. Корень 4 — обычное число, но формула
+# Кардано ведёт к нему через √−121. Начало вехи Джанибекова (H53, H54).
+#
+# Без пар формула неприменима — несбывшееся ожидание. В плоскости пар число —
+# пара (re, im) с правилом умножения (Гамильтон, 1837); правило объявлено
+# здесь, ядро о комплексных числах не знает (решение 23). Кандидатов в
+# кубические корни добавляет генератор: examples/bombelli.rs.
+
+axis repr
+value repr real
+value repr pairs
+
+plane pairs = repr:pairs
+
+fact eq: cubic(eq: bombelli, p: 15, q: 4) @ [textbook]
+fact r4: candidate_root(eq: bombelli, x: 4) @ [textbook]
+
+# Корень проверяется подстановкой.
+rule sat strict @: satisfies(eq: ?e, x: ?x) <-
+    cubic(eq: ?e, p: ?p, q: ?q), candidate_root(eq: ?e, x: ?x), ?x^3 = ?p * ?x + ?q
+
+# Кардано: x = ∛(q/2 + √D) + ∛(q/2 − √D), D = q²/4 − p³/27.
+rule disc strict @: radicand(eq: ?e, value: ?d) <-
+    cubic(eq: ?e, p: ?p, q: ?q), ?d = ?q^2 / 4 - ?p^3 / 27
+rule real strict @: formula_applies(eq: ?e) <- radicand(eq: ?e, value: ?d), ?d >= 0
+
+# Пары. √D при D < 0 — пара (0, √−D): так Бомбелли считал «più di meno».
+rule tplus strict @ pairs: cube_target(eq: ?e, sign: plus, re: ?r, im: ?i) <-
+    cubic(eq: ?e, q: ?q), radicand(eq: ?e, value: ?d), ?d < 0,
+    ?r = ?q / 2, ?i = (0 - ?d)^0.5
+rule tminus strict @ pairs: cube_target(eq: ?e, sign: minus, re: ?r, im: ?i) <-
+    cubic(eq: ?e, q: ?q), radicand(eq: ?e, value: ?d), ?d < 0,
+    ?r = ?q / 2, ?i = 0 - (0 - ?d)^0.5
+
+# (a + bi)³ по правилу умножения пар: (a, b)(c, d) = (ac − bd, ad + bc).
+rule sq strict @ pairs: square(re: ?a, im: ?b, sre: ?r, sim: ?i) <-
+    pair(re: ?a, im: ?b), ?r = ?a * ?a - ?b * ?b, ?i = 2 * ?a * ?b
+rule cu strict @ pairs: cube(re: ?a, im: ?b, cre: ?r, cim: ?i) <-
+    square(re: ?a, im: ?b, sre: ?s, sim: ?t), ?r = ?s * ?a - ?t * ?b, ?i = ?s * ?b + ?t * ?a
+rule root strict @ pairs: cube_root(eq: ?e, sign: ?g, re: ?a, im: ?b) <-
+    cube(re: ?a, im: ?b, cre: ?r, cim: ?i), cube_target(eq: ?e, sign: ?g, re: ?r, im: ?i)
+
+# Сумма корней-пар; мнимая часть должна исчезнуть.
+rule sum strict @ pairs: cardano_value(eq: ?e, re: ?r, im: ?i) <-
+    cube_root(eq: ?e, sign: plus, re: ?a, im: ?b), cube_root(eq: ?e, sign: minus, re: ?c, im: ?d),
+    ?r = ?a + ?c, ?i = ?b + ?d
+rule back strict @ pairs: cardano_real(eq: ?e, x: ?r) <- cardano_value(eq: ?e, re: ?r, im: ?i), ?i = 0
+rule agree strict @ pairs: cardano_correct(eq: ?e, x: ?x) <-
+    cardano_real(eq: ?e, x: ?x), satisfies(eq: ?e, x: ?x)
+
+query satisfies(eq: bombelli, x: 4) @ expect yes
+query formula_applies(eq: bombelli) @ expect yes
+query cardano_correct(eq: bombelli, x: 4) @ pairs expect yes

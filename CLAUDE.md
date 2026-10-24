@@ -10,7 +10,7 @@ Relation-first формальная система представления с
 
 1. [docs/roadmap.md](docs/roadmap.md) — где мы и что дальше (раздел «Следующие шаги»).
 2. [docs/decisions.md](docs/decisions.md) — решения автора (1–22). Их не пересматривать.
-3. [docs/hypotheses.md](docs/hypotheses.md) — предложения помощника (H0–H54), **не приняты**.
+3. [docs/hypotheses.md](docs/hypotheses.md) — предложения помощника (H0–H56), **не приняты**.
 4. [docs/open-questions.md](docs/open-questions.md) — что решает только автор.
 5. [docs/impl/poc.md](docs/impl/poc.md) — нотация `.agl`, семантика ядра, детерминизм, рефлексия, обучение.
 
@@ -64,6 +64,7 @@ python3 tools/llm_dsl.py run 3              # LLM пишет .agl; вызовы 
 uv run --python 3.11 --with memote==0.17.0 --with cobra==0.32.1 tools/memote_ref.py build  # казусы memote
 python3 tools/trunk.py build               # ствол и классы ChEBI из data/raw (офлайн); fetch, fetch-classes — из сети
 cargo run --release --example analogy      # прототип H51: недостающая реакция по аналогии
+cargo run --release --example bombelli     # веха Джанибекова, шаг 0: аномалия → плоскость пар (AGL_TRACE=1 — ход)
 ```
 
 ## LLM через RouterAI
