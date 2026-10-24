@@ -26,7 +26,11 @@ fn main() {
         let total: usize = by.values().map(|v| v.0).sum();
         let mut rows: Vec<_> = by.into_iter().collect();
         rows.sort_by(|a, b| b.1.0.cmp(&a.1.0).then(a.0.cmp(b.0)));
-        println!("== {path}: {total} atoms, {} facts, {} rules", prog.facts.len(), prog.rules.len());
+        println!(
+            "== {path}: {total} atoms, {} facts, {} rules",
+            prog.facts.len(),
+            prog.rules.len()
+        );
         for (rel, (n, d, p)) in rows.iter().take(8) {
             println!("  {rel:24} {n:7} atoms {d:7} derivations {p:8} premises");
         }

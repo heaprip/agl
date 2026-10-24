@@ -5,6 +5,9 @@ should be designed (docs/hypotheses.md, H61).
     tools/onto_stats.py fetch   download pinned releases of ChEBI-lite and Open English
                                 WordNet into data/onto/raw/ and write data/onto/MANIFEST
     tools/onto_stats.py stats   offline: check MANIFEST, print the measurements
+    tools/onto_stats.py edges FAMILY RELEASE
+                                offline: print is_a edges as "species<TAB>genus" lines,
+                                sorted (input of examples/labels.rs)
 
 What is measured, as distributions (percentiles), not means:
   - parents per term (is_a), and roles per term (has_role: a second axis);
@@ -328,11 +331,19 @@ def stats():
             compare(f"{family} {a}", b, *shapes[a], *shapes[b])
 
 
+def edges(family, rel):
+    verified()
+    out = sorted((t, p) for t, (ps, _) in load(family, rel).items() for p in ps)
+    sys.stdout.write("".join(f"{t}\t{p}\n" for t, p in out))
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd == "fetch":
         fetch()
     elif cmd == "stats":
         stats()
+    elif cmd == "edges":
+        edges(sys.argv[2], sys.argv[3])
     else:
         print(__doc__)

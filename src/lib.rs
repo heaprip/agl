@@ -10,6 +10,7 @@ pub mod check;
 pub mod concept;
 pub mod eval;
 pub mod extent;
+pub mod label;
 pub mod learn;
 pub mod lint;
 pub mod model;
