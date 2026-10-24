@@ -1136,10 +1136,11 @@ fn eval_expr(e: &Expr, b: &Binding) -> Result<Term, EvalErr> {
             let (Term::Num(x, dx), Term::Num(y, dy)) = (&lv, &rv) else {
                 return Err(EvalErr::NotNumber(format!("{lv} {op} {rv}")));
             };
-            let (x, y, dx, dy) = (*x, *y, *dx, *dy);
+            let (x, y) = (*x, *y);
+            let overflow = || EvalErr::Dim("dimension exponent overflow".into());
             let same = |what: &str| {
                 if dx == dy {
-                    Ok(dx)
+                    Ok(dx.clone())
                 } else {
                     Err(EvalErr::Dim(format!("{what} [{dx}] and [{dy}]")))
                 }
@@ -1147,8 +1148,8 @@ fn eval_expr(e: &Expr, b: &Binding) -> Result<Term, EvalErr> {
             let (v, d) = match op {
                 '+' => (x + y, same("adding")?),
                 '-' => (x - y, same("subtracting")?),
-                '*' => (x * y, dx.times(dy)),
-                '/' if y != 0.0 => (x / y, dx.per(dy)),
+                '*' => (x * y, dx.times(dy).ok_or_else(overflow)?),
+                '/' if y != 0.0 => (x / y, dx.per(dy).ok_or_else(overflow)?),
                 '/' => return Err(EvalErr::NotNumber("division by zero".into())),
                 '^' if !dy.is_none() => {
                     return Err(EvalErr::Dim(format!("exponent with dimension [{dy}]")));
@@ -1156,9 +1157,7 @@ fn eval_expr(e: &Expr, b: &Binding) -> Result<Term, EvalErr> {
                 // Integer powers stay bit-identical across platforms; `powf` goes through libm.
                 '^' if y.fract() == 0.0 && y.abs() <= 64.0 => {
                     let n = y as i32;
-                    let d = dx
-                        .pow(n)
-                        .ok_or_else(|| EvalErr::Dim("dimension exponent overflow".into()))?;
+                    let d = dx.pow(n).ok_or_else(overflow)?;
                     (x.powi(n), d)
                 }
                 '^' if dx.is_none() => (x.powf(y), Dim::NONE),

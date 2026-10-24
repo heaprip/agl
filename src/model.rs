@@ -383,4 +383,6 @@ pub struct Program {
     /// `cover female(person) | male(person)`: every individual is in one of
     /// the alternatives. Used only when concepts are compared.
     pub covers: Vec<Vec<(String, String)>>,
+    /// Declared quantities and units (decision 23).
+    pub units: crate::units::Units,
 }

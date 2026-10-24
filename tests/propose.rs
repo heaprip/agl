@@ -3,7 +3,7 @@
 use agl::propose::{Op, apply, propose};
 
 fn load(path: &str) -> agl::model::Program {
-    agl::parse(&std::fs::read_to_string(path).unwrap()).unwrap()
+    agl::parse::parse_file(std::path::Path::new(path)).unwrap()
 }
 
 #[test]

@@ -121,7 +121,7 @@ fn main() -> ExitCode {
             print!("{}", agl::concept::report(&prog));
         }
         if let Some(src) = &where_ {
-            match agl::parse::parse_atom(src) {
+            match agl::parse::parse_atom_in(src, &prog.units) {
                 Ok(pat) => {
                     let (exts, complete) = agl::extent::extents(&prog, &pat);
                     print!("{}", agl::extent::render_extents(&exts, complete));

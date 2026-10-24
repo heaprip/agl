@@ -35,3 +35,6 @@ query agrees(quantity: a_moon) @ phys + precision:fine   expect no
 query agrees(quantity: a_moon) @ phys                    expect unknown
 query fall(object: apple1, toward: earth) @ phys         expect unknown
 query fall(object: apple1, toward: earth) @ narr         expect yes
+
+# Единицы — в конце, чтобы номера строк файла не сдвигались.
+include lib/si.agl

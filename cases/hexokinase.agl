@@ -113,3 +113,6 @@ rule rev strict @ biochem: ¬irreversible(reaction: ?r) <- dG(reaction: ?r, valu
 query irreversible(reaction: hk_bio) @ biochem + cond:cell     expect yes
 query irreversible(reaction: hk_bio) @ biochem + cond:standard expect no
 query irreversible(reaction: hk_bio) @ biochem                 expect unknown
+
+# Единицы — в конце, чтобы номера строк файла не сдвигались.
+include lib/si.agl

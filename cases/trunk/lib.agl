@@ -52,3 +52,6 @@ fact st10: step(pathway: glycolysis, reaction: RHEA_18157, direction: reverse, t
 # Тождество классов: вещество входит в свой класс и в классы-предки по is_a из ChEBI.
 rule mem_self strict @: member(species: ?y, of: ?y) <- participates(species: ?y)
 rule mem_isa strict @: member(species: ?y, of: ?q) <- is_a(species: ?y, parent: ?p), member(species: ?p, of: ?q)
+
+# Единицы — в конце, чтобы номера строк файла не сдвигались.
+include ../lib/si.agl

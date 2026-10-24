@@ -1,0 +1,36 @@
+# Величины и единицы СИ. Ядро их не знает (решение 23): здесь объявлено,
+# какие величины базовые и как называются единицы. Подключается казусами,
+# где числа с единицами.
+
+quantity length m
+quantity mass kg
+quantity duration s
+quantity current A
+quantity temperature K
+quantity amount mol
+quantity luminosity cd
+
+unit g = 1e-3 kg
+unit mg = 1e-6 kg
+unit km = 1e3 m
+unit cm = 1e-2 m
+unit mm = 1e-3 m
+unit um = 1e-6 m
+unit nm = 1e-9 m
+unit L = 1e-3 m^3
+unit mL = 1e-6 m^3
+unit dL = 1e-4 m^3
+unit mmol = 1e-3 mol
+unit M = 1e3 m^-3 mol
+unit mM = m^-3 mol
+unit min = 60 s
+unit h = 3600 s
+unit day = 86400 s
+unit N = m kg s^-2
+unit J = m^2 kg s^-2
+unit kJ = 1e3 m^2 kg s^-2
+unit W = m^2 kg s^-3
+unit Pa = m^-1 kg s^-2
+unit kPa = 1e3 m^-1 kg s^-2
+unit atm = 101325 m^-1 kg s^-2
+unit mmHg = 133.322387415 m^-1 kg s^-2

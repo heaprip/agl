@@ -222,7 +222,8 @@ fact o2: available(species: o2) @ oxygen:present
 query available(species: o2) @ situate c expect unknown
 query available(species: o2) @ oxygen:present expect yes
 ";
-    let report = agl::run(&agl::parse(src).unwrap());
+    let si = include_str!("../cases/lib/si.agl");
+    let report = agl::run(&agl::parse(&format!("{si}{src}")).unwrap());
     assert!(report.failed_queries().next().is_none());
     let q = &report.queries[0];
     assert_eq!(agl::model::plane_to_string(&q.plane), "{oxygen:absent}");

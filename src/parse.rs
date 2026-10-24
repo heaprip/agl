@@ -23,7 +23,7 @@
 //! A statement continues on the next line while it ends with `,` or `<-`.
 
 use crate::model::*;
-use crate::units::{Dim, parse_unit};
+use crate::units::{Dim, Units};
 
 /// Reads a file, expanding `include PATH` lines (relative to the including
 /// file) in place, and parses the result. Line numbers in errors refer to the
@@ -60,7 +60,28 @@ fn expand(path: &std::path::Path, stack: &mut Vec<std::path::PathBuf>) -> Result
 
 pub fn parse(src: &str) -> Result<Program, String> {
     let mut prog = Program::default();
-    for (line_no, stmt) in statements(src) {
+    let stmts = statements(src);
+    // Units first: numbers anywhere in the program may use them.
+    let (mut quantities, mut units) = (Vec::new(), Vec::new());
+    for (line_no, stmt) in &stmts {
+        let (kw, rest) = stmt.split_once(char::is_whitespace).unwrap_or((stmt, ""));
+        let err = |m: &str| format!("line {line_no}: {m}");
+        match kw {
+            "quantity" => match rest.split_whitespace().collect::<Vec<_>>().as_slice() {
+                [q, sym] => quantities.push((ident(q)?.to_string(), sym.to_string())),
+                _ => return Err(err("expected `quantity NAME UNIT`")),
+            },
+            "unit" => match rest.split_once('=') {
+                Some((sym, def)) if !sym.trim().is_empty() => {
+                    units.push((sym.trim().to_string(), def.trim().to_string()))
+                }
+                _ => return Err(err("expected `unit SYMBOL = [SCALE] UNIT`")),
+            },
+            _ => {}
+        }
+    }
+    let u = Units::declare(&quantities, &units)?;
+    for (line_no, stmt) in stmts {
         let (nf, nr, nq, nu, nb) = (
             prog.facts.len(),
             prog.rules.len(),
@@ -69,7 +90,7 @@ pub fn parse(src: &str) -> Result<Program, String> {
             prog.forbids.len(),
         );
         let (nc, nw, nm) = (prog.concepts.len(), prog.words.len(), prog.compares.len());
-        parse_statement(&mut prog, &stmt).map_err(|e| format!("line {line_no}: {e}"))?;
+        parse_statement(&mut prog, &u, &stmt).map_err(|e| format!("line {line_no}: {e}"))?;
         prog.facts[nf..].iter_mut().for_each(|f| f.line = line_no);
         prog.rules[nr..].iter_mut().for_each(|r| r.line = line_no);
         prog.queries[nq..].iter_mut().for_each(|q| q.line = line_no);
@@ -84,6 +105,7 @@ pub fn parse(src: &str) -> Result<Program, String> {
             .for_each(|c| c.line = line_no);
     }
     compile_concepts(&mut prog);
+    prog.units = u;
     Ok(prog)
 }
 
@@ -149,10 +171,11 @@ fn statements(src: &str) -> Vec<(usize, String)> {
     out
 }
 
-fn parse_statement(prog: &mut Program, stmt: &str) -> Result<(), String> {
+fn parse_statement(prog: &mut Program, u: &Units, stmt: &str) -> Result<(), String> {
     let (kw, rest) = stmt.split_once(char::is_whitespace).unwrap_or((stmt, ""));
     let rest = rest.trim();
     match kw {
+        "quantity" | "unit" => {}
         "axis" => prog.axes.declare_axis(ident(rest)?),
         "value" => {
             let parts: Vec<&str> = rest.split_whitespace().collect();
@@ -228,7 +251,7 @@ fn parse_statement(prog: &mut Program, stmt: &str) -> Result<(), String> {
                 ),
                 None => (spec, "given".to_string()),
             };
-            let atom = parse_atom(lit.trim())?;
+            let atom = parse_atom_in(lit.trim(), u)?;
             let plane = parse_spec(prog, spec)?;
             prog.facts.push(Fact {
                 id: ident(id.trim())?.to_string(),
@@ -249,10 +272,10 @@ fn parse_statement(prog: &mut Program, stmt: &str) -> Result<(), String> {
                 Some("defeasible") => Strength::Defeasible,
                 other => return Err(format!("expected `strict` or `defeasible`, got {other:?}")),
             };
-            let head = parse_atom(head.trim())?;
+            let head = parse_atom_in(head.trim(), u)?;
             let body = split_top(body, ',')
                 .into_iter()
-                .map(|l| parse_lit(l.trim()))
+                .map(|l| parse_lit(l.trim(), u))
                 .collect::<Result<Vec<_>, _>>()?;
             let plane = parse_spec(prog, spec)?;
             prog.rules.push(Rule {
@@ -276,7 +299,7 @@ fn parse_statement(prog: &mut Program, stmt: &str) -> Result<(), String> {
         }
         "forbid" => {
             let (lit, spec) = split_at_plane(rest)?;
-            let atom = parse_atom(lit.trim())?;
+            let atom = parse_atom_in(lit.trim(), u)?;
             let plane = parse_spec(prog, spec)?;
             prog.forbids.push(Forbid {
                 atom,
@@ -345,7 +368,7 @@ fn parse_statement(prog: &mut Program, stmt: &str) -> Result<(), String> {
             };
             let spec = words.join(" ");
             let spec = spec.as_str();
-            let atom = parse_atom(lit.trim())?;
+            let atom = parse_atom_in(lit.trim(), u)?;
             let plane = parse_spec(prog, spec)?;
             prog.queries.push(Query {
                 atom,
@@ -359,7 +382,7 @@ fn parse_statement(prog: &mut Program, stmt: &str) -> Result<(), String> {
         "concept" => {
             let (head_part, body) = split_rule_head(rest)?;
             let (head, spec) = split_at_plane(head_part)?;
-            let head = parse_atom(head)?;
+            let head = parse_atom_in(head, u)?;
             if head.neg {
                 return Err("a concept head is positive".into());
             }
@@ -372,7 +395,7 @@ fn parse_statement(prog: &mut Program, stmt: &str) -> Result<(), String> {
             }
             let body = split_top(body, ',')
                 .into_iter()
-                .map(|l| parse_lit(l.trim()))
+                .map(|l| parse_lit(l.trim(), u))
                 .collect::<Result<Vec<_>, _>>()?;
             for lit in &body {
                 let ok = match lit {
@@ -565,11 +588,11 @@ fn is_atom_syntax(s: &str) -> bool {
     name_len > 0 && s[name_len..].starts_with('(')
 }
 
-fn parse_lit(s: &str) -> Result<Lit, String> {
+fn parse_lit(s: &str, u: &Units) -> Result<Lit, String> {
     if is_atom_syntax(s) {
-        return Ok(Lit::Atom(parse_atom(s)?));
+        return Ok(Lit::Atom(parse_atom_in(s, u)?));
     }
-    if let Some(agg) = parse_agg(s)? {
+    if let Some(agg) = parse_agg(s, u)? {
         return Ok(agg);
     }
     for (tok, op) in [
@@ -581,8 +604,8 @@ fn parse_lit(s: &str) -> Result<Lit, String> {
         ("=", CmpOp::Eq),
     ] {
         if let Some(p) = s.find(tok) {
-            let l = parse_expr(&s[..p])?;
-            let r = parse_expr(&s[p + tok.len()..])?;
+            let l = parse_expr(&s[..p], u)?;
+            let r = parse_expr(&s[p + tok.len()..], u)?;
             return Ok(Lit::Cmp(l, op, r));
         }
     }
@@ -590,7 +613,7 @@ fn parse_lit(s: &str) -> Result<Lit, String> {
 }
 
 /// `?v = sum(EXPR) over (ATOM, ATOM)`; also `count`, `min`, `max`.
-fn parse_agg(s: &str) -> Result<Option<Lit>, String> {
+fn parse_agg(s: &str, u: &Units) -> Result<Option<Lit>, String> {
     let Some((lhs, rhs)) = s.split_once('=') else {
         return Ok(None);
     };
@@ -627,7 +650,7 @@ fn parse_agg(s: &str) -> Result<Option<Lit>, String> {
         }
     }
     let end = end.ok_or("unbalanced parentheses in aggregate")?;
-    let expr = parse_expr(&rhs[inner_start..end])?;
+    let expr = parse_expr(&rhs[inner_start..end], u)?;
     let rest = rhs[end + 1..].trim_start();
     let list = rest
         .strip_prefix("over")
@@ -639,7 +662,7 @@ fn parse_agg(s: &str) -> Result<Option<Lit>, String> {
         .ok_or("expected `over (ATOMS)`")?;
     let over = split_top(list, ',')
         .into_iter()
-        .map(|a| parse_atom(a.trim()))
+        .map(|a| parse_atom_in(a.trim(), u))
         .collect::<Result<Vec<_>, _>>()?;
     Ok(Some(Lit::Agg {
         var: ident(var)?.to_string(),
@@ -649,7 +672,12 @@ fn parse_agg(s: &str) -> Result<Option<Lit>, String> {
     }))
 }
 
+/// An atom with numbers in plain form only; `parse_atom_in` reads units.
 pub fn parse_atom(s: &str) -> Result<Atom, String> {
+    parse_atom_in(s, &Units::default())
+}
+
+pub fn parse_atom_in(s: &str, u: &Units) -> Result<Atom, String> {
     let (neg, s) = match s.strip_prefix('¬').or_else(|| s.strip_prefix('~')) {
         Some(rest) => (true, rest.trim_start()),
         None => (false, s),
@@ -666,12 +694,12 @@ pub fn parse_atom(s: &str) -> Result<Atom, String> {
         let (role, term) = arg
             .split_once(':')
             .ok_or_else(|| format!("expected `role: term` in `{arg}`"))?;
-        out.push((ident(role.trim())?.to_string(), parse_term(term.trim())?));
+        out.push((ident(role.trim())?.to_string(), parse_term(term.trim(), u)?));
     }
     Ok(Atom::new(ident(rel.trim())?.to_string(), out, neg))
 }
 
-fn parse_term(s: &str) -> Result<Term, String> {
+fn parse_term(s: &str, u: &Units) -> Result<Term, String> {
     if let Some(v) = s.strip_prefix('?') {
         return Ok(Term::Var(ident(v)?.to_string()));
     }
@@ -683,7 +711,7 @@ fn parse_term(s: &str) -> Result<Term, String> {
         let unit = unit
             .strip_suffix(']')
             .ok_or_else(|| format!("missing `]` in `{s}`"))?;
-        let (scale, dim) = parse_unit(unit)?;
+        let (scale, dim) = u.parse_unit(unit)?;
         return Ok(Term::Num(n * scale, dim));
     }
     if let Ok(n) = s.parse::<f64>() {
@@ -692,10 +720,10 @@ fn parse_term(s: &str) -> Result<Term, String> {
     Ok(Term::Sym(ident(s)?.to_string()))
 }
 
-fn parse_expr(s: &str) -> Result<Expr, String> {
+fn parse_expr(s: &str, u: &Units) -> Result<Expr, String> {
     let tokens = tokenize(s)?;
     let mut pos = 0;
-    let e = expr(&tokens, &mut pos)?;
+    let e = expr(&tokens, &mut pos, u)?;
     if pos != tokens.len() {
         return Err(format!("trailing input in expression `{s}`"));
     }
@@ -743,41 +771,41 @@ fn tokenize(s: &str) -> Result<Vec<String>, String> {
     Ok(out)
 }
 
-fn expr(t: &[String], pos: &mut usize) -> Result<Expr, String> {
-    let mut lhs = term(t, pos)?;
+fn expr(t: &[String], pos: &mut usize, u: &Units) -> Result<Expr, String> {
+    let mut lhs = term(t, pos, u)?;
     while *pos < t.len() && (t[*pos] == "+" || t[*pos] == "-") {
         let op = t[*pos].chars().next().unwrap();
         *pos += 1;
-        lhs = Expr::Bin(Box::new(lhs), op, Box::new(term(t, pos)?));
+        lhs = Expr::Bin(Box::new(lhs), op, Box::new(term(t, pos, u)?));
     }
     Ok(lhs)
 }
 
-fn term(t: &[String], pos: &mut usize) -> Result<Expr, String> {
-    let mut lhs = factor(t, pos)?;
+fn term(t: &[String], pos: &mut usize, u: &Units) -> Result<Expr, String> {
+    let mut lhs = factor(t, pos, u)?;
     while *pos < t.len() && (t[*pos] == "*" || t[*pos] == "/") {
         let op = t[*pos].chars().next().unwrap();
         *pos += 1;
-        lhs = Expr::Bin(Box::new(lhs), op, Box::new(factor(t, pos)?));
+        lhs = Expr::Bin(Box::new(lhs), op, Box::new(factor(t, pos, u)?));
     }
     Ok(lhs)
 }
 
-fn factor(t: &[String], pos: &mut usize) -> Result<Expr, String> {
-    let base = primary(t, pos)?;
+fn factor(t: &[String], pos: &mut usize, u: &Units) -> Result<Expr, String> {
+    let base = primary(t, pos, u)?;
     if *pos < t.len() && t[*pos] == "^" {
         *pos += 1;
-        return Ok(Expr::Bin(Box::new(base), '^', Box::new(factor(t, pos)?)));
+        return Ok(Expr::Bin(Box::new(base), '^', Box::new(factor(t, pos, u)?)));
     }
     Ok(base)
 }
 
-fn primary(t: &[String], pos: &mut usize) -> Result<Expr, String> {
+fn primary(t: &[String], pos: &mut usize, u: &Units) -> Result<Expr, String> {
     let tok = t.get(*pos).ok_or("unexpected end of expression")?;
     *pos += 1;
     match tok.as_str() {
         "(" => {
-            let e = expr(t, pos)?;
+            let e = expr(t, pos, u)?;
             if t.get(*pos).map(String::as_str) != Some(")") {
                 return Err("missing `)` in expression".into());
             }
@@ -787,8 +815,8 @@ fn primary(t: &[String], pos: &mut usize) -> Result<Expr, String> {
         "-" => Ok(Expr::Bin(
             Box::new(Expr::Term(Term::Num(0.0, Dim::NONE))),
             '-',
-            Box::new(primary(t, pos)?),
+            Box::new(primary(t, pos, u)?),
         )),
-        _ => Ok(Expr::Term(parse_term(tok)?)),
+        _ => Ok(Expr::Term(parse_term(tok, u)?)),
     }
 }

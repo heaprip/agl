@@ -95,7 +95,7 @@ pub fn extents(prog: &Program, pattern: &Atom) -> (Vec<Extent>, bool) {
             }
         }
         for key in out.conflicts.keys() {
-            if let Ok(a) = crate::parse::parse_atom(key)
+            if let Ok(a) = crate::parse::parse_atom_in(key, &prog.units)
                 && matches(&pos, &a)
             {
                 here.insert(a.key(), Holds::Conflict);

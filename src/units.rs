@@ -1,37 +1,59 @@
-//! Physical dimensions: exponents over the seven SI base units, and a small
-//! table of named units with their scale to SI. Values are stored in SI.
+//! Dimensions and units, declared by the program (decision 23). The kernel
+//! knows only the algebra: a dimension is a product of powers of base units,
+//! and a unit is a scale times a dimension. Which quantities are basic and
+//! what the units are called comes from the data:
+//!
+//! ```text
+//! quantity length m
+//! unit km = 1000 m
+//! unit N = kg m/s^2
+//! ```
 
+use std::collections::BTreeMap;
 use std::fmt;
 
-/// Exponents of m, kg, s, A, K, mol, cd.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Dim(pub [i8; 7]);
-
-const BASE: [&str; 7] = ["m", "kg", "s", "A", "K", "mol", "cd"];
+/// Exponents of base units, by base unit symbol; zero exponents are absent.
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Dim(BTreeMap<String, i8>);
 
 impl Dim {
-    pub const NONE: Dim = Dim([0; 7]);
+    pub const NONE: Dim = Dim(BTreeMap::new());
+
+    pub fn base(sym: &str) -> Dim {
+        Dim(BTreeMap::from([(sym.to_string(), 1)]))
+    }
 
     pub fn is_none(&self) -> bool {
-        *self == Dim::NONE
+        self.0.is_empty()
     }
 
-    pub fn times(self, o: Dim) -> Dim {
-        let mut d = self.0;
-        d.iter_mut().zip(o.0).for_each(|(a, b)| *a += b);
-        Dim(d)
+    fn combine(&self, o: &Dim, sign: i8) -> Option<Dim> {
+        let mut d = self.0.clone();
+        for (u, e) in &o.0 {
+            let x = d.entry(u.clone()).or_insert(0);
+            *x = x.checked_add(e.checked_mul(sign)?)?;
+            if *x == 0 {
+                d.remove(u);
+            }
+        }
+        Some(Dim(d))
     }
 
-    pub fn per(self, o: Dim) -> Dim {
-        let mut d = self.0;
-        d.iter_mut().zip(o.0).for_each(|(a, b)| *a -= b);
-        Dim(d)
+    pub fn times(&self, o: &Dim) -> Option<Dim> {
+        self.combine(o, 1)
     }
 
-    pub fn pow(self, n: i32) -> Option<Dim> {
-        let mut d = self.0;
-        for a in &mut d {
-            *a = i8::try_from(i32::from(*a) * n).ok()?;
+    pub fn per(&self, o: &Dim) -> Option<Dim> {
+        self.combine(o, -1)
+    }
+
+    pub fn pow(&self, n: i32) -> Option<Dim> {
+        let mut d = BTreeMap::new();
+        for (u, e) in &self.0 {
+            let x = i8::try_from(i32::from(*e) * n).ok()?;
+            if x != 0 {
+                d.insert(u.clone(), x);
+            }
         }
         Some(Dim(d))
     }
@@ -39,13 +61,12 @@ impl Dim {
 
 impl fmt::Display for Dim {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let parts: Vec<String> = BASE
+        let parts: Vec<String> = self
+            .0
             .iter()
-            .zip(self.0)
-            .filter(|(_, e)| *e != 0)
             .map(|(u, e)| {
-                if e == 1 {
-                    u.to_string()
+                if *e == 1 {
+                    u.clone()
                 } else {
                     format!("{u}^{e}")
                 }
@@ -55,72 +76,105 @@ impl fmt::Display for Dim {
     }
 }
 
-fn d(m: i8, kg: i8, s: i8, a: i8, k: i8, mol: i8) -> Dim {
-    Dim([m, kg, s, a, k, mol, 0])
+/// Declared units: symbol → (scale to the base units, dimension).
+#[derive(Clone, Debug, Default)]
+pub struct Units {
+    /// Base quantity → its base unit symbol.
+    pub quantities: BTreeMap<String, String>,
+    named: BTreeMap<String, (f64, Dim)>,
 }
 
-/// Named units: symbol, scale to SI, dimension.
-fn unit(sym: &str) -> Option<(f64, Dim)> {
-    Some(match sym {
-        "m" => (1.0, d(1, 0, 0, 0, 0, 0)),
-        "kg" => (1.0, d(0, 1, 0, 0, 0, 0)),
-        "s" => (1.0, d(0, 0, 1, 0, 0, 0)),
-        "A" => (1.0, d(0, 0, 0, 1, 0, 0)),
-        "K" => (1.0, d(0, 0, 0, 0, 1, 0)),
-        "mol" => (1.0, d(0, 0, 0, 0, 0, 1)),
-        "cd" => (1.0, Dim([0, 0, 0, 0, 0, 0, 1])),
-        "g" => (1e-3, d(0, 1, 0, 0, 0, 0)),
-        "mg" => (1e-6, d(0, 1, 0, 0, 0, 0)),
-        "km" => (1e3, d(1, 0, 0, 0, 0, 0)),
-        "cm" => (1e-2, d(1, 0, 0, 0, 0, 0)),
-        "mm" => (1e-3, d(1, 0, 0, 0, 0, 0)),
-        "um" => (1e-6, d(1, 0, 0, 0, 0, 0)),
-        "nm" => (1e-9, d(1, 0, 0, 0, 0, 0)),
-        "L" => (1e-3, d(3, 0, 0, 0, 0, 0)),
-        "mL" => (1e-6, d(3, 0, 0, 0, 0, 0)),
-        "dL" => (1e-4, d(3, 0, 0, 0, 0, 0)),
-        "mmol" => (1e-3, d(0, 0, 0, 0, 0, 1)),
-        "M" => (1e3, d(-3, 0, 0, 0, 0, 1)),
-        "mM" => (1.0, d(-3, 0, 0, 0, 0, 1)),
-        "min" => (60.0, d(0, 0, 1, 0, 0, 0)),
-        "h" => (3600.0, d(0, 0, 1, 0, 0, 0)),
-        "day" => (86400.0, d(0, 0, 1, 0, 0, 0)),
-        "N" => (1.0, d(1, 1, -2, 0, 0, 0)),
-        "J" => (1.0, d(2, 1, -2, 0, 0, 0)),
-        "kJ" => (1e3, d(2, 1, -2, 0, 0, 0)),
-        "W" => (1.0, d(2, 1, -3, 0, 0, 0)),
-        "Pa" => (1.0, d(-1, 1, -2, 0, 0, 0)),
-        "kPa" => (1e3, d(-1, 1, -2, 0, 0, 0)),
-        "atm" => (101_325.0, d(-1, 1, -2, 0, 0, 0)),
-        "mmHg" => (133.322_387_415, d(-1, 1, -2, 0, 0, 0)),
-        _ => return None,
-    })
-}
-
-/// Parses a unit expression such as `m/s^2`, `kJ/mol` or `kg m^2 s^-2`.
-/// Juxtaposition and `*` multiply; every factor after `/` divides.
-pub fn parse_unit(src: &str) -> Result<(f64, Dim), String> {
-    let mut scale = 1.0;
-    let mut dim = Dim::NONE;
-    let mut dividing = false;
-    let spaced = src.replace('*', " ").replace('/', " / ");
-    for tok in spaced.split_whitespace() {
-        if tok == "/" {
-            dividing = true;
-            continue;
+impl Units {
+    /// Builds the table from `quantity NAME UNIT` and `unit SYM = [SCALE] EXPR`
+    /// declarations, in any order: a unit may be defined through units
+    /// declared after it.
+    pub fn declare(
+        quantities: &[(String, String)],
+        units: &[(String, String)],
+    ) -> Result<Units, String> {
+        let mut t = Units::default();
+        for (q, sym) in quantities {
+            if let Some(old) = t.quantities.insert(q.clone(), sym.clone())
+                && old != *sym
+            {
+                return Err(format!("quantity `{q}` declared with `{old}` and `{sym}`"));
+            }
+            t.add(sym, 1.0, Dim::base(sym))?;
         }
-        let (sym, exp) = match tok.split_once('^') {
-            Some((s, e)) => (
-                s,
-                e.parse::<i32>()
-                    .map_err(|_| format!("bad exponent in `{tok}`"))?,
-            ),
-            None => (tok, 1),
-        };
-        let (sc, dm) = unit(sym).ok_or_else(|| format!("unknown unit `{sym}`"))?;
-        let exp = if dividing { -exp } else { exp };
-        scale *= sc.powi(exp);
-        dim = dim.times(dm.pow(exp).ok_or("unit exponent overflow")?);
+        let mut pending: Vec<&(String, String)> = units.iter().collect();
+        while !pending.is_empty() {
+            let before = pending.len();
+            let mut still = Vec::new();
+            for u in pending {
+                match t.parse_definition(&u.1) {
+                    Ok((scale, dim)) => t.add(&u.0, scale, dim)?,
+                    Err(_) => still.push(u),
+                }
+            }
+            if still.len() == before {
+                let (sym, def) = still[0];
+                let why = t.parse_definition(def).unwrap_err();
+                return Err(format!("unit `{sym}`: {why}"));
+            }
+            pending = still;
+        }
+        Ok(t)
     }
-    Ok((scale, dim))
+
+    fn add(&mut self, sym: &str, scale: f64, dim: Dim) -> Result<(), String> {
+        match self.named.get(sym) {
+            Some(old) if *old != (scale, dim.clone()) => {
+                Err(format!("unit `{sym}` declared twice differently"))
+            }
+            _ => {
+                self.named.insert(sym.to_string(), (scale, dim));
+                Ok(())
+            }
+        }
+    }
+
+    /// `1000 m`, `kg m/s^2`, `133.3 Pa`: an optional scale, then a unit.
+    fn parse_definition(&self, src: &str) -> Result<(f64, Dim), String> {
+        let src = src.trim();
+        let (first, rest) = src.split_once(char::is_whitespace).unwrap_or((src, ""));
+        let (n, unit) = match first.parse::<f64>() {
+            Ok(n) => (n, rest),
+            Err(_) => (1.0, src),
+        };
+        let (scale, dim) = self.parse_unit(unit)?;
+        Ok((n * scale, dim))
+    }
+
+    /// Parses a unit expression such as `m/s^2`, `kJ/mol` or `kg m^2 s^-2`.
+    /// Juxtaposition and `*` multiply; every factor after `/` divides.
+    pub fn parse_unit(&self, src: &str) -> Result<(f64, Dim), String> {
+        let mut scale = 1.0;
+        let mut dim = Dim::NONE;
+        let mut dividing = false;
+        let spaced = src.replace('*', " ").replace('/', " / ");
+        for tok in spaced.split_whitespace() {
+            if tok == "/" {
+                dividing = true;
+                continue;
+            }
+            let (sym, exp) = match tok.split_once('^') {
+                Some((s, e)) => (
+                    s,
+                    e.parse::<i32>()
+                        .map_err(|_| format!("bad exponent in `{tok}`"))?,
+                ),
+                None => (tok, 1),
+            };
+            let (sc, dm) = self
+                .named
+                .get(sym)
+                .ok_or_else(|| format!("unknown unit `{sym}`"))?;
+            let exp = if dividing { -exp } else { exp };
+            scale *= sc.powi(exp);
+            dim = dim
+                .times(&dm.pow(exp).ok_or("unit exponent overflow")?)
+                .ok_or("unit exponent overflow")?;
+        }
+        Ok((scale, dim))
+    }
 }

@@ -2,6 +2,8 @@
 
 use std::fs;
 
+const SI: &str = include_str!("../cases/lib/si.agl");
+
 #[test]
 fn cases_meet_expectations() {
     let mut paths: Vec<_> = fs::read_dir("cases")
@@ -14,8 +16,8 @@ fn cases_meet_expectations() {
         .iter()
         .filter(|p| p.extension().is_some_and(|e| e == "agl"))
     {
-        let src = fs::read_to_string(path).unwrap();
-        let prog = agl::parse(&src).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+        let prog =
+            agl::parse::parse_file(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
         let report = agl::run(&prog);
         assert!(
             !report.has_errors(),
@@ -88,7 +90,7 @@ fact g: dG(value: -16.7[kJ/mol]) @
 fact t: temperature(value: 310[K]) @
 rule bad strict @: hot(x: ?g) <- dG(value: ?g), temperature(value: ?t), ?g < ?t
 ";
-    let report = agl::run(&agl::parse(src).unwrap());
+    let report = agl::run(&agl::parse(&format!("{SI}{src}")).unwrap());
     assert!(report.has_errors());
     assert!(
         report
@@ -127,6 +129,25 @@ fact a: p(value: 760[mmHg]) @
 fact b: q(value: 1[atm]) @
 rule c strict @: close(x: 1) <- p(value: ?a), q(value: ?b), ((?a - ?b) / ?b)^2 < 0.0001
 query close(x: 1) @ expect yes
+";
+    let report = agl::run(&agl::parse(&format!("{SI}{src}")).unwrap());
+    assert!(!report.has_errors(), "{:?}", report.errors);
+    assert!(report.failed_queries().next().is_none());
+}
+
+/// Decision 23: the kernel knows no units of its own.
+#[test]
+fn units_come_only_from_declarations() {
+    let err = agl::parse("fact a: p(value: 1[m]) @\n").unwrap_err();
+    assert!(err.contains("unknown unit `m`"), "{err}");
+    // Any base quantity will do, and a unit may be defined through a later one.
+    let src = "
+unit lap = 4 stride
+quantity pace stride
+fact a: p(value: 2[lap]) @
+fact b: q(value: 8[stride]) @
+rule c strict @: same(x: 1) <- p(value: ?a), q(value: ?b), ?a = ?b
+query same(x: 1) @ expect yes
 ";
     let report = agl::run(&agl::parse(src).unwrap());
     assert!(!report.has_errors(), "{:?}", report.errors);

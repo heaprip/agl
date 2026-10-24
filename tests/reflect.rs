@@ -76,7 +76,7 @@ fn current_cases_diagnose_only_the_hobbes_collapse_and_keep_it() {
         .iter()
         .filter(|p| p.extension().is_some_and(|e| e == "agl"))
     {
-        let prog = agl::parse(&std::fs::read_to_string(path).unwrap()).unwrap();
+        let prog = agl::parse::parse_file(path).unwrap();
         for d in diagnose(&prog) {
             let kept = d.notes.iter().any(|n| {
                 n.contains("without [collapse] it settles, but expectations on lines 68, 69 fail")
