@@ -96,6 +96,11 @@ pub fn parse(src: &str) -> Result<Program, String> {
         parse_statement(&mut prog, &u, &stmt).map_err(|e| format!("line {line_no}: {e}"))?;
         prog.facts[nf..].iter_mut().for_each(|f| f.line = line_no);
         prog.rules[nr..].iter_mut().for_each(|r| r.line = line_no);
+        if let Some(n) = prog.nestings.last_mut()
+            && n.line == 0
+        {
+            n.line = line_no;
+        }
         prog.queries[nq..].iter_mut().for_each(|q| q.line = line_no);
         prog.uniques[nu..].iter_mut().for_each(|u| u.line = line_no);
         prog.forbids[nb..].iter_mut().for_each(|b| b.line = line_no);
@@ -289,6 +294,35 @@ fn parse_statement(prog: &mut Program, u: &Units, stmt: &str) -> Result<(), Stri
                 plane,
                 line: 0,
             });
+        }
+        "nesting" => {
+            let bad = "expected `nesting ID: N(a, b) by E(x, y)`";
+            let (id, rest) = rest.split_once(':').ok_or(bad)?;
+            let (n, e) = rest.split_once(" by ").ok_or(bad)?;
+            let pair = |s: &str| -> Result<(String, (String, String)), String> {
+                let (name, roles) = s.trim().split_once('(').ok_or(bad)?;
+                let roles = roles.strip_suffix(')').ok_or(bad)?;
+                let (a, b) = roles.split_once(',').ok_or(bad)?;
+                Ok((
+                    ident(name.trim())?.to_string(),
+                    (ident(a.trim())?.to_string(), ident(b.trim())?.to_string()),
+                ))
+            };
+            let (rel, roles) = pair(n)?;
+            let (edge, edge_roles) = pair(e)?;
+            if roles.0 == roles.1 || edge_roles.0 == edge_roles.1 {
+                return Err("nesting roles must differ".into());
+            }
+            let nest = Nesting {
+                id: ident(id.trim())?.to_string(),
+                rel,
+                roles,
+                edge,
+                edge_roles,
+                line: 0,
+            };
+            prog.rules.extend(nest.rules());
+            prog.nestings.push(nest);
         }
         "status" => {
             let names: Vec<&str> = rest.split('>').map(str::trim).collect();

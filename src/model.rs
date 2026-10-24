@@ -361,6 +361,73 @@ pub struct Compare {
     pub line: usize,
 }
 
+/// `nesting ID: N(a, b) by E(x, y)`: N is the transitive closure of E.
+/// Parsing adds the two strict rules `ID_base` and `ID_step` (see
+/// `Nesting::rules`), which every module reads as ordinary rules; evaluation
+/// derives their atoms from labels instead of iterating them (H61).
+#[derive(Clone, Debug)]
+pub struct Nesting {
+    pub id: String,
+    pub rel: String,
+    /// (species role, genus role) of N
+    pub roles: (String, String),
+    pub edge: String,
+    /// (species role, genus role) of E
+    pub edge_roles: (String, String),
+    pub line: usize,
+}
+
+impl Nesting {
+    pub fn base_id(&self) -> String {
+        format!("{}_base", self.id)
+    }
+
+    pub fn step_id(&self) -> String {
+        format!("{}_step", self.id)
+    }
+
+    /// `ID_base: N(a: ?x, b: ?y) <- E(x: ?x, y: ?y)` and
+    /// `ID_step: N(a: ?x, b: ?y) <- E(x: ?x, y: ?z), N(a: ?z, b: ?y)`.
+    pub fn rules(&self) -> [Rule; 2] {
+        let var = |v: &str| Term::Var(v.to_string());
+        let n = |a: &str, b: &str| {
+            Atom::new(
+                self.rel.clone(),
+                vec![
+                    (self.roles.0.clone(), var(a)),
+                    (self.roles.1.clone(), var(b)),
+                ],
+                false,
+            )
+        };
+        let e = |a: &str, b: &str| {
+            Atom::new(
+                self.edge.clone(),
+                vec![
+                    (self.edge_roles.0.clone(), var(a)),
+                    (self.edge_roles.1.clone(), var(b)),
+                ],
+                false,
+            )
+        };
+        let rule = |id: String, body: Vec<Lit>| Rule {
+            id,
+            head: n("x", "y"),
+            body,
+            strength: Strength::Strict,
+            plane: Plane::new(),
+            line: self.line,
+        };
+        [
+            rule(self.base_id(), vec![Lit::Atom(e("x", "y"))]),
+            rule(
+                self.step_id(),
+                vec![Lit::Atom(e("x", "z")), Lit::Atom(n("z", "y"))],
+            ),
+        ]
+    }
+}
+
 #[derive(Clone, Default, Debug)]
 pub struct Program {
     pub axes: Axes,
@@ -385,4 +452,5 @@ pub struct Program {
     pub covers: Vec<Vec<(String, String)>>,
     /// Declared quantities and units (decision 23).
     pub units: crate::units::Units,
+    pub nestings: Vec<Nesting>,
 }

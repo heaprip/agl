@@ -567,19 +567,201 @@ fn closure(
         .collect();
     levels.sort();
     levels.dedup();
+    // A nesting whose two rules are visible is derived from labels, unless
+    // one of its atoms lost a conflict: then its rules run as written.
+    let nests: Vec<&Nesting> = prog
+        .nestings
+        .iter()
+        .filter(|n| {
+            let (b, s) = (n.base_id(), n.step_id());
+            rules.iter().any(|r| r.id == b)
+                && rules.iter().any(|r| r.id == s)
+                && !blocked
+                    .iter()
+                    .any(|k| k.starts_with(&format!("{}(", n.rel)))
+        })
+        .collect();
+    let by_labels = |r: &Rule| {
+        nests
+            .iter()
+            .any(|n| r.id == n.base_id() || r.id == n.step_id())
+    };
     for level in levels {
+        let at = |rel: &str| strata.get(rel).copied().unwrap_or(0) == level;
         let layer: Vec<&Rule> = rules
             .iter()
             .copied()
-            .filter(|r| strata.get(&r.head.rel).copied().unwrap_or(0) == level)
+            .filter(|r| at(&r.head.rel) && !by_labels(r))
             .collect();
-        if fixpoint(&mut db, &layer, blocked, errors) {
-            settle(&mut db, top);
-            return (db, true);
+        let here: Vec<&Nesting> = nests.iter().copied().filter(|n| at(&n.rel)).collect();
+        loop {
+            if fixpoint(&mut db, &layer, blocked, errors) {
+                settle(&mut db, top);
+                return (db, true);
+            }
+            let mut added = false;
+            for n in &here {
+                added |= nest(&mut db, n);
+            }
+            if db.len() > MAX_ATOMS {
+                settle(&mut db, top);
+                return (db, true);
+            }
+            if !added {
+                break;
+            }
         }
     }
     settle(&mut db, top);
     (db, false)
+}
+
+/// Adds the atoms of a nesting N with the derivations its two rules would
+/// give, read from labels in one pass (H61): `ID_base` for every edge atom,
+/// `ID_step` for every edge atom E(x, z) and atom N(z, y). N atoms that came
+/// from elsewhere (facts, other rules) count as a last step of a path. Called
+/// again after other rules of the stratum add edges; returns whether anything
+/// was added.
+fn nest(db: &mut Db, n: &Nesting) -> bool {
+    let pick = |a: &Atom, roles: &(String, String)| -> Option<(Term, Term)> {
+        let get = |r: &str| a.args.iter().find(|(x, _)| x == r).map(|(_, t)| t.clone());
+        Some((get(&roles.0)?, get(&roles.1)?))
+    };
+    let (base_id, step_id) = (n.base_id(), n.step_id());
+    // (key, x, y) of edge atoms; (key, z, y) of N atoms from elsewhere.
+    let mut edges: Vec<(String, Term, Term)> = Vec::new();
+    let mut given: Vec<(String, Term, Term)> = Vec::new();
+    for (k, (a, ds)) in db.iter() {
+        if a.neg {
+            continue;
+        }
+        if a.rel == n.edge {
+            if let Some((x, y)) = pick(a, &n.edge_roles) {
+                edges.push((k.clone(), x, y));
+            }
+        } else if a.rel == n.rel
+            && ds
+                .iter()
+                .any(|d| d.source != base_id && d.source != step_id)
+            && let Some((z, y)) = pick(a, &n.roles)
+        {
+            given.push((k.clone(), z, y));
+        }
+    }
+    // Nodes by printed term; a given N(z, y) is an edge to a fresh copy of y
+    // that has no edges out, so a path reaching it ends with that step.
+    let mut terms: BTreeMap<String, Term> = BTreeMap::new();
+    let mut graph: Vec<(String, String)> = Vec::new();
+    for (_, x, y) in &edges {
+        let (sx, sy) = (x.to_string(), y.to_string());
+        terms.insert(sx.clone(), x.clone());
+        terms.insert(sy.clone(), y.clone());
+        graph.push((sx, sy));
+    }
+    for (_, z, y) in &given {
+        let sz = z.to_string();
+        terms.insert(sz.clone(), z.clone());
+        terms.insert(format!("\0{y}"), y.clone());
+        graph.push((sz, format!("\0{y}")));
+    }
+    let labels = crate::label::Labels::build(graph.iter().map(|(a, b)| (a.as_str(), b.as_str())));
+    let mut out: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for (_, x, y) in &edges {
+        out.entry(x.to_string()).or_default().push(y.to_string());
+    }
+    // z -> keys of the N(z, y) atoms that will hold.
+    let mut holds: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    let mut derived: Vec<(Atom, String)> = Vec::new();
+    for t in labels.names() {
+        let y = &terms[t];
+        let fresh = t.starts_with('\0');
+        for d in labels.descendants(t) {
+            // To a fresh copy, at least one edge must come first: the given
+            // atom alone is not derived.
+            let holds_here = if fresh {
+                out.get(d)
+                    .is_some_and(|qs| qs.iter().any(|q| labels.within(q, t)))
+            } else {
+                labels.reaches(d, t)
+            };
+            if d.starts_with('\0') || !holds_here {
+                continue;
+            }
+            let atom = Atom::new(
+                n.rel.clone(),
+                vec![
+                    (n.roles.0.clone(), terms[d].clone()),
+                    (n.roles.1.clone(), y.clone()),
+                ],
+                false,
+            );
+            let key = atom.key();
+            if holds.entry(d.to_string()).or_default().insert(key.clone()) {
+                derived.push((atom, key));
+            }
+        }
+    }
+    for (k, z, _) in &given {
+        holds.entry(z.to_string()).or_default().insert(k.clone());
+    }
+    let mut atoms: BTreeMap<String, Atom> = derived.into_iter().map(|(a, k)| (k, a)).collect();
+    let mut new: Vec<(String, Derivation)> = Vec::new();
+    let derivation = |source: &str, premises: Vec<String>| Derivation {
+        source: source.to_string(),
+        is_fact: false,
+        strict: true,
+        plane: Plane::new(),
+        premises,
+        rank: 0,
+    };
+    for (ek, x, y) in &edges {
+        let base = Atom::new(
+            n.rel.clone(),
+            vec![
+                (n.roles.0.clone(), x.clone()),
+                (n.roles.1.clone(), y.clone()),
+            ],
+            false,
+        );
+        let bk = base.key();
+        atoms.entry(bk.clone()).or_insert(base);
+        new.push((bk, derivation(&base_id, vec![ek.clone()])));
+        for nk in holds.get(&y.to_string()).into_iter().flatten() {
+            // N(y, w) for this edge's genus y gives N(x, w).
+            let w = db
+                .get(nk)
+                .map(|(a, _)| a)
+                .or_else(|| atoms.get(nk))
+                .and_then(|a| pick(a, &n.roles))
+                .map(|(_, w)| w)
+                .expect("an N atom of the closure");
+            let head = Atom::new(
+                n.rel.clone(),
+                vec![(n.roles.0.clone(), x.clone()), (n.roles.1.clone(), w)],
+                false,
+            );
+            let hk = head.key();
+            atoms.entry(hk.clone()).or_insert(head);
+            let mut premises = vec![ek.clone(), nk.clone()];
+            premises.sort();
+            premises.dedup();
+            new.push((hk, derivation(&step_id, premises)));
+        }
+    }
+    let mut added = false;
+    for (key, d) in new {
+        let atom = atoms.get(&key).cloned().expect("atom of a derivation");
+        let entry = db.entry(key).or_insert_with(|| (atom, vec![]));
+        if !entry
+            .1
+            .iter()
+            .any(|x| x.source == d.source && x.premises == d.premises)
+        {
+            entry.1.push(d);
+            added = true;
+        }
+    }
+    added
 }
 
 fn real(premises: &[String]) -> impl Iterator<Item = &String> {

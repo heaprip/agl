@@ -19,7 +19,7 @@ fn load(path: &str) -> (usize, Labels) {
         .map(|l| l.split_once('\t').expect("species<TAB>genus"))
         .collect();
     let n = edges.len();
-    (n, Labels::build(edges).expect("labels"))
+    (n, Labels::build(edges))
 }
 
 fn main() {
