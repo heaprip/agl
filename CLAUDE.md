@@ -47,7 +47,7 @@ Relation-first формальная система представления с
 ## Команды
 
 ```sh
-cargo test --release                       # всё; ~1 мин
+cargo test --release                       # всё; ~20 с
 AGL_SIM_SEEDS=20000 cargo test --release --test sim   # широкий прогон
 AGL_SEED=<n> cargo test --test sim         # повтор упавшего seed
 AGL_SIM_SEEDS=50000 cargo test --release --test oracle  # сверка ядра с эталоном DL

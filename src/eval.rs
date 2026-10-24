@@ -128,6 +128,7 @@ enum Label {
 /// failure). Conflicts still open after that rest on each other in a cycle
 /// and are decided together on everything alive. Returns the losers to block.
 fn decide(prog: &Program, db: &Db, out: &mut Outcome) -> Vec<String> {
+    let founded = Founded::new(db);
     let mut label: BTreeMap<&str, Label> = BTreeMap::new();
     let mut stuck = false;
     loop {
@@ -147,7 +148,8 @@ fn decide(prog: &Program, db: &Db, out: &mut Outcome) -> Vec<String> {
                 Some((_, (_, clive))) if clive.is_empty() => (!app.is_empty()).then_some(Label::In),
                 Some((ckey, (capp, clive))) => {
                     let wins = |a: &[&Derivation], b: &[&Derivation]| {
-                        !a.is_empty() && matches!(resolve(prog, db, a, b, key, ckey), Winner::Pos)
+                        !a.is_empty()
+                            && matches!(resolve(prog, &founded, a, b, key, ckey), Winner::Pos)
                     };
                     if wins(&app, &clive) {
                         Some(Label::In)
@@ -241,7 +243,7 @@ fn decide(prog: &Program, db: &Db, out: &mut Outcome) -> Vec<String> {
         } else if !atom.neg {
             let (app, _) = split(derivs, &label);
             let (capp, _) = split(cderivs, &label);
-            let kind = match resolve(prog, db, &app, &capp, key, &ckey) {
+            let kind = match resolve(prog, &founded, &app, &capp, key, &ckey) {
                 Winner::None(kind) => kind,
                 _ => ConflictKind::Unresolved,
             };
@@ -291,9 +293,64 @@ enum Winner {
     None(ConflictKind),
 }
 
+/// `founded` for one database, each key computed once: `decide` asks for the
+/// same keys on every pass while the database stays the same.
+struct Founded<'a> {
+    db: &'a Db,
+    memo: std::cell::RefCell<BTreeMap<String, Vec<&'a Derivation>>>,
+}
+
+impl<'a> Founded<'a> {
+    fn new(db: &'a Db) -> Self {
+        Founded {
+            db,
+            memo: Default::default(),
+        }
+    }
+
+    fn get(&self, key: &str) -> Vec<&'a Derivation> {
+        if let Some(ds) = self.memo.borrow().get(key) {
+            return ds.clone();
+        }
+        let ds = founded(self.db, key);
+        self.memo.borrow_mut().insert(key.to_string(), ds.clone());
+        ds
+    }
+}
+
 /// Derivations of `key` that stand without `key` itself: a derivation that
 /// rests on its own conclusion neither supports it nor needs to be beaten.
 fn founded<'a>(db: &'a Db, key: &str) -> Vec<&'a Derivation> {
+    // Every atom of the closure was derived from facts. If no chain of
+    // premises leads from `key` back to `key`, none of its premises needs it,
+    // so every derivation stands; the search below is needed only on a cycle.
+    let mut seen: BTreeSet<&str> = BTreeSet::new();
+    let mut stack: Vec<&str> = db[key]
+        .1
+        .iter()
+        .flat_map(|d| real(&d.premises).map(String::as_str))
+        .collect();
+    let mut cyclic = false;
+    while let Some(k) = stack.pop() {
+        if k == key {
+            cyclic = true;
+            break;
+        }
+        if !seen.insert(k) {
+            continue;
+        }
+        let Some((_, ds)) = db.get(k) else {
+            cyclic = true; // not in the closure: let the full search judge
+            break;
+        };
+        stack.extend(
+            ds.iter()
+                .flat_map(|d| real(&d.premises).map(String::as_str)),
+        );
+    }
+    if !cyclic {
+        return db[key].1.iter().collect();
+    }
     let mut without: BTreeSet<&str> = BTreeSet::new();
     let stands = |d: &Derivation, without: &BTreeSet<&str>| {
         real(&d.premises).all(|p| without.contains(p.as_str()))
@@ -316,7 +373,7 @@ fn founded<'a>(db: &'a Db, key: &str) -> Vec<&'a Derivation> {
 /// derivations of its complement `ckey`.
 fn resolve(
     prog: &Program,
-    db: &Db,
+    founded: &Founded,
     pos: &[&Derivation],
     neg: &[&Derivation],
     key: &str,
@@ -352,7 +409,7 @@ fn resolve(
     }
     // Team defeat, as in defeasible logic: a side wins by priority when every
     // derivation of the other side is beaten by one of its own.
-    let (fp, fn_) = (founded(db, key), founded(db, ckey));
+    let (fp, fn_) = (founded.get(key), founded.get(ckey));
     let pos: Vec<&Derivation> = pos
         .iter()
         .copied()
@@ -557,12 +614,11 @@ fn fixpoint(
 ) -> bool {
     loop {
         let mut added = false;
-        let index = index_by_rel(db);
+        let index = Index::new(db);
         let mut new: Vec<(Atom, Derivation)> = Vec::new();
         for r in rules {
             let mut matches = Vec::new();
             let mut ctx = Matcher {
-                db,
                 index: &index,
                 rule: &r.id,
                 errors: &mut *errors,
@@ -711,20 +767,76 @@ fn schedule(r: &Rule) -> Vec<Lit> {
     order
 }
 
-fn index_by_rel(db: &Db) -> BTreeMap<(String, bool), Vec<String>> {
-    let mut index: BTreeMap<(String, bool), Vec<String>> = BTreeMap::new();
-    for (k, (a, _)) in db {
-        index
-            .entry((a.rel.clone(), a.neg))
-            .or_default()
-            .push(k.clone());
+/// Atoms of the database by relation, and by relation and the symbol in one
+/// role, so a pattern with a known symbol does not scan the whole relation.
+/// Numbers are not indexed: they compare with a tolerance.
+struct Index<'a> {
+    by_rel: BTreeMap<String, Vec<(&'a String, &'a Atom)>>,
+    by_sym: BTreeMap<String, Vec<(&'a String, &'a Atom)>>,
+}
+
+fn rel_key(rel: &str, neg: bool) -> String {
+    format!("{rel}\u{1}{neg}")
+}
+
+fn sym_key(rel: &str, neg: bool, role: &str, sym: &str) -> String {
+    format!("{rel}\u{1}{neg}\u{1}{role}\u{1}{sym}")
+}
+
+impl<'a> Index<'a> {
+    fn new(db: &'a Db) -> Self {
+        let mut by_rel: BTreeMap<String, Vec<_>> = BTreeMap::new();
+        let mut by_sym: BTreeMap<String, Vec<_>> = BTreeMap::new();
+        for (k, (a, _)) in db {
+            by_rel
+                .entry(rel_key(&a.rel, a.neg))
+                .or_default()
+                .push((k, a));
+            for (role, t) in &a.args {
+                if let Term::Sym(v) = t {
+                    by_sym
+                        .entry(sym_key(&a.rel, a.neg, role, v))
+                        .or_default()
+                        .push((k, a));
+                }
+            }
+        }
+        Index { by_rel, by_sym }
     }
-    index
+
+    /// Atoms that can match `pat` under `binding`: the shortest list among
+    /// the roles with a known symbol, else the whole relation. Lists keep
+    /// database order, so matching order does not change.
+    fn candidates(&self, pat: &Atom, binding: &Binding) -> &[(&'a String, &'a Atom)] {
+        let mut best: Option<&Vec<_>> = None;
+        for (role, t) in &pat.args {
+            let sym = match t {
+                Term::Sym(v) => v,
+                Term::Var(v) => match binding.get(v) {
+                    Some(Term::Sym(s)) => s,
+                    _ => continue,
+                },
+                Term::Num(..) => continue,
+            };
+            let Some(list) = self.by_sym.get(&sym_key(&pat.rel, pat.neg, role, sym)) else {
+                return &[];
+            };
+            if best.is_none_or(|b| list.len() < b.len()) {
+                best = Some(list);
+            }
+        }
+        match best {
+            Some(list) => list,
+            None => self
+                .by_rel
+                .get(&rel_key(&pat.rel, pat.neg))
+                .map_or(&[], Vec::as_slice),
+        }
+    }
 }
 
 struct Matcher<'a> {
-    db: &'a Db,
-    index: &'a BTreeMap<(String, bool), Vec<String>>,
+    index: &'a Index<'a>,
     rule: &'a str,
     errors: &'a mut BTreeSet<String>,
 }
@@ -804,14 +916,14 @@ impl Matcher<'_> {
     }
 
     fn atom(&self, pat: &Atom, binding: &Binding) -> Vec<(Binding, String)> {
-        let Some(keys) = self.index.get(&(pat.rel.clone(), pat.neg)) else {
-            return vec![];
-        };
         let mut out = Vec::new();
-        for k in keys {
+        for (k, ground) in self.index.candidates(pat, binding) {
+            if !fits(pat, ground, binding) {
+                continue;
+            }
             let mut b = binding.clone();
-            if unify(pat, &self.db[k].0, &mut b) {
-                out.push((b, k.clone()));
+            if unify(pat, ground, &mut b) {
+                out.push((b, (*k).clone()));
             }
         }
         out
@@ -906,6 +1018,20 @@ impl Matcher<'_> {
             self.errors.insert(format!("rule `{}`: {msg}", self.rule));
         }
     }
+}
+
+/// A cheap test before `unify`, without copying the binding: roles present,
+/// constants and bound variables equal. Unbound variables are left to `unify`.
+fn fits(pat: &Atom, ground: &Atom, b: &Binding) -> bool {
+    pat.args.iter().all(|(role, pt)| {
+        let Some((_, gt)) = ground.args.iter().find(|(r, _)| r == role) else {
+            return false;
+        };
+        match pt {
+            Term::Var(v) => b.get(v).is_none_or(|bound| term_eq(bound, gt)),
+            t => term_eq(t, gt),
+        }
+    })
 }
 
 /// Pattern roles must all be present in the ground atom; the atom may have more.

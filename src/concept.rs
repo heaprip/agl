@@ -181,20 +181,150 @@ impl Cq {
             }
             self.subst(&m).sorted()
         };
-        let mut order: Vec<usize> = (0..rest.len()).collect();
-        let mut best = named(&order);
-        if rest.len() <= MAX_CANON {
-            let mut best_text = best.to_string();
+        let order: Vec<usize> = (0..rest.len()).collect();
+        if rest.len() > MAX_CANON {
+            return named(&order);
+        }
+        let best = named(&self.least_naming(&map, &rest, &prefix));
+        #[cfg(debug_assertions)]
+        {
+            // The plain search this one replaces: build, sort and print every naming.
+            let mut order = order;
+            let mut slow = named(&order);
+            let mut slow_text = slow.to_string();
             while next_permutation(&mut order) {
                 let q = named(&order);
                 let text = q.to_string();
-                if text < best_text {
-                    best = q;
-                    best_text = text;
+                if text < slow_text {
+                    slow = q;
+                    slow_text = text;
                 }
             }
+            debug_assert_eq!(best, slow, "canonical naming of {self}");
         }
         best
+    }
+
+    /// The order of `rest` whose naming `prefix1`, `prefix2`… gives the
+    /// smallest text of the sorted query; the first such order among the
+    /// permutations in lexicographic order. Same result as building, sorting
+    /// and printing the query for every naming, without the copies: atoms are
+    /// cut once into roles and slots, each naming only fills the slots.
+    fn least_naming<'a>(
+        &'a self,
+        map: &'a BTreeMap<String, T>,
+        rest: &[String],
+        prefix: &str,
+    ) -> Vec<usize> {
+        /// A term as `T` orders it: variables before constants, then by name.
+        #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+        enum View<'a> {
+            V(&'a str),
+            C(&'a str),
+        }
+        enum Slot<'a> {
+            Fixed(View<'a>),
+            Rest(usize),
+        }
+        let slot = |t: &'a T| -> Slot<'a> {
+            match t {
+                T::C(c) => Slot::Fixed(View::C(c)),
+                T::V(v) => match rest.iter().position(|x| x == v) {
+                    Some(i) => Slot::Rest(i),
+                    None => match map.get(v) {
+                        Some(T::V(n)) => Slot::Fixed(View::V(n)),
+                        Some(T::C(c)) => Slot::Fixed(View::C(c)),
+                        None => Slot::Fixed(View::V(v)),
+                    },
+                },
+            }
+        };
+        let atoms: Vec<(&str, Vec<(&str, Slot)>)> = self
+            .atoms
+            .iter()
+            .map(|a| {
+                (
+                    a.rel.as_str(),
+                    a.args.iter().map(|(r, t)| (r.as_str(), slot(t))).collect(),
+                )
+            })
+            .collect();
+        let neqs: Vec<(Slot, Slot)> = self.neqs.iter().map(|(l, r)| (slot(l), slot(r))).collect();
+        let names: Vec<String> = (1..=rest.len()).map(|k| format!("{prefix}{k}")).collect();
+        let mut name_of = vec![0usize; rest.len()];
+        let mut order: Vec<usize> = (0..rest.len()).collect();
+        let mut best_order = order.clone();
+        let mut best_text: Option<String> = None;
+        let mut text = String::new();
+        let mut sorted_atoms: Vec<(&str, Vec<(&str, View)>)> = Vec::with_capacity(atoms.len());
+        let mut sorted_neqs: Vec<(View, View)> = Vec::with_capacity(neqs.len());
+        loop {
+            for (k, &i) in order.iter().enumerate() {
+                name_of[i] = k;
+            }
+            fn view<'n>(s: &Slot<'n>, names: &'n [String], name_of: &[usize]) -> View<'n> {
+                match s {
+                    Slot::Fixed(v) => *v,
+                    Slot::Rest(i) => View::V(&names[name_of[*i]]),
+                }
+            }
+            let view = |s| view(s, &names, &name_of);
+            sorted_atoms.clear();
+            for (rel, args) in &atoms {
+                sorted_atoms.push((rel, args.iter().map(|(r, s)| (*r, view(s))).collect()));
+            }
+            sorted_atoms.sort();
+            sorted_atoms.dedup();
+            sorted_neqs.clear();
+            for (l, r) in &neqs {
+                let (l, r) = (view(l), view(r));
+                sorted_neqs.push(if r < l { (r, l) } else { (l, r) });
+            }
+            sorted_neqs.sort();
+            sorted_neqs.dedup();
+            text.clear();
+            let term = |text: &mut String, v: &View| match v {
+                View::V(n) => {
+                    text.push('?');
+                    text.push_str(n);
+                }
+                View::C(c) => text.push_str(c),
+            };
+            let mut first = true;
+            for (rel, args) in &sorted_atoms {
+                if !first {
+                    text.push_str(", ");
+                }
+                first = false;
+                text.push_str(rel);
+                text.push('(');
+                for (j, (role, v)) in args.iter().enumerate() {
+                    if j > 0 {
+                        text.push_str(", ");
+                    }
+                    text.push_str(role);
+                    text.push_str(": ");
+                    term(&mut text, v);
+                }
+                text.push(')');
+            }
+            for (l, r) in &sorted_neqs {
+                if !first {
+                    text.push_str(", ");
+                }
+                first = false;
+                term(&mut text, l);
+                text.push_str(" != ");
+                term(&mut text, r);
+            }
+            if best_text.as_ref().is_none_or(|b| text < *b) {
+                best_text = Some(text.clone());
+                best_order.copy_from_slice(&order);
+            }
+            if !next_permutation(&mut order) {
+                return best_order;
+            }
+        }
     }
 
     fn sorted(mut self) -> Cq {
@@ -265,7 +395,7 @@ fn senses<'a>(prog: &'a Program, name: &str, plane: &Plane) -> Vec<&'a Concept> 
         .iter()
         .filter(|c| c.head.rel == name && prog.axes.plane_within(plane, &c.plane))
         .collect();
-    out.sort_by_key(|c| sense_key(c));
+    out.sort_by_cached_key(|c| sense_key(c));
     out
 }
 
@@ -514,7 +644,8 @@ fn search_order(q: &Cq) -> Vec<&CAtom> {
 }
 
 /// A homomorphism from `q` into the world that sends its head to the world's.
-fn hom(q: &Cq, w: &World, link: bool) -> bool {
+/// `order` is `search_order(q)`, computed once per query.
+fn hom<'a>(q: &'a Cq, order: &[&'a CAtom], w: &World, link: bool) -> bool {
     let mut b: BTreeMap<&str, E> = BTreeMap::new();
     for (role, t) in &q.head {
         let Some((_, e)) = w.head.iter().find(|(r, _)| r == role) else {
@@ -527,17 +658,16 @@ fn hom(q: &Cq, w: &World, link: bool) -> bool {
     if !link && !q.atoms.is_empty() {
         return false;
     }
-    let order = search_order(q);
     let mut by_rel: BTreeMap<&str, Vec<&Vec<(String, E)>>> = BTreeMap::new();
     for (rel, args) in &w.atoms {
         by_rel.entry(rel.as_str()).or_default().push(args);
     }
-    go(q, &order, &by_rel, 0, &mut b)
+    go(q, order, &by_rel, 0, &mut b)
 }
 
 fn bind<'a>(b: &mut BTreeMap<&'a str, E>, t: &'a T, e: &E) -> bool {
     match t {
-        T::C(c) => *e == E::C(c.clone()),
+        T::C(c) => matches!(e, E::C(x) if x == c),
         T::V(v) => match b.get(v.as_str()) {
             Some(x) => x == e,
             None => {
@@ -725,10 +855,13 @@ fn counterexample(
         .collect();
     covers.sort();
     let covers: Vec<&Vec<(String, String)>> = covers.iter().collect();
-    let holds = |w: &World| {
-        u2.iter()
-            .any(|q2| q2.roles() == q1.roles() && hom(q2, w, link))
-    };
+    let roles = q1.roles();
+    let targets: Vec<(&Cq, Vec<&CAtom>)> = u2
+        .iter()
+        .filter(|q2| q2.roles() == roles)
+        .map(|q2| (q2, search_order(q2)))
+        .collect();
+    let holds = |w: &World| targets.iter().any(|(q2, order)| hom(q2, order, w, link));
     for w in worlds(q1, &consts, all)? {
         if let Some(cx) = uncovered(&w, &covers, &holds) {
             return Ok(Some(cx));
@@ -1166,7 +1299,19 @@ pub fn witness(
     pb: &Plane,
 ) -> Result<Option<Witness>, String> {
     let (ua, ub) = (normal_form(prog, a, pa)?, normal_form(prog, b, pb)?);
-    Ok(union_counterexample(prog, &ua, pa, &ub, pb)?.map(|w| w.facts()))
+    witness_of(prog, &ua, pa, &ub, pb)
+}
+
+/// `witness` for concepts already in normal form, so that comparing many
+/// pairs computes each normal form once.
+pub fn witness_of(
+    prog: &Program,
+    ua: &[Cq],
+    pa: &Plane,
+    ub: &[Cq],
+    pb: &Plane,
+) -> Result<Option<Witness>, String> {
+    Ok(union_counterexample(prog, ua, pa, ub, pb)?.map(|w| w.facts()))
 }
 
 pub struct Compared {

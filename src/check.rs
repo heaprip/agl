@@ -217,11 +217,21 @@ pub struct Situation {
 /// a `situated` atom the narrowing rested on, and then the plane has no
 /// grounds.
 pub fn situate(prog: &Program, base: &Plane, context: &str) -> Result<Situation, String> {
+    let mut evals = Evals {
+        prog,
+        done: BTreeMap::new(),
+    };
+    situate_in(&mut evals, base, context)
+}
+
+/// `situate` sharing the outcomes already evaluated for the report.
+fn situate_in(evals: &mut Evals, base: &Plane, context: &str) -> Result<Situation, String> {
+    let prog = evals.prog;
     let mut plane = base.clone();
     let mut used: BTreeSet<String> = BTreeSet::new();
     let rounds = prog.axes_count() + 2;
     for _ in 0..rounds {
-        let out = eval::evaluate(prog, &plane);
+        let out = evals.get(&plane);
         let mut next = plane.clone();
         let mut grounds = String::new();
         for (key, (atom, _)) in &out.db {
@@ -250,7 +260,7 @@ pub fn situate(prog: &Program, base: &Plane, context: &str) -> Result<Situation,
                     plane_to_string(&next)
                 )
             })?;
-            grounds.push_str(&eval::explain(&out, key));
+            grounds.push_str(&eval::explain(out, key));
             used.insert(key.clone());
         }
         if next == plane {
@@ -290,7 +300,7 @@ fn answer(
 ) -> QueryResult {
     let (plane, prelude) = match &q.situate {
         None => (q.plane.clone(), String::new()),
-        Some(ctx) => match situate(prog, &q.plane, ctx) {
+        Some(ctx) => match situate_in(evals, &q.plane, ctx) {
             Ok(s) => {
                 let head = format!("`{ctx}` is situated in {}:\n", plane_to_string(&s.plane));
                 let grounds: String = s.grounds.lines().map(|l| format!("  {l}\n")).collect();

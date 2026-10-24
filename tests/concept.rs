@@ -2,7 +2,7 @@
 //! evaluation of the same concepts on data. Every run is fixed by its seed;
 //! `AGL_SEED=<n>` replays one, `AGL_SIM_SEEDS=<n>` widens the sweep.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use agl::model::*;
 use agl::sim::{Rng, permute};
@@ -117,8 +117,8 @@ fn gen_facts(rng: &mut Rng, cover: bool) -> Vec<Atom> {
     out
 }
 
-/// The answers of `rel` that the kernel derives from `facts`.
-fn answers(prog: &Program, facts: &[Atom], rel: &str) -> BTreeSet<String> {
+/// The answers of every relation that the kernel derives from `facts`.
+fn answers(prog: &Program, facts: &[Atom]) -> BTreeMap<String, BTreeSet<String>> {
     let mut p = prog.clone();
     p.facts = facts
         .iter()
@@ -132,15 +132,21 @@ fn answers(prog: &Program, facts: &[Atom], rel: &str) -> BTreeSet<String> {
         })
         .collect();
     let out = agl::eval::evaluate(&p, &Plane::new());
-    out.db
-        .values()
-        .filter(|(a, _)| a.rel == rel && !a.neg)
-        .map(|(a, _)| {
-            let mut args = a.args.clone();
-            args.sort_by(|x, y| x.0.cmp(&y.0));
-            format!("{args:?}")
-        })
-        .collect()
+    let mut by_rel: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    for (a, _) in out.db.values().filter(|(a, _)| !a.neg) {
+        let mut args = a.args.clone();
+        args.sort_by(|x, y| x.0.cmp(&y.0));
+        by_rel
+            .entry(a.rel.clone())
+            .or_default()
+            .insert(format!("{args:?}"));
+    }
+    by_rel
+}
+
+fn of<'a>(answers: &'a BTreeMap<String, BTreeSet<String>>, rel: &str) -> &'a BTreeSet<String> {
+    static EMPTY: BTreeSet<String> = BTreeSet::new();
+    answers.get(rel).unwrap_or(&EMPTY)
 }
 
 fn head_key(head: &[(String, Term)]) -> String {
@@ -158,9 +164,18 @@ fn comparison_by_definition_agrees_with_evaluation_on_data() {
         let cover = !prog.covers.is_empty();
         let mut rng = Rng::new(seed ^ 0xA5A5);
         let data: Vec<Vec<Atom>> = (0..20).map(|_| gen_facts(&mut rng, cover)).collect();
+        let on_data: Vec<_> = data.iter().map(|facts| answers(&prog, facts)).collect();
+        let mut forms = Vec::new();
         for a in &names {
-            for b in &names {
-                let w = match agl::concept::witness(&prog, a, &root, b, &root) {
+            forms.push(agl::concept::normal_form(&prog, a, &root));
+        }
+        for (a, fa) in names.iter().zip(&forms) {
+            for (b, fb) in names.iter().zip(&forms) {
+                let w = match (fa, fb) {
+                    (Ok(ua), Ok(ub)) => agl::concept::witness_of(&prog, ua, &root, ub, &root),
+                    (Err(e), _) | (_, Err(e)) => Err(e.clone()),
+                };
+                let w = match w {
                     Ok(w) => w,
                     Err(e) if e.contains("too many") => {
                         skipped += 1;
@@ -171,10 +186,9 @@ fn comparison_by_definition_agrees_with_evaluation_on_data() {
                 match w {
                     None => {
                         below += 1;
-                        for facts in &data {
-                            let (xa, xb) = (answers(&prog, facts, a), answers(&prog, facts, b));
+                        for (facts, ans) in data.iter().zip(&on_data) {
                             assert!(
-                                xa.is_subset(&xb),
+                                of(ans, a).is_subset(of(ans, b)),
                                 "seed {seed}: {a} ⊑ {b} by definition, but not on {facts:?}"
                             );
                         }
@@ -182,12 +196,13 @@ fn comparison_by_definition_agrees_with_evaluation_on_data() {
                     Some((facts, head)) => {
                         not_below += 1;
                         let key = head_key(&head);
+                        let ans = answers(&prog, &facts);
                         assert!(
-                            answers(&prog, &facts, a).contains(&key),
+                            of(&ans, a).contains(&key),
                             "seed {seed}: witness for {a} ⋢ {b} lacks {a}: {facts:?}"
                         );
                         assert!(
-                            !answers(&prog, &facts, b).contains(&key),
+                            !of(&ans, b).contains(&key),
                             "seed {seed}: witness for {a} ⋢ {b} has {b}: {facts:?}"
                         );
                     }
