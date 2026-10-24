@@ -103,8 +103,19 @@ impl Visibility {
     }
 }
 
+/// `evaluate` with the naive fixpoint: every round matches every rule
+/// against the whole database. Kept as the reference that the semi-naive
+/// fixpoint is checked against (H65).
+pub fn evaluate_reference(prog: &Program, ctx: &Plane) -> Outcome {
+    evaluate_mode(prog, &Visibility::new(prog), ctx, true)
+}
+
 /// `evaluate` with the statements already grouped by plane.
 pub fn evaluate_in(prog: &Program, vis: &Visibility, ctx: &Plane) -> Outcome {
+    evaluate_mode(prog, vis, ctx, false)
+}
+
+fn evaluate_mode(prog: &Program, vis: &Visibility, ctx: &Plane, naive: bool) -> Outcome {
     let facts: Vec<&Fact> = Visibility::visible(prog, &vis.facts, ctx)
         .into_iter()
         .map(|i| &prog.facts[i])
@@ -126,6 +137,7 @@ pub fn evaluate_in(prog: &Program, vis: &Visibility, ctx: &Plane) -> Outcome {
             &blocked,
             top,
             &mut out.errors,
+            naive,
         );
         if truncated && !out.truncated {
             // Silent truncation turned "not derived" into "unknown" (found by
@@ -533,6 +545,7 @@ pub fn strata(rules: &[Rule]) -> (BTreeMap<String, usize>, Vec<String>) {
 type Db = BTreeMap<String, (Atom, Vec<Derivation>)>;
 type Binding = BTreeMap<String, Term>;
 
+#[allow(clippy::too_many_arguments)]
 fn closure(
     prog: &Program,
     facts: &[&Fact],
@@ -541,6 +554,7 @@ fn closure(
     blocked: &BTreeSet<String>,
     top: usize,
     errors: &mut BTreeSet<String>,
+    naive: bool,
 ) -> (Db, bool) {
     let mut db: Db = BTreeMap::new();
     for f in facts {
@@ -595,7 +609,7 @@ fn closure(
             .collect();
         let here: Vec<&Nesting> = nests.iter().copied().filter(|n| at(&n.rel)).collect();
         loop {
-            if fixpoint(&mut db, &layer, blocked, errors) {
+            if fixpoint(&mut db, &layer, blocked, errors, naive) {
                 settle(&mut db, top);
                 return (db, true);
             }
@@ -831,25 +845,51 @@ fn settle(db: &mut Db, top: usize) {
 }
 
 /// Saturates `db` with one stratum of rules; returns true if truncated.
+///
+/// Semi-naive (H65): after the first round, a match must take at least one
+/// atom literal from the atoms new in the last round; the others come from
+/// the whole database. A match of old atoms only was found in an earlier
+/// round. Aggregates read lower strata, which do not change here. `naive`
+/// matches everything every round: the reference.
 fn fixpoint(
     db: &mut Db,
     rules: &[&Rule],
     blocked: &BTreeSet<String>,
     errors: &mut BTreeSet<String>,
+    naive: bool,
 ) -> bool {
+    // Atoms new in the last round; None in the first round: all are new.
+    let mut fresh: Option<BTreeSet<String>> = None;
     loop {
         let mut added = false;
-        let index = Index::new(db);
+        let index = Index::new(db.iter());
+        let delta = fresh
+            .as_ref()
+            .filter(|_| !naive)
+            .map(|f| Index::new(db.iter().filter(|(k, _)| f.contains(*k))));
         let mut new: Vec<(Atom, Derivation)> = Vec::new();
         for r in rules {
             let mut matches = Vec::new();
+            let body = schedule(r);
             let mut ctx = Matcher {
                 index: &index,
+                forced: None,
                 rule: &r.id,
                 errors: &mut *errors,
             };
-            let body = schedule(r);
-            ctx.body(&body, 0, &mut Binding::new(), &mut Vec::new(), &mut matches);
+            match &delta {
+                None => ctx.body(&body, 0, &mut Binding::new(), &mut Vec::new(), &mut matches),
+                Some(d) => {
+                    for (i, _) in body
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, l)| matches!(l, Lit::Atom(_)))
+                    {
+                        ctx.forced = Some((i, d));
+                        ctx.body(&body, 0, &mut Binding::new(), &mut Vec::new(), &mut matches);
+                    }
+                }
+            }
             for (binding, mut premises) in matches {
                 // A body is a conjunction: its premises form a set, not a sequence.
                 premises.sort();
@@ -872,10 +912,14 @@ fn fixpoint(
                 ));
             }
         }
+        let mut born: BTreeSet<String> = BTreeSet::new();
         for (head, d) in new {
             let key = head.key();
             if blocked.contains(&key) {
                 continue;
+            }
+            if !db.contains_key(&key) {
+                born.insert(key.clone());
             }
             let entry = db.entry(key).or_insert_with(|| (head, vec![]));
             if !entry
@@ -890,9 +934,11 @@ fn fixpoint(
         if db.len() > MAX_ATOMS {
             return true;
         }
-        if !added {
+        // A new derivation of an old atom gives no new match.
+        if !added || (!naive && born.is_empty()) {
             return false;
         }
+        fresh = Some(born);
     }
 }
 
@@ -1009,10 +1055,10 @@ fn sym_key(rel: &str, neg: bool, role: &str, sym: &str) -> String {
 }
 
 impl<'a> Index<'a> {
-    fn new(db: &'a Db) -> Self {
+    fn new(atoms: impl Iterator<Item = (&'a String, &'a (Atom, Vec<Derivation>))>) -> Self {
         let mut by_rel: BTreeMap<String, Vec<_>> = BTreeMap::new();
         let mut by_sym: BTreeMap<String, Vec<_>> = BTreeMap::new();
-        for (k, (a, _)) in db {
+        for (k, (a, _)) in atoms {
             by_rel
                 .entry(rel_key(&a.rel, a.neg))
                 .or_default()
@@ -1062,6 +1108,9 @@ impl<'a> Index<'a> {
 
 struct Matcher<'a> {
     index: &'a Index<'a>,
+    /// The atom literal at this position matches only atoms of this index
+    /// (the last round's new atoms).
+    forced: Option<(usize, &'a Index<'a>)>,
     rule: &'a str,
     errors: &'a mut BTreeSet<String>,
 }
@@ -1081,7 +1130,11 @@ impl Matcher<'_> {
         }
         match &lits[i] {
             Lit::Atom(pat) => {
-                for (b, k) in self.atom(pat, binding) {
+                let index = match self.forced {
+                    Some((at, d)) if at == i => d,
+                    _ => self.index,
+                };
+                for (b, k) in self.atom(index, pat, binding) {
                     let mut b = b;
                     premises.push(k);
                     self.body(lits, i + 1, &mut b, premises, out);
@@ -1140,9 +1193,9 @@ impl Matcher<'_> {
         }
     }
 
-    fn atom(&self, pat: &Atom, binding: &Binding) -> Vec<(Binding, String)> {
+    fn atom(&self, index: &Index, pat: &Atom, binding: &Binding) -> Vec<(Binding, String)> {
         let mut out = Vec::new();
-        for (k, ground) in self.index.candidates(pat, binding) {
+        for (k, ground) in index.candidates(pat, binding) {
             if !fits(pat, ground, binding) {
                 continue;
             }
@@ -1168,7 +1221,7 @@ impl Matcher<'_> {
         for pat in over {
             let mut next = Vec::new();
             for (b, used) in &solutions {
-                for (b2, k) in self.atom(pat, b) {
+                for (b2, k) in self.atom(self.index, pat, b) {
                     let mut u = used.clone();
                     u.push(k);
                     next.push((b2, u));
