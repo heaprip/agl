@@ -12,15 +12,21 @@ fn main() -> ExitCode {
         .iter()
         .position(|a| a == "--learn")
         .and_then(|i| args.get(i + 1).cloned());
+    let implications = args.iter().any(|a| a == "--implications");
+    let where_ = args
+        .iter()
+        .position(|a| a == "--where")
+        .and_then(|i| args.get(i + 1).cloned());
+    let takes_value = |i: usize| i > 0 && (args[i - 1] == "--learn" || args[i - 1] == "--where");
     let files: Vec<&String> = args
         .iter()
         .enumerate()
-        .filter(|(i, a)| !(a.starts_with('-') || *i > 0 && args[i - 1] == "--learn"))
+        .filter(|(i, a)| !(a.starts_with('-') || takes_value(*i)))
         .map(|(_, a)| a)
         .collect();
     if files.is_empty() {
         eprintln!(
-            "usage: agl [-v] [--diagnose] [--propose] [--concepts] [--learn REL] FILE.agl..."
+            "usage: agl [-v] [--diagnose] [--propose] [--concepts] [--implications] [--learn REL] [--where ATOM] FILE.agl..."
         );
         return ExitCode::from(2);
     }
@@ -113,6 +119,24 @@ fn main() -> ExitCode {
         }
         if concepts {
             print!("{}", agl::concept::report(&prog));
+        }
+        if let Some(src) = &where_ {
+            match agl::parse::parse_atom(src) {
+                Ok(pat) => {
+                    let (exts, complete) = agl::extent::extents(&prog, &pat);
+                    print!("{}", agl::extent::render_extents(&exts, complete));
+                }
+                Err(e) => {
+                    println!("--where: {e}");
+                    ok = false;
+                }
+            }
+        }
+        if implications {
+            print!(
+                "{}",
+                agl::extent::render_implications(&agl::extent::implications(&prog))
+            );
         }
         if diagnose {
             let ds = agl::reflect::diagnose(&prog);

@@ -62,13 +62,13 @@ impl Report {
 
 /// Outcomes already evaluated, by plane. Evaluation is a pure function of the
 /// program and the plane, so the scan and every query in one plane share one.
-struct Evals<'a> {
-    prog: &'a Program,
-    done: BTreeMap<Plane, eval::Outcome>,
+pub(crate) struct Evals<'a> {
+    pub(crate) prog: &'a Program,
+    pub(crate) done: BTreeMap<Plane, eval::Outcome>,
 }
 
 impl Evals<'_> {
-    fn get(&mut self, plane: &Plane) -> &eval::Outcome {
+    pub(crate) fn get(&mut self, plane: &Plane) -> &eval::Outcome {
         if !self.done.contains_key(plane) {
             let out = eval::evaluate(self.prog, plane);
             self.done.insert(plane.clone(), out);
@@ -120,7 +120,7 @@ const MAX_CONTEXTS: usize = 4096;
 /// Contexts worth checking: every plane in use, and every non-empty meet of
 /// any number of them, closed to a fixpoint (meets of three planes and more
 /// included). Returns false if the closure hit `MAX_CONTEXTS`.
-fn contexts(prog: &Program) -> (Vec<Plane>, bool) {
+pub(crate) fn contexts(prog: &Program) -> (Vec<Plane>, bool) {
     let mut planes: BTreeSet<Plane> = BTreeSet::new();
     prog.facts.iter().for_each(|f| {
         planes.insert(f.plane.clone());

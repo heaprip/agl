@@ -10,11 +10,12 @@ Relation-first формальная система представления с
 
 1. [docs/roadmap.md](docs/roadmap.md) — где мы и что дальше (раздел «Следующие шаги»).
 2. [docs/decisions.md](docs/decisions.md) — решения автора (1–22). Их не пересматривать.
-3. [docs/hypotheses.md](docs/hypotheses.md) — предложения помощника (H0–H51), **не приняты**.
+3. [docs/hypotheses.md](docs/hypotheses.md) — предложения помощника (H0–H52), **не приняты**.
 4. [docs/open-questions.md](docs/open-questions.md) — что решает только автор.
 5. [docs/impl/poc.md](docs/impl/poc.md) — нотация `.agl`, семантика ядра, детерминизм, рефлексия, обучение.
 
 Остальное:
+- [docs/glossary.md](docs/glossary.md) — словарь: как называется в науке то, о чём речь;
 - [docs/mechanisms.md](docs/mechanisms.md) — сводная карта механизмов и связок между ними;
 - `docs/cases/` — казусы на бумаге: Ньютон, гексокиназа, газообмен, «Праведные», родство;
 - `docs/blind/` — слепые прогоны: агент и 4 модели;
@@ -57,6 +58,8 @@ cargo run --release -- --diagnose FILE     # рефлексия R1
 cargo run --release -- --propose FILE      # рефлексия R2
 cargo run --release -- --learn viable cases/learning/viability.agl
 cargo run --release -- --concepts cases/kinship.agl  # разложение понятий: уровни, порядок, общий род
+cargo run --release -- --where "mother(ego: ?e, alter: ?a)" cases/kinship.agl  # где верно
+cargo run --release -- --implications cases/kinship.agl  # что с чем связано по плоскостям
 python3 tools/llm_dsl.py run 3              # LLM пишет .agl; вызовы воспроизводятся из docs/dsl/calls
 uv run --python 3.11 --with memote==0.17.0 --with cobra==0.32.1 tools/memote_ref.py build  # казусы memote
 python3 tools/trunk.py build               # ствол и классы ChEBI из data/raw (офлайн); fetch, fetch-classes — из сети
