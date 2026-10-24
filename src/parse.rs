@@ -29,9 +29,12 @@ use crate::units::{Dim, Units};
 /// file) in place, and parses the result. Line numbers in errors refer to the
 /// expanded text.
 pub fn parse_file(path: &std::path::Path) -> Result<Program, String> {
-    let mut stack = Vec::new();
-    let src = expand(path, &mut stack)?;
-    parse(&src)
+    parse(&read_expanded(path)?)
+}
+
+/// The text of a file with its includes expanded, for tools that append to it.
+pub fn read_expanded(path: &std::path::Path) -> Result<String, String> {
+    expand(path, &mut Vec::new())
 }
 
 fn expand(path: &std::path::Path, stack: &mut Vec<std::path::PathBuf>) -> Result<String, String> {

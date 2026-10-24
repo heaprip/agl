@@ -1,0 +1,11 @@
+# Контрольная (H57, шаг 3): x² = 4 в целых уже решается (x = 2). Лишнее
+# присоединение должно дать делители нуля: (X − 2)(X + 2) ≡ 0.
+
+fact eq: equation(eq: four) @ [textbook]
+fact l2: eq_coef(eq: four, side: left, deg: 2, c: 1) @ [textbook]
+fact r0: eq_coef(eq: four, side: right, deg: 0, c: 4) @ [textbook]
+fact dom: domain(lo: -4, hi: 4) @
+
+query solvable(eq: four) @ expect yes
+
+include ../../lib/adjoin.agl

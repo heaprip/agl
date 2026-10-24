@@ -1,0 +1,11 @@
+# Контрольная (H57, шаг 3): 1 : 0 в целых, 0·x = 1. Присоединение должно
+# сломать консервативность.
+
+fact eq: equation(eq: by_zero) @ [textbook]
+fact l1: eq_coef(eq: by_zero, side: left, deg: 1, c: 0) @ [textbook]
+fact r0: eq_coef(eq: by_zero, side: right, deg: 0, c: 1) @ [textbook]
+fact dom: domain(lo: -4, hi: 4) @
+
+query solvable(eq: by_zero) @ expect yes
+
+include ../../lib/adjoin.agl

@@ -1,0 +1,10 @@
+# Дроби: 1 : 3 в целых. Уравнение 3x = 1 не решается среди целых.
+
+fact eq: equation(eq: third) @ [textbook]
+fact l1: eq_coef(eq: third, side: left, deg: 1, c: 3) @ [textbook]
+fact r0: eq_coef(eq: third, side: right, deg: 0, c: 1) @ [textbook]
+fact dom: domain(lo: -4, hi: 4) @
+
+query solvable(eq: third) @ expect yes
+
+include ../../lib/adjoin.agl

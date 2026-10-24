@@ -21,4 +21,4 @@ pub mod sim;
 pub mod units;
 
 pub use check::{Report, render, run};
-pub use parse::{parse, parse_file};
+pub use parse::{parse, parse_file, read_expanded};
