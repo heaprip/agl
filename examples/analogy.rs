@@ -296,6 +296,7 @@ fn balanced(t: &Trunk, removed: &str, props: &[Proposal]) -> Vec<bool> {
     }
     let prog = parse(&src).expect("fork parses");
     let out = evaluate(&prog, &Plane::new());
+    assert!(!out.truncated, "closure truncated: raise the batch split");
     (0..props.len())
         .map(|i| {
             out.db

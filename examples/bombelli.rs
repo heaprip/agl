@@ -90,6 +90,7 @@ fn main() {
             }
             let prog = agl::parse(&text).unwrap();
             let out = evaluate(&prog, plane);
+            assert!(!out.truncated, "closure truncated: raise the batch split");
             let roots: Vec<String> = out
                 .db
                 .values()

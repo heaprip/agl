@@ -135,7 +135,9 @@ fn main() {
             return;
         }
     };
-    let (_, root_broken) = sieve(&evaluate(&prog, &Plane::new()));
+    let root = evaluate(&prog, &Plane::new());
+    assert!(!root.truncated, "closure truncated");
+    let (_, root_broken) = sieve(&root);
 
     // 2. Adjoin exactly the equation that failed.
     text.push_str(&format!(
@@ -161,6 +163,7 @@ fn main() {
     }
     let prog = agl::parse(&text).unwrap();
     let out = evaluate(&prog, &prog.planes["adj"]);
+    assert!(!out.truncated, "closure truncated: raise the batch split");
     let (sols, broken) = sieve(&out);
 
     println!(

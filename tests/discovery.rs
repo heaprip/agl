@@ -46,6 +46,7 @@ fn bombelli_finds_two_plus_i_and_returns_to_four() {
         ]
     );
     let out = evaluate(&prog, &prog.planes["pairs"]);
+    assert!(!out.truncated, "closure truncated: raise the batch split");
     let roots: Vec<String> = out
         .db
         .values()
@@ -160,6 +161,7 @@ fn cauchy_adjoins_minus_one_and_derives_hamilton() {
         ("adj_1", 1),
     ] {
         let out = evaluate(&prog, &prog.planes[p]);
+        assert!(!out.truncated, "closure truncated: raise the batch split");
         assert_eq!(atoms(&out, "law_broken"), [], "{p}");
         let sqrt = !atoms(&out, "sqrt_of").is_empty();
         assert_eq!(sqrt, s < 0, "{p}: square root of -121");
@@ -282,6 +284,7 @@ fn adjoined(problem: &str) -> agl::model::Program {
 /// broken with how often.
 fn sieve(prog: &agl::model::Program) -> (Vec<String>, Vec<(String, usize)>) {
     let out = evaluate(prog, &prog.planes["adj"]);
+    assert!(!out.truncated, "closure truncated: raise the batch split");
     let sym = |a: &agl::model::Atom, role: &str| {
         a.args
             .iter()
@@ -364,6 +367,9 @@ fn hamilton(active: &[&str]) -> (agl::model::Program, Vec<String>) {
     let mut src = std::fs::read_to_string("cases/discovery/hamilton.agl").unwrap();
     for u in 0..4 {
         src.push_str(&format!("fact unit_{u}: unit(u: u{u}) @\n"));
+        if u > 0 {
+            src.push_str(&format!("fact sq_{u}: fixed_square(u: u{u}) @\n"));
+        }
     }
     for l in active {
         src.push_str(&format!("fact active_{l}: active(law: {l}) @\n"));
@@ -402,6 +408,7 @@ fn hamilton(active: &[&str]) -> (agl::model::Program, Vec<String>) {
     }
     let prog = agl::parse(&src).unwrap();
     let out = evaluate(&prog, &agl::model::Plane::new());
+    assert!(!out.truncated, "closure truncated: raise the batch split");
     let alive = atoms(&out, "survives")
         .iter()
         .map(|a| a.args[0].1.to_string())
@@ -431,6 +438,7 @@ fn hamilton_does_not_depend_on_statement_order() {
     for seed in 0..2 {
         let p = permute(&prog, seed);
         let out = evaluate(&p, &agl::model::Plane::new());
+        assert!(!out.truncated, "closure truncated: raise the batch split");
         let got: Vec<String> = atoms(&out, "survives")
             .iter()
             .map(|a| a.args[0].1.to_string())

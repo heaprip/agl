@@ -127,6 +127,14 @@ pub fn evaluate_in(prog: &Program, vis: &Visibility, ctx: &Plane) -> Outcome {
             top,
             &mut out.errors,
         );
+        if truncated && !out.truncated {
+            // Silent truncation turned "not derived" into "unknown" (found by
+            // the ablation of H57, step 4): say it where the report shows it.
+            out.errors.insert(format!(
+                "closure stopped at {MAX_ATOMS} atoms in context {}: what is not derived may be missing",
+                if ctx.is_empty() { "{}".to_string() } else { format!("{ctx:?}") }
+            ));
+        }
         out.truncated |= truncated;
         let newly = decide(prog, &db, &mut out);
         let before = blocked.len();

@@ -99,6 +99,7 @@ fn main() {
         .map(|q| q.query.atom.to_string())
         .collect();
     let root = evaluate(&base, &Plane::new());
+    assert!(!root.truncated, "closure truncated: raise the batch split");
     let d = derived(&root, "radicand")
         .find_map(|a| num(a, "value"))
         .expect("radicand");
@@ -143,6 +144,7 @@ fn main() {
             }
             let prog = agl::parse(&text).unwrap();
             let out = evaluate(&prog, &prog.planes[&pn]);
+            assert!(!out.truncated, "closure truncated: raise the batch split");
             let tried = ((k + 1) * BATCH).min(elems.len());
             let roots: Vec<String> = derived(&out, "cube_root").map(|a| a.to_string()).collect();
             if sqrt.is_none() && derived(&out, "sqrt_of").next().is_some() {
@@ -185,6 +187,7 @@ fn main() {
             .collect();
         let prog = agl::parse(&text).unwrap();
         let out = evaluate(&prog, &prog.planes[&pn]);
+        assert!(!out.truncated, "closure truncated: raise the batch split");
         let broken: Vec<String> = derived(&out, "law_broken").map(|a| a.to_string()).collect();
         let mut products: BTreeMap<(String, String), [f64; 2]> = BTreeMap::new();
         for a in derived(&out, "reduced").filter(|a| sym(a, "kind") == Some("product")) {
