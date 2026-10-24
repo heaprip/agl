@@ -224,3 +224,121 @@ pub fn permute(prog: &Program, seed: u64) -> Program {
     p.covers = covers;
     p
 }
+
+/// A random program without planes, aggregates, situations or forbids, for
+/// comparison with the reference defeasible logic in `tests/oracle.rs`. Bodies
+/// run up to three atoms, and half the programs carry a strict chain of depth
+/// three or four with a defeasible shortcut and a defeasible attacker, the
+/// shape where a derivation's strength and trust must be read through the
+/// chain. With `ranked`, facts carry statuses of different trust.
+pub fn gen_flat_program(seed: u64, ranked: bool) -> Program {
+    let mut rng = Rng::new(seed);
+    let mut prog = Program::default();
+    let statuses = ["hi", "mid", "lo"];
+    if ranked {
+        prog.status_rank = [("hi", 3), ("mid", 2), ("lo", 1)]
+            .into_iter()
+            .map(|(s, r)| (s.to_string(), r))
+            .collect();
+    }
+    let fact = |prog: &mut Program, rng: &mut Rng, atom: Atom| {
+        let status = if ranked {
+            rng.pick(&statuses)
+        } else {
+            &"given"
+        };
+        prog.facts.push(Fact {
+            id: format!("f{}", prog.facts.len()),
+            atom,
+            plane: Plane::new(),
+            status: status.to_string(),
+            line: 0,
+        });
+    };
+    let rule = |prog: &mut Program, head: Atom, body: Vec<Atom>, strict: bool| {
+        prog.rules.push(Rule {
+            id: format!("r{}", prog.rules.len()),
+            head,
+            body: body.into_iter().map(Lit::Atom).collect(),
+            strength: if strict {
+                Strength::Strict
+            } else {
+                Strength::Defeasible
+            },
+            plane: Plane::new(),
+            line: 0,
+        });
+    };
+    for _ in 0..(2 + rng.below(6)) {
+        let atom = gen_atom(&mut rng, &[]);
+        fact(&mut prog, &mut rng, atom);
+    }
+    for _ in 0..(3 + rng.below(7)) {
+        let body: Vec<Atom> = (0..1 + rng.below(3))
+            .map(|_| gen_atom(&mut rng, &["X", "Y", "Z"]))
+            .collect();
+        let bound: Vec<&str> = body.iter().flat_map(|a| a.vars()).collect();
+        let mut head = gen_atom(&mut rng, &bound);
+        if bound.is_empty() {
+            head.args.iter_mut().for_each(|(_, t)| {
+                if matches!(t, Term::Var(_)) {
+                    *t = Term::Sym("c0".into());
+                }
+            });
+        }
+        let strict = rng.chance(1, 3);
+        rule(&mut prog, head, body, strict);
+    }
+    if rng.chance(1, 2) {
+        let pat = |rel: &str, neg: bool| {
+            Atom::new(
+                rel.to_string(),
+                ROLES
+                    .iter()
+                    .map(|r| (r.to_string(), Term::Var(r.to_uppercase())))
+                    .collect(),
+                neg,
+            )
+        };
+        let depth = 3 + rng.below(2);
+        let rels: Vec<&str> = (0..=depth).map(|_| *rng.pick(&RELS)).collect();
+        let start = Atom::new(
+            rels[0].to_string(),
+            ROLES
+                .iter()
+                .map(|r| (r.to_string(), Term::Sym(rng.pick(&CONSTS).to_string())))
+                .collect(),
+            false,
+        );
+        fact(&mut prog, &mut rng, start);
+        for w in rels.windows(2) {
+            let strict = !rng.chance(1, 4);
+            rule(&mut prog, pat(w[1], false), vec![pat(w[0], false)], strict);
+        }
+        let mid = 1 + rng.below(depth - 1);
+        rule(
+            &mut prog,
+            pat(rels[mid], false),
+            vec![pat(rels[0], false)],
+            false,
+        );
+        let target = mid + rng.below(depth + 1 - mid);
+        let strict = rng.chance(1, 4);
+        rule(
+            &mut prog,
+            pat(rels[target], true),
+            vec![pat(rels[0], false)],
+            strict,
+        );
+    }
+    // Priorities only from a lower to a higher index: acyclic, as defeasible
+    // logic requires of its superiority relation.
+    let n = prog.rules.len();
+    for _ in 0..rng.below(4) {
+        let (w, l) = (rng.below(n), rng.below(n));
+        if w < l {
+            prog.defeats.insert((format!("r{w}"), format!("r{l}")));
+        }
+    }
+    prog
+}
