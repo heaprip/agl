@@ -145,9 +145,12 @@ impl Cq {
 
     /// The same query whatever the order of its atoms: head variables named
     /// after their roles, the rest `?x1`, `?x2`… in the naming that gives the
-    /// smallest text, atoms and inequalities sorted and without repeats. With
-    /// more than `MAX_CANON` other variables, they are named in order of
-    /// appearance instead.
+    /// smallest text, atoms and inequalities sorted and without repeats. The
+    /// prefix `x` grows (`x_`, `x__`…) until no role is called like a numbered
+    /// variable, so a role `x1` cannot merge with another variable. With more
+    /// than `MAX_CANON` other variables, they are named in order of appearance
+    /// in the atoms sorted as written: still independent of the order of the
+    /// atoms, though not of the names of the variables.
     pub fn canonical(&self) -> Cq {
         let mut map = BTreeMap::new();
         for (role, t) in &self.head {
@@ -155,15 +158,26 @@ impl Cq {
                 map.entry(v.clone()).or_insert_with(|| T::V(role.clone()));
             }
         }
-        let rest: Vec<String> = self
-            .vars()
-            .into_iter()
-            .filter(|v| !map.contains_key(v))
-            .collect();
+        let mut prefix = "x".to_string();
+        let numbered = |role: &str, prefix: &str| {
+            role.strip_prefix(prefix)
+                .is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()))
+        };
+        while self.head.iter().any(|(role, _)| numbered(role, &prefix)) {
+            prefix.push('_');
+        }
+        let rest: Vec<String> = if self.vars().len() - map.len() <= MAX_CANON {
+            self.vars()
+        } else {
+            self.clone().sorted().vars()
+        }
+        .into_iter()
+        .filter(|v| !map.contains_key(v))
+        .collect();
         let named = |order: &[usize]| {
             let mut m = map.clone();
             for (k, &i) in order.iter().enumerate() {
-                m.insert(rest[i].clone(), T::V(format!("x{}", k + 1)));
+                m.insert(rest[i].clone(), T::V(format!("{prefix}{}", k + 1)));
             }
             self.subst(&m).sorted()
         };
@@ -946,10 +960,104 @@ fn connected(q: &Cq) -> Cq {
     }
 }
 
+/// Relations the rules for `rel` rest on, `rel` included.
+fn cone(prog: &Program, rel: &str) -> BTreeSet<String> {
+    let mut out = BTreeSet::from([rel.to_string()]);
+    loop {
+        let before = out.len();
+        let mut body: Vec<String> = Vec::new();
+        for r in prog.rules.iter().filter(|r| out.contains(&r.head.rel)) {
+            for lit in &r.body {
+                match lit {
+                    Lit::Atom(a) => body.push(a.rel.clone()),
+                    Lit::Agg { over, .. } => body.extend(over.iter().map(|a| a.rel.clone())),
+                    Lit::Cmp(..) => {}
+                }
+            }
+        }
+        out.extend(body);
+        if out.len() == before {
+            return out;
+        }
+    }
+}
+
+/// Why the rules for the relations in `cone` are not monotone, if they are
+/// not. Canonical worlds decide containment exactly for strict rules over
+/// positive atoms and `=`/`!=` between symbols; aggregates, ordering,
+/// arithmetic, defeasible rules and negation can each make a larger world
+/// lose a conclusion.
+fn not_monotone(prog: &Program, cone: &BTreeSet<String>) -> Option<String> {
+    for r in prog.rules.iter().filter(|r| cone.contains(&r.head.rel)) {
+        let why = if r.strength == Strength::Defeasible {
+            Some("is defeasible")
+        } else if r.head.neg {
+            Some("derives a negation")
+        } else {
+            r.body.iter().find_map(|lit| match lit {
+                Lit::Atom(a) if a.neg => Some("has a negated premise"),
+                Lit::Agg { .. } => Some("aggregates"),
+                Lit::Cmp(Expr::Term(l), CmpOp::Eq | CmpOp::Ne, Expr::Term(r))
+                    if !matches!(l, Term::Num(..)) && !matches!(r, Term::Num(..)) =>
+                {
+                    None
+                }
+                Lit::Cmp(..) => Some("compares or computes"),
+                Lit::Atom(_) => None,
+            })
+        };
+        if let Some(why) = why {
+            return Some(format!("rule `{}` {why}", r.id));
+        }
+    }
+    None
+}
+
+/// Symbols the rules for `cone` and the `forbid` constraints mention: a
+/// canonical world must be able to name them, or a rule like `?a != adam`
+/// is never tested on `adam`.
+fn rule_consts(prog: &Program, cone: &BTreeSet<String>) -> BTreeSet<String> {
+    fn sym(t: &Term, out: &mut BTreeSet<String>) {
+        if let Term::Sym(s) = t {
+            out.insert(s.clone());
+        }
+    }
+    fn expr(e: &Expr, out: &mut BTreeSet<String>) {
+        match e {
+            Expr::Term(t) => sym(t, out),
+            Expr::Bin(l, _, r) => {
+                expr(l, out);
+                expr(r, out);
+            }
+        }
+    }
+    let mut out = BTreeSet::new();
+    let atom = |a: &Atom, out: &mut BTreeSet<String>| a.args.iter().for_each(|(_, t)| sym(t, out));
+    for r in prog.rules.iter().filter(|r| cone.contains(&r.head.rel)) {
+        atom(&r.head, &mut out);
+        for lit in &r.body {
+            match lit {
+                Lit::Atom(a) => atom(a, &mut out),
+                Lit::Agg { over, expr: e, .. } => {
+                    over.iter().for_each(|a| atom(a, &mut out));
+                    expr(e, &mut out);
+                }
+                Lit::Cmp(l, _, r) => {
+                    expr(l, &mut out);
+                    expr(r, &mut out);
+                }
+            }
+        }
+    }
+    prog.forbids.iter().for_each(|f| atom(&f.atom, &mut out));
+    out
+}
+
 /// `u1` read in `c1` is below the rule-defined relation `rel` read in `c2`:
 /// in every canonical world of every sense, the rules derive `rel` of the head.
-/// Worlds that break a `forbid` are skipped. Exact for positive rules; with
-/// defeasible rules it is only a check.
+/// The worlds identify variables with the constants of the senses, of the
+/// rules and of the `forbid` constraints; worlds that break a `forbid` are
+/// skipped. Exact for monotone rules (`not_monotone`); otherwise only a check.
 /// Returns a world where the rules do not derive it, if there is one.
 fn below_rules(
     prog: &Program,
@@ -962,8 +1070,11 @@ fn below_rules(
         E::B(i) => Term::Sym(format!("_w{i}")),
         E::C(c) => Term::Sym(c.clone()),
     };
+    let extra = rule_consts(prog, &cone(prog, rel));
     for q in u1 {
-        for w in worlds(q, &q.consts(), true)? {
+        let mut consts = q.consts();
+        consts.extend(extra.iter().cloned());
+        for w in worlds(q, &consts, true)? {
             let mut p = Program {
                 axes: prog.axes.clone(),
                 planes: prog.planes.clone(),
@@ -1104,13 +1215,20 @@ pub fn compare(prog: &Program, cmp: &Compare) -> Result<Compared, String> {
         return Err(format!("`{b}` is neither a concept nor derived by a rule"));
     }
     let world = below_rules(prog, &ua, pa, b, pb)?;
-    let relation = match world {
-        None => Relation::Below,
-        Some(_) => Relation::NotBelow,
+    let loose = not_monotone(prog, &cone(prog, b));
+    let relation = match (&world, &loose) {
+        (Some(_), _) => Relation::NotBelow,
+        (None, None) => Relation::Below,
+        (None, Some(_)) => Relation::Unknown,
     };
-    let why = world
-        .map(|w| format!("the rules do not derive `{b}` in: {w}\n"))
-        .unwrap_or_default();
+    let why = match (world, loose) {
+        (Some(w), _) => format!("the rules do not derive `{b}` in: {w}\n"),
+        (None, Some(l)) => format!(
+            "the rules derive `{b}` in every canonical world, but {l}: \
+             a larger world may lose it, so this is not a proof\n"
+        ),
+        (None, None) => String::new(),
+    };
     Ok(Compared {
         relation,
         explanation: format!(

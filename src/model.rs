@@ -332,6 +332,10 @@ pub enum Relation {
     Apart,
     /// Against a relation defined by rules: only "below" can be shown.
     NotBelow,
+    /// Against rules that are not monotone (aggregates, comparisons,
+    /// defeasible rules, negation): no counterexample among the canonical
+    /// worlds, but that does not prove "below".
+    Unknown,
 }
 
 impl fmt::Display for Relation {
@@ -342,6 +346,7 @@ impl fmt::Display for Relation {
             Relation::Above => "above",
             Relation::Apart => "apart",
             Relation::NotBelow => "not_below",
+            Relation::Unknown => "unknown",
         };
         write!(f, "{s}")
     }

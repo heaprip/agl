@@ -226,3 +226,71 @@ compare a @ vs b @
     let err = report.compares[0].verdict.clone().unwrap_err();
     assert!(err.contains("defined through itself"), "{err}");
 }
+
+fn compared(src: &str) -> Vec<String> {
+    agl::run(&agl::parse(src).unwrap())
+        .compares
+        .iter()
+        .map(|c| match &c.verdict {
+            Ok(r) => r.to_string(),
+            Err(e) => e.clone(),
+        })
+        .collect()
+}
+
+#[test]
+fn a_role_named_like_a_numbered_variable_does_not_merge_variables() {
+    let src = "
+relation edge(from, to)
+concept a(x1: ?a) @: edge(from: ?a, to: ?b)
+concept loop(x1: ?a) @: edge(from: ?a, to: ?a)
+compare a @ vs loop @
+";
+    assert_eq!(compared(src), ["above"]);
+}
+
+#[test]
+fn worlds_name_the_constants_of_the_rules() {
+    let src = "
+relation parenthood(child, parent)
+concept parent(ego: ?e, alter: ?a) @: parenthood(child: ?e, parent: ?a)
+rule rb strict @: b(ego: ?e, alter: ?a) <- parenthood(child: ?e, parent: ?a), ?a != adam
+compare parent @ vs b @
+";
+    assert_eq!(compared(src), ["not_below"]);
+}
+
+#[test]
+fn against_rules_that_are_not_monotone_below_is_not_claimed() {
+    let src = "
+relation parenthood(child, parent)
+concept parent(ego: ?e, alter: ?a) @: parenthood(child: ?e, parent: ?a)
+rule rb strict @: b(ego: ?e, alter: ?a) <- parenthood(child: ?e, parent: ?a), ?n = count(?c) over (parenthood(child: ?c, parent: ?a)), ?n < 2
+compare parent @ vs b @
+";
+    assert_eq!(compared(src), ["unknown"]);
+}
+
+#[test]
+fn many_variables_keep_the_canonical_form_independent_of_atom_order() {
+    let atoms = [
+        "r(s: ?e, t: ?b1)",
+        "r(s: ?b1, t: ?b2)",
+        "r(s: ?b2, t: ?b3)",
+        "r(s: ?b3, t: ?b4)",
+        "r(s: ?b4, t: ?b5)",
+        "r(s: ?b5, t: ?b6)",
+        "r(s: ?b6, t: ?b7)",
+        "r(s: ?b1, t: ?b8)",
+    ];
+    let report = |body: &[&str]| {
+        let src = format!(
+            "relation r(s, t)\nconcept big(ego: ?e) @: {}\n",
+            body.join(", ")
+        );
+        agl::concept::report(&agl::parse(&src).unwrap())
+    };
+    let mut reversed = atoms;
+    reversed.reverse();
+    assert_eq!(report(&atoms), report(&reversed));
+}

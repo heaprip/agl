@@ -16,7 +16,7 @@
 //! concept NAME(role: ?v, ...) @ SPEC: ATOM, ..., ?a != ?b
 //! word LANG WORD = CONCEPT
 //! cover REL(role) | REL(role) ...
-//! compare NAME @ SPEC vs NAME @ SPEC [expect same|below|above|apart|not_below]
+//! compare NAME @ SPEC vs NAME @ SPEC [expect same|below|above|apart|not_below|unknown]
 //! ```
 //!
 //! SPEC is `item + item ...`, where an item is a plane name or `axis:value`.
@@ -438,6 +438,7 @@ fn parse_statement(prog: &mut Program, stmt: &str) -> Result<(), String> {
                     "above" => Relation::Above,
                     "apart" => Relation::Apart,
                     "not_below" => Relation::NotBelow,
+                    "unknown" => Relation::Unknown,
                     other => return Err(format!("unknown relation `{other}`")),
                 });
                 right = r.trim();
