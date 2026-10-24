@@ -1,0 +1,97 @@
+# Шаг 2 лестницы H57: присоединение корня по Коши (1847). Уравнение то же,
+# что у Бомбелли: x³ = 15x + 4, формула Кардано упирается в √−121.
+#
+# Правила умножения пар здесь нет. Элемент — многочлен a + bX, заданный
+# коэффициентами; умножение — закон распределения (произведение Коши);
+# затем приведение по модулю X² − s. Какое s присоединить, решает
+# генератор по аномалии: он создаёт плоскости `adjoined(s)` и называет
+# элементы (examples/cauchy.rs). Ядро считает и проверяет.
+
+axis repr
+value repr real
+
+fact eq: cubic(eq: bombelli, p: 15, q: 4) @ [textbook]
+fact r4: candidate_root(eq: bombelli, x: 4) @ [textbook]
+
+rule sat strict @: satisfies(eq: ?e, x: ?x) <-
+    cubic(eq: ?e, p: ?p, q: ?q), candidate_root(eq: ?e, x: ?x), ?x^3 = ?p * ?x + ?q
+
+# Кардано: x = ∛(q/2 + √D) + ∛(q/2 − √D), D = q²/4 − p³/27.
+rule disc strict @: radicand(eq: ?e, value: ?d) <-
+    cubic(eq: ?e, p: ?p, q: ?q), ?d = ?q^2 / 4 - ?p^3 / 27
+rule real strict @: formula_applies(eq: ?e) <- radicand(eq: ?e, value: ?d), ?d >= 0
+
+# Степени X. Произведение двух многочленов первой степени — до X², куб — до X³.
+fact h0: half(h: 0) @
+fact h1: half(h: 1) @
+fact l0: low(r: 0) @
+fact l1: low(r: 1) @
+
+# Закон распределения: (Σ aᵢXⁱ)(Σ bⱼXʲ) = Σₖ (Σ_{i+j=k} aᵢbⱼ) Xᵏ.
+# Квадрат и куб элемента, произведение пары, которую проверяет генератор.
+rule sqt strict @: term(l: ?x, r: ?x, kind: square, i: ?i, j: ?j, deg: ?k, v: ?v) <-
+    coef(p: ?x, deg: ?i, c: ?a), coef(p: ?x, deg: ?j, c: ?b), ?k = ?i + ?j, ?v = ?a * ?b
+rule mut strict @: term(l: ?x, r: ?y, kind: product, i: ?i, j: ?j, deg: ?k, v: ?v) <-
+    probe(l: ?x, r: ?y), coef(p: ?x, deg: ?i, c: ?a), coef(p: ?y, deg: ?j, c: ?b),
+    ?k = ?i + ?j, ?v = ?a * ?b
+rule tsum strict @: raw2(l: ?x, r: ?y, kind: ?n, deg: ?k, c: ?c) <-
+    term(l: ?x, r: ?y, kind: ?n, deg: ?k),
+    ?c = sum(?v) over (term(l: ?x, r: ?y, kind: ?n, i: ?i, j: ?j, deg: ?k, v: ?v))
+# Куб — квадрат, умноженный ещё раз по тому же закону.
+rule cut strict @: cterm(p: ?x, i: ?i, j: ?j, deg: ?k, v: ?v) <-
+    raw2(l: ?x, r: ?x, kind: square, deg: ?i, c: ?a), coef(p: ?x, deg: ?j, c: ?b),
+    ?k = ?i + ?j, ?v = ?a * ?b
+rule csum strict @: raw3(p: ?x, deg: ?k, c: ?c) <-
+    cterm(p: ?x, deg: ?k), ?c = sum(?v) over (cterm(p: ?x, i: ?i, j: ?j, deg: ?k, v: ?v))
+rule r2 strict @: raw(l: ?x, r: ?y, kind: ?n, deg: ?k, c: ?c) <- raw2(l: ?x, r: ?y, kind: ?n, deg: ?k, c: ?c)
+rule r3 strict @: raw(l: ?x, r: ?x, kind: cube, deg: ?k, c: ?c) <- raw3(p: ?x, deg: ?k, c: ?c)
+
+# Приведение по модулю X² − s: Xᵐ = sʰ Xʳ, m = r + 2h.
+rule fold strict @: folded(l: ?x, r: ?y, kind: ?n, deg: ?m, low: ?r, v: ?v) <-
+    raw(l: ?x, r: ?y, kind: ?n, deg: ?m, c: ?c), adjoined(s: ?s), low(r: ?r), half(h: ?h),
+    ?m = ?r + 2 * ?h, ?v = ?c * ?s^?h
+rule red strict @: reduced(l: ?x, r: ?y, kind: ?n, deg: ?r, c: ?c) <-
+    folded(l: ?x, r: ?y, kind: ?n, low: ?r),
+    ?c = sum(?v) over (folded(l: ?x, r: ?y, kind: ?n, deg: ?m, low: ?r, v: ?v))
+
+# Сито (1): квадратный корень из подкоренного.
+rule sqrt strict @: sqrt_of(eq: ?e, p: ?z) <-
+    radicand(eq: ?e, value: ?d), ?d < 0,
+    reduced(l: ?z, r: ?z, kind: square, deg: 0, c: ?c0), ?c0 = ?d,
+    reduced(l: ?z, r: ?z, kind: square, deg: 1, c: ?c1), ?c1 = 0
+
+# Цели Кардано q/2 ± √D; знак «плюс» — у корня с положительным коэффициентом при X.
+rule tplus strict @: cube_target(eq: ?e, sign: plus, re: ?r, im: ?i) <-
+    cubic(eq: ?e, q: ?q), sqrt_of(eq: ?e, p: ?z), coef(p: ?z, deg: 0, c: ?a),
+    coef(p: ?z, deg: 1, c: ?b), ?b > 0, ?r = ?q / 2 + ?a, ?i = ?b
+rule tminus strict @: cube_target(eq: ?e, sign: minus, re: ?r, im: ?i) <-
+    cubic(eq: ?e, q: ?q), sqrt_of(eq: ?e, p: ?z), coef(p: ?z, deg: 0, c: ?a),
+    coef(p: ?z, deg: 1, c: ?b), ?b > 0, ?r = ?q / 2 - ?a, ?i = 0 - ?b
+
+# Сито (2): кубические корни, их сумма и возврат к проверенному корню.
+rule root strict @: cube_root(eq: ?e, sign: ?g, p: ?x) <-
+    cube_target(eq: ?e, sign: ?g, re: ?r, im: ?i),
+    reduced(l: ?x, r: ?x, kind: cube, deg: 0, c: ?c0), ?c0 = ?r,
+    reduced(l: ?x, r: ?x, kind: cube, deg: 1, c: ?c1), ?c1 = ?i
+rule val strict @: cardano_value(eq: ?e, re: ?r, im: ?i) <-
+    cube_root(eq: ?e, sign: plus, p: ?x), cube_root(eq: ?e, sign: minus, p: ?y),
+    coef(p: ?x, deg: 0, c: ?a), coef(p: ?x, deg: 1, c: ?b),
+    coef(p: ?y, deg: 0, c: ?c), coef(p: ?y, deg: 1, c: ?d), ?r = ?a + ?c, ?i = ?b + ?d
+rule back strict @: cardano_real(eq: ?e, x: ?r) <- cardano_value(eq: ?e, re: ?r, im: ?i), ?i = 0
+rule agree strict @: cardano_correct(eq: ?e, x: ?x) <-
+    cardano_real(eq: ?e, x: ?x), satisfies(eq: ?e, x: ?x)
+
+# Сито (3): законы на выборке пар от генератора.
+rule comm strict @: law_broken(law: commutative, l: ?x, r: ?y) <-
+    reduced(l: ?x, r: ?y, kind: product, deg: ?k, c: ?c),
+    reduced(l: ?y, r: ?x, kind: product, deg: ?k, c: ?d), ?c != ?d
+rule cons0 strict @: law_broken(law: conservative, l: ?x, r: ?y) <-
+    probe(l: ?x, r: ?y), coef(p: ?x, deg: 1, c: ?b), coef(p: ?y, deg: 1, c: ?d), ?b = 0, ?d = 0,
+    coef(p: ?x, deg: 0, c: ?a), coef(p: ?y, deg: 0, c: ?c),
+    reduced(l: ?x, r: ?y, kind: product, deg: 0, c: ?v), ?v != ?a * ?c
+rule cons1 strict @: law_broken(law: conservative, l: ?x, r: ?y) <-
+    probe(l: ?x, r: ?y), coef(p: ?x, deg: 1, c: ?b), coef(p: ?y, deg: 1, c: ?d), ?b = 0, ?d = 0,
+    reduced(l: ?x, r: ?y, kind: product, deg: 1, c: ?v), ?v != 0
+
+query satisfies(eq: bombelli, x: 4) @ expect yes
+query formula_applies(eq: bombelli) @ expect yes
