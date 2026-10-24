@@ -212,9 +212,13 @@ pub struct Situation {
 /// Narrows `base` by the `situated(context, axis, value)` atoms derived for
 /// `context`, again and again until the plane stops changing. Narrowing only
 /// makes more rules visible, and each axis can be fixed once, so this ends.
-/// A context situated in two disjoint values of one axis is an error.
+/// A context situated in two disjoint values of one axis is an error. So is a
+/// plane that undermines itself: rules visible only after narrowing may defeat
+/// a `situated` atom the narrowing rested on, and then the plane has no
+/// grounds.
 pub fn situate(prog: &Program, base: &Plane, context: &str) -> Result<Situation, String> {
     let mut plane = base.clone();
+    let mut used: BTreeSet<String> = BTreeSet::new();
     let rounds = prog.axes_count() + 2;
     for _ in 0..rounds {
         let out = eval::evaluate(prog, &plane);
@@ -247,8 +251,22 @@ pub fn situate(prog: &Program, base: &Plane, context: &str) -> Result<Situation,
                 )
             })?;
             grounds.push_str(&eval::explain(&out, key));
+            used.insert(key.clone());
         }
         if next == plane {
+            let lost: Vec<&String> = used.iter().filter(|k| !out.db.contains_key(*k)).collect();
+            if let Some(k) = lost.first() {
+                let why = out
+                    .defeated
+                    .get(*k)
+                    .cloned()
+                    .unwrap_or_else(|| "it is not derived there".into());
+                return Err(format!(
+                    "`{context}` undermines its own plane: it was situated by `{k}`, \
+                     which does not hold in {}: {why}",
+                    plane_to_string(&plane)
+                ));
+            }
             return Ok(Situation { plane, grounds });
         }
         plane = next;

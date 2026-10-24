@@ -160,3 +160,25 @@ rule rnq defeasible @ z:c: ¬q(i: ?i) <- p(i: ?i)
         .collect();
     assert_eq!(found, ["q(i: k) {x:a, y:b, z:c}"]);
 }
+
+#[test]
+fn a_plane_that_undermines_its_situation_is_a_conflict() {
+    // In the root, `k` is situated in w:x; in w:x a narrower rule denies it.
+    let src = "
+axis w
+value w x
+fact b: base(id: k) @
+rule s1 defeasible @: situated(context: k, axis: w, value: x) <- base(id: k)
+rule s2 defeasible @ w:x: ¬situated(context: k, axis: w, value: x) <- base(id: k)
+rule g defeasible @ w:x: good(id: k) <- base(id: k)
+query good(id: k) @ situate k expect conflict
+";
+    let report = agl::run(&agl::parse(src).unwrap());
+    let q = &report.queries[0];
+    assert_eq!(q.verdict, agl::model::Verdict::Conflict);
+    assert!(
+        q.explanation.contains("undermines its own plane"),
+        "{}",
+        q.explanation
+    );
+}
