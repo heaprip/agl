@@ -1,0 +1,94 @@
+{
+  "_embedded" : {
+    "terms" : [ {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_35705",
+      "lang" : "en",
+      "description" : [ "An agent that suppresses immune function by one of several mechanisms of action. Classical cytotoxic immunosuppressants act by inhibiting DNA synthesis. Others may act through activation of T-cells or by inhibiting the activation of helper cells. In addition, an immunosuppressive agent is a role played by a compound which is exhibited by a capability to diminish the extent and/or voracity of an immune response." ],
+      "synonyms" : [ "immunosuppressant", "immunosuppressive agents", "inmunosupresor" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:35705" ]
+      },
+      "label" : "immunosuppressive agent",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "CHEBI_35705",
+      "obo_id" : "CHEBI:35705",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "immunosuppressant",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "immunosuppressive agents",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "inmunosupresor",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35705?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35705/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35705/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35705/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35705/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35705/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35705/graph"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms?iri=http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FCHEBI_35705"
+    }
+  },
+  "page" : {
+    "size" : 1,
+    "totalElements" : 1,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}

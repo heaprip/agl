@@ -1,0 +1,2019 @@
+{
+  "_embedded" : {
+    "terms" : [ {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_22563",
+      "lang" : "en",
+      "description" : [ "A monoatomic or polyatomic species having one or more elementary charges of the electron." ],
+      "synonyms" : [ "Anion", "Anionen", "anion", "anion", "aniones", "anions" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:22563" ]
+      },
+      "label" : "anion",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_22563",
+      "obo_id" : "CHEBI:22563",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "anion",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Anion",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Anionen",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "anion",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "anion",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "aniones",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "anions",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_22563?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_22563/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_22563/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_22563/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_22563/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_22563/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_22563/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_22563/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_22563/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_22563/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_22563/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_23367",
+      "lang" : "en",
+      "description" : [ "Any constitutionally or isotopically distinct atom, molecule, ion, ion pair, radical, radical ion, complex, conformer etc., identifiable as a separately distinguishable entity." ],
+      "synonyms" : [ "entidad molecular", "entidades moleculares", "entite moleculaire", "molecular entities", "molecular entity", "molecular entity", "molekulare Entitaet" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:23367" ]
+      },
+      "label" : "molecular entity",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_23367",
+      "obo_id" : "CHEBI:23367",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "molecular entity",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "entidad molecular",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "entidades moleculares",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "entite moleculaire",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "molecular entities",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "molecular entity",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "molekulare Entitaet",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23367?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23367/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23367/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23367/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23367/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23367/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23367/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23367/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23367/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23367/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23367/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_24431",
+      "lang" : "en",
+      "description" : [ "A chemical entity is a physical entity of interest in chemistry including molecular entities, parts thereof, and chemical substances." ],
+      "synonyms" : [ "chemical entity" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:24431" ]
+      },
+      "label" : "chemical entity",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : true,
+      "short_form" : "CHEBI_24431",
+      "obo_id" : "CHEBI:24431",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "chemical entity",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "uniprot_ft",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24431?lang=en"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24431/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24431/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24431/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24431/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24431/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_24834",
+      "lang" : "en",
+      "description" : [ ],
+      "synonyms" : [ "inorganic anions" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:24834" ]
+      },
+      "label" : "inorganic anion",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_24834",
+      "obo_id" : "CHEBI:24834",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "inorganic anions",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24834?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24834/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24834/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24834/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24834/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24834/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24834/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24834/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24834/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24834/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24834/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_24835",
+      "lang" : "en",
+      "description" : [ "A molecular entity that contains no carbon." ],
+      "synonyms" : [ "anorganische Verbindungen", "inorganic compounds", "inorganic entity", "inorganic molecular entities", "inorganics" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:24835" ]
+      },
+      "label" : "inorganic molecular entity",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_24835",
+      "obo_id" : "CHEBI:24835",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "anorganische Verbindungen",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "inorganic compounds",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "inorganic entity",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "inorganic molecular entities",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "inorganics",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24835?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24835/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24835/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24835/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24835/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24835/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24835/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24835/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24835/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24835/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24835/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_24870",
+      "lang" : "en",
+      "description" : [ "A molecular entity having a net electric charge." ],
+      "synonyms" : [ "Ion", "Ionen", "ion", "ion", "iones", "ions" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:24870" ]
+      },
+      "label" : "ion",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_24870",
+      "obo_id" : "CHEBI:24870",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "ion",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Ion",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Ionen",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "ion",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "ion",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "iones",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "ions",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24870?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24870/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24870/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24870/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24870/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24870/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24870/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24870/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24870/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24870/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_24870/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_25741",
+      "lang" : "en",
+      "description" : [ "An oxide is a chemical compound of oxygen with other chemical elements." ],
+      "synonyms" : [ "oxide", "oxides" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:25741" ]
+      },
+      "label" : "oxide",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_25741",
+      "obo_id" : "CHEBI:25741",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "oxide",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "oxides",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25741?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25741/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25741/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25741/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25741/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25741/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25741/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25741/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25741/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25741/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25741/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_25806",
+      "lang" : "en",
+      "description" : [ ],
+      "synonyms" : [ "oxygen molecular entities", "oxygen molecular entity" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:25806" ]
+      },
+      "label" : "oxygen molecular entity",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_25806",
+      "obo_id" : "CHEBI:25806",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "oxygen molecular entities",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "oxygen molecular entity",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25806?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25806/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25806/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25806/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25806/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25806/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25806/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25806/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25806/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25806/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25806/graph"
+        },
+        "has_part" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_25806/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FBFO_0000051"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_26082",
+      "lang" : "en",
+      "description" : [ ],
+      "synonyms" : [ "phosphorus molecular entities" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:26082" ]
+      },
+      "label" : "phosphorus molecular entity",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_26082",
+      "obo_id" : "CHEBI:26082",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "phosphorus molecular entities",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_26082?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_26082/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_26082/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_26082/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_26082/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_26082/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_26082/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_26082/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_26082/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_26082/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_26082/graph"
+        },
+        "has_part" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_26082/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FBFO_0000051"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_33273",
+      "lang" : "en",
+      "description" : [ "An anion consisting of more than one atom." ],
+      "synonyms" : [ "polyatomic anions" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:33273" ]
+      },
+      "label" : "polyatomic anion",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_33273",
+      "obo_id" : "CHEBI:33273",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "polyatomic anions",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33273?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33273/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33273/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33273/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33273/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33273/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33273/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33273/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33273/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33273/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33273/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_33302",
+      "lang" : "en",
+      "description" : [ "A p-block molecular entity containing any pnictogen." ],
+      "synonyms" : [ "pnictogen molecular entities", "pnictogen molecular entity" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:33302" ]
+      },
+      "label" : "pnictogen molecular entity",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_33302",
+      "obo_id" : "CHEBI:33302",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "pnictogen molecular entities",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "pnictogen molecular entity",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33302?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33302/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33302/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33302/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33302/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33302/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33302/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33302/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33302/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33302/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33302/graph"
+        },
+        "has_part" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33302/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FBFO_0000051"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_33304",
+      "lang" : "en",
+      "description" : [ "Any p-block molecular entity containing a chalcogen." ],
+      "synonyms" : [ "chalcogen compounds", "chalcogen molecular entities", "chalcogen molecular entity" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:33304" ]
+      },
+      "label" : "chalcogen molecular entity",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_33304",
+      "obo_id" : "CHEBI:33304",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "chalcogen compounds",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "chalcogen molecular entities",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "chalcogen molecular entity",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33304?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33304/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33304/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33304/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33304/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33304/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33304/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33304/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33304/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33304/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33304/graph"
+        },
+        "has_part" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33304/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FBFO_0000051"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_33459",
+      "lang" : "en",
+      "description" : [ ],
+      "synonyms" : [ "pnictogen oxoanion", "pnictogen oxoanions" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:33459" ]
+      },
+      "label" : "pnictogen oxoanion",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_33459",
+      "obo_id" : "CHEBI:33459",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "pnictogen oxoanion",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "pnictogen oxoanions",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33459?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33459/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33459/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33459/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33459/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33459/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33459/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33459/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33459/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33459/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33459/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_33461",
+      "lang" : "en",
+      "description" : [ ],
+      "synonyms" : [ "oxoanions of phosphorus", "phosphorus oxoanion", "phosphorus oxoanions" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:33461" ]
+      },
+      "label" : "phosphorus oxoanion",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_33461",
+      "obo_id" : "CHEBI:33461",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "oxoanions of phosphorus",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "phosphorus oxoanion",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "phosphorus oxoanions",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33461?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33461/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33461/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33461/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33461/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33461/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33461/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33461/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33461/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33461/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33461/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_33579",
+      "lang" : "en",
+      "description" : [ "A molecular entity containing one or more atoms from any of groups 1, 2, 13, 14, 15, 16, 17, and 18 of the periodic table." ],
+      "synonyms" : [ "main group compounds", "main group molecular entities" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:33579" ]
+      },
+      "label" : "main group molecular entity",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_33579",
+      "obo_id" : "CHEBI:33579",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "main group compounds",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "main group molecular entities",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33579?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33579/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33579/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33579/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33579/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33579/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33579/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33579/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33579/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33579/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33579/graph"
+        },
+        "has_part" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33579/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FBFO_0000051"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_33675",
+      "lang" : "en",
+      "description" : [ "A main group molecular entity that contains one or more atoms of a p-block element." ],
+      "synonyms" : [ "p-block compounds", "p-block molecular entities", "p-block molecular entitiy" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:33675" ]
+      },
+      "label" : "p-block molecular entity",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_33675",
+      "obo_id" : "CHEBI:33675",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "p-block compounds",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "p-block molecular entities",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "p-block molecular entitiy",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33675?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33675/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33675/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33675/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33675/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33675/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33675/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33675/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33675/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33675/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33675/graph"
+        },
+        "has_part" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_33675/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FBFO_0000051"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_35406",
+      "lang" : "en",
+      "description" : [ "An oxoanion is an anion derived from an oxoacid by loss of hydron(s) bound to oxygen." ],
+      "synonyms" : [ "oxoacid anions", "oxoanion", "oxoanions" ],
+      "annotation" : {
+        "has_alternative_id" : [ "CHEBI:33274", "CHEBI:33436" ],
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:35406" ]
+      },
+      "label" : "oxoanion",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_35406",
+      "obo_id" : "CHEBI:35406",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "oxoacid anions",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "oxoanion",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "oxoanions",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35406?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35406/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35406/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35406/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35406/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35406/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35406/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35406/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35406/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35406/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35406/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_35780",
+      "lang" : "en",
+      "description" : [ "A phosphorus oxoanion that is the conjugate base of phosphoric acid." ],
+      "synonyms" : [ "Pi", "phosphate ions", "phosphate" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:35780" ]
+      },
+      "label" : "phosphate ion",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_35780",
+      "obo_id" : "CHEBI:35780",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "Pi",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "phosphate ions",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "phosphate",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35780?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35780/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35780/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35780/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35780/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35780/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35780/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35780/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35780/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35780/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35780/graph"
+        },
+        "has_role" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35780/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0000087"
+        },
+        "is_deprotonated_form_of" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_35780/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0018033"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_36357",
+      "lang" : "en",
+      "description" : [ "Any molecular entity consisting of more than one atom." ],
+      "synonyms" : [ "polyatomic entities" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:36357" ]
+      },
+      "label" : "polyatomic entity",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_36357",
+      "obo_id" : "CHEBI:36357",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "polyatomic entities",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36357?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36357/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36357/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36357/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36357/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36357/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36357/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36357/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36357/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36357/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36357/graph"
+        },
+        "has_part" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36357/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FBFO_0000051"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_36358",
+      "lang" : "en",
+      "description" : [ "An ion consisting of more than one atom." ],
+      "synonyms" : [ "polyatomic ions" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:36358" ]
+      },
+      "label" : "polyatomic ion",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_36358",
+      "obo_id" : "CHEBI:36358",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "polyatomic ions",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36358?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36358/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36358/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36358/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36358/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36358/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36358/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36358/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36358/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36358/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36358/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_36914",
+      "lang" : "en",
+      "description" : [ ],
+      "synonyms" : [ "inorganic ions" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:36914" ]
+      },
+      "label" : "inorganic ion",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_36914",
+      "obo_id" : "CHEBI:36914",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "inorganic ions",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36914?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36914/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36914/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36914/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36914/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36914/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36914/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36914/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36914/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36914/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_36914/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_37577",
+      "lang" : "en",
+      "description" : [ "A molecular entity consisting of two or more chemical elements." ],
+      "synonyms" : [ "chemical compound", "heteroatomic molecular entities" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:37577" ]
+      },
+      "label" : "heteroatomic molecular entity",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_37577",
+      "obo_id" : "CHEBI:37577",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "chemical compound",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "heteroatomic molecular entities",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_37577?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_37577/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_37577/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_37577/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_37577/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_37577/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_37577/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_37577/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_37577/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_37577/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_37577/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_79387",
+      "lang" : "en",
+      "description" : [ "Any inorganic anion with a valency of three." ],
+      "synonyms" : [ "trivalent inorganic anions" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:79387" ]
+      },
+      "label" : "trivalent inorganic anion",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_79387",
+      "obo_id" : "CHEBI:79387",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "trivalent inorganic anions",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_79387?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_79387/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_79387/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_79387/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_79387/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_79387/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_79387/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_79387/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_79387/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_79387/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_79387/graph"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_18367/ancestors?page=0&size=1000"
+    }
+  },
+  "page" : {
+    "size" : 1000,
+    "totalElements" : 23,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}

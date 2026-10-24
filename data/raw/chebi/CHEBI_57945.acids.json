@@ -1,0 +1,555 @@
+{
+  "_embedded" : {
+    "terms" : [ {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_16908",
+      "lang" : "en",
+      "description" : [ "A coenzyme found in all living cells; consists of two nucleotides joined through their 5'-phosphate groups, with one nucleotide containing an adenine base and the other containing nicotinamide." ],
+      "synonyms" : [ "1,4-DIHYDRONICOTINAMIDE ADENINE DINUCLEOTIDE", "DPNH", "NADH", "Reduced nicotinamide adenine dinucleotide", "adenosine 5'-{3-[1-(3-carbamoyl-1,4-dihydropyridin-1-yl)-1,4-anhydro-D-ribitol-5-yl] dihydrogen diphosphate}", "adenosine 5'-{3-[1-(3-carbamoyl-1,4-dihydropyridin-1-yl)-1,4-anhydro-D-ribitol-5-yl] dihydrogen diphosphate}", "nicotinamide adenine dinucleotide (reduced)" ],
+      "annotation" : {
+        "charge" : [ 0.0 ],
+        "database_cross_reference" : [ "beilstein:79324", "cas:58-68-4", "drugbank:DB00157", "gmelin:544241", "hmdb:HMDB0001487", "kegg.compound:C00004", "knapsack:C00019343", "pdb-ccd:NAI", "pubmed:11259315", "pubmed:19459318", "reaxys:79324", "wikipedia.en:Nicotinamide_adenine_dinucleotide" ],
+        "generalized_empirical_formula" : [ "C21H29N7O14P2" ],
+        "has_alternative_id" : [ "CHEBI:13395", "CHEBI:13396", "CHEBI:21902", "CHEBI:44216", "CHEBI:7423" ],
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:16908" ],
+        "inchi_key_string" : [ "BOPGDPNILDQYTO-NNYOXOHSSA-N" ],
+        "inchi_string" : [ "InChI=1S/C21H29N7O14P2/c22-17-12-19(25-7-24-17)28(8-26-12)21-16(32)14(30)11(41-21)6-39-44(36,37)42-43(34,35)38-5-10-13(29)15(31)20(40-10)27-3-1-2-9(4-27)18(23)33/h1,3-4,7-8,10-11,13-16,20-21,29-32H,2,5-6H2,(H2,23,33)(H,34,35)(H,36,37)(H2,22,24,25)/t10-,11-,13-,14-,15-,16-,20-,21-/m1/s1" ],
+        "mass" : [ "665.446" ],
+        "monoisotopic_mass" : [ "665.12477" ],
+        "smiles_string" : [ "NC(=O)C1=CN([C@@H]2O[C@H](COP(=O)(O)OP(=O)(O)OC[C@H]3O[C@@H](n4cnc5c(N)ncnc54)[C@H](O)[C@@H]3O)[C@@H](O)[C@H]2O)C=CC1" ]
+      },
+      "label" : "NADH",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "CHEBI_16908",
+      "obo_id" : "CHEBI:16908",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : [ {
+        "database" : "beilstein",
+        "id" : "79324",
+        "description" : "beilstein",
+        "url" : null
+      }, {
+        "database" : "cas",
+        "id" : "58-68-4",
+        "description" : "cas",
+        "url" : "https://commonchemistry.cas.org/detail?cas_rn=58-68-4"
+      }, {
+        "database" : "drugbank",
+        "id" : "DB00157",
+        "description" : "drugbank",
+        "url" : "https://go.drugbank.com/drugs/DB00157"
+      }, {
+        "database" : "gmelin",
+        "id" : "544241",
+        "description" : "gmelin",
+        "url" : null
+      }, {
+        "database" : "hmdb",
+        "id" : "HMDB0001487",
+        "description" : "hmdb",
+        "url" : "http://www.hmdb.ca/metabolites/HMDB0001487"
+      }, {
+        "database" : "kegg.compound",
+        "id" : "C00004",
+        "description" : "kegg.compound",
+        "url" : null
+      }, {
+        "database" : "knapsack",
+        "id" : "C00019343",
+        "description" : "knapsack",
+        "url" : "http://www.knapsackfamily.com/knapsack_core/information.php?word=C00019343"
+      }, {
+        "database" : "pdb-ccd",
+        "id" : "NAI",
+        "description" : "pdb-ccd",
+        "url" : null
+      }, {
+        "database" : "pubmed",
+        "id" : "11259315",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/11259315/"
+      }, {
+        "database" : "pubmed",
+        "id" : "19459318",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/19459318/"
+      }, {
+        "database" : "reaxys",
+        "id" : "79324",
+        "description" : "reaxys",
+        "url" : null
+      }, {
+        "database" : "wikipedia.en",
+        "id" : "Nicotinamide_adenine_dinucleotide",
+        "description" : "wikipedia.en",
+        "url" : null
+      } ],
+      "obo_synonym" : [ {
+        "name" : "adenosine 5'-{3-[1-(3-carbamoyl-1,4-dihydropyridin-1-yl)-1,4-anhydro-D-ribitol-5-yl] dihydrogen diphosphate}",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "1,4-DIHYDRONICOTINAMIDE ADENINE DINUCLEOTIDE",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "pdb-ccd",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "DPNH",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "NADH",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Reduced nicotinamide adenine dinucleotide",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "adenosine 5'-{3-[1-(3-carbamoyl-1,4-dihydropyridin-1-yl)-1,4-anhydro-D-ribitol-5-yl] dihydrogen diphosphate}",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "nicotinamide adenine dinucleotide (reduced)",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16908?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16908/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16908/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16908/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16908/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16908/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16908/graph"
+        },
+        "has_role" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16908/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0000087"
+        },
+        "is_protonated_form_of" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16908/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0018034"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_23357",
+      "lang" : "en",
+      "description" : [ "An organic molecule or ion (usually a metal ion) that is required by an enzyme for its activity. It may be attached either loosely (coenzyme) or tightly (prosthetic group)." ],
+      "synonyms" : [ "cofactor", "cofactors", "cofactors" ],
+      "annotation" : {
+        "database_cross_reference" : [ "wikipedia.en:Cofactor_(biochemistry)" ],
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:23357" ]
+      },
+      "label" : "cofactor",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_23357",
+      "obo_id" : "CHEBI:23357",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : [ {
+        "database" : "wikipedia.en",
+        "id" : "Cofactor_(biochemistry)",
+        "description" : "wikipedia.en",
+        "url" : null
+      } ],
+      "obo_synonym" : [ {
+        "name" : "cofactors",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "cofactor",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "cofactors",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23357?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23357/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23357/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23357/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23357/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23357/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23357/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23357/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23357/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23357/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_23357/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_75772",
+      "lang" : "en",
+      "description" : [ "Any  fungal metabolite produced during a metabolic reaction in Baker's yeast (<em>Saccharomyces cerevisiae </em>)." ],
+      "synonyms" : [ "S. cerevisiae metabolite", "S. cerevisiae metabolites", "S. cerevisiae secondary metabolite", "S. cerevisiae secondary metabolites", "Saccharomyces cerevisiae metabolites", "Saccharomyces cerevisiae secondary metabolites", "baker's yeast metabolite", "baker's yeast metabolites", "baker's yeast secondary metabolite", "baker's yeast secondary metabolites" ],
+      "annotation" : {
+        "has_alternative_id" : [ "CHEBI:76949", "CHEBI:76951" ],
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:75772" ]
+      },
+      "label" : "Saccharomyces cerevisiae metabolite",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "CHEBI_75772",
+      "obo_id" : "CHEBI:75772",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "S. cerevisiae metabolite",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "S. cerevisiae metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "S. cerevisiae secondary metabolite",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "S. cerevisiae secondary metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Saccharomyces cerevisiae metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Saccharomyces cerevisiae secondary metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "baker's yeast metabolite",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "baker's yeast metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "baker's yeast secondary metabolite",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "baker's yeast secondary metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_77746",
+      "lang" : "en",
+      "description" : [ "Any mammalian metabolite  produced during a metabolic reaction in humans (<em>Homo sapiens</em>)." ],
+      "synonyms" : [ "H. sapiens metabolite", "H. sapiens metabolites", "Homo sapiens metabolite", "Homo sapiens metabolites" ],
+      "annotation" : {
+        "has_alternative_id" : [ "CHEBI:75770", "CHEBI:77123" ],
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:77746" ]
+      },
+      "label" : "human metabolite",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_77746",
+      "obo_id" : "CHEBI:77746",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "H. sapiens metabolite",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "H. sapiens metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Homo sapiens metabolite",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Homo sapiens metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/graph"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_57945/is_deprotonated_form_of?page=0&size=100"
+    }
+  },
+  "page" : {
+    "size" : 100,
+    "totalElements" : 4,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}

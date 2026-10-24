@@ -1,0 +1,152 @@
+{
+  "_embedded" : {
+    "terms" : [ {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_16001",
+      "lang" : "en",
+      "description" : [ "The (<i>R</i>)-enantiomer of 3-phosphoglyceroyl dihydrogen phosphate." ],
+      "synonyms" : [ "(2R)-2-hydroxy-1-oxopropane-1,3-diyl bis(dihydrogen phosphate)", "(2R)-2-hydroxy-1-oxopropane-1,3-diyl bis(dihydrogen phosphate)", "(R)-2-Hydroxy-3-(phosphonooxy)-1-monoanhydride with phosphoric propanoic acid", "1,3-Bisphospho-D-glycerate", "3-Phospho-D-glyceroyl phosphate" ],
+      "annotation" : {
+        "charge" : [ 0.0 ],
+        "database_cross_reference" : [ "cas:38168-82-0", "kegg.compound:C00236", "knapsack:C00019552", "pdb-ccd:X15" ],
+        "generalized_empirical_formula" : [ "C3H8O10P2" ],
+        "has_alternative_id" : [ "CHEBI:11881", "CHEBI:1658", "CHEBI:20189" ],
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:16001" ],
+        "inchi_key_string" : [ "LJQLQCAXBUHEAZ-UWTATZPHSA-N" ],
+        "inchi_string" : [ "InChI=1S/C3H8O10P2/c4-2(1-12-14(6,7)8)3(5)13-15(9,10)11/h2,4H,1H2,(H2,6,7,8)(H2,9,10,11)/t2-/m1/s1" ],
+        "mass" : [ "266.035" ],
+        "monoisotopic_mass" : [ "265.95927" ],
+        "smiles_string" : [ "O=C(OP(=O)(O)O)[C@H](O)COP(=O)(O)O" ]
+      },
+      "label" : "3-phospho-D-glyceroyl dihydrogen phosphate",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "CHEBI_16001",
+      "obo_id" : "CHEBI:16001",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : [ {
+        "database" : "cas",
+        "id" : "38168-82-0",
+        "description" : "cas",
+        "url" : "https://commonchemistry.cas.org/detail?cas_rn=38168-82-0"
+      }, {
+        "database" : "kegg.compound",
+        "id" : "C00236",
+        "description" : "kegg.compound",
+        "url" : null
+      }, {
+        "database" : "knapsack",
+        "id" : "C00019552",
+        "description" : "knapsack",
+        "url" : "http://www.knapsackfamily.com/knapsack_core/information.php?word=C00019552"
+      }, {
+        "database" : "pdb-ccd",
+        "id" : "X15",
+        "description" : "pdb-ccd",
+        "url" : null
+      } ],
+      "obo_synonym" : [ {
+        "name" : "(2R)-2-hydroxy-1-oxopropane-1,3-diyl bis(dihydrogen phosphate)",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "(2R)-2-hydroxy-1-oxopropane-1,3-diyl bis(dihydrogen phosphate)",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "(R)-2-Hydroxy-3-(phosphonooxy)-1-monoanhydride with phosphoric propanoic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "1,3-Bisphospho-D-glycerate",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "3-Phospho-D-glyceroyl phosphate",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16001?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16001/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16001/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16001/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16001/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16001/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16001/graph"
+        },
+        "has_role" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16001/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0000087"
+        },
+        "is_protonated_form_of" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16001/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0018034"
+        },
+        "has_functional_parent" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16001/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0018038"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms?iri=http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FCHEBI_16001"
+    }
+  },
+  "page" : {
+    "size" : 1,
+    "totalElements" : 1,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}

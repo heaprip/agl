@@ -1,0 +1,556 @@
+{
+  "_embedded" : {
+    "terms" : [ {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_16004",
+      "lang" : "en",
+      "description" : [ "An optically active form of lactate having (<i>R</i>)-configuration." ],
+      "synonyms" : [ "(2R)-2-hydroxypropanoate", "(2R)-2-hydroxypropanoate", "(R)-lactate", "D-2-hydroxypropanoate", "D-2-hydroxypropionate", "D-lactate" ],
+      "annotation" : {
+        "charge" : [ -1.0 ],
+        "database_cross_reference" : [ "gmelin:362716", "kegg.compound:C00256", "metacyc.compound:D-LACTATE", "reaxys:4655978" ],
+        "generalized_empirical_formula" : [ "C3H5O3" ],
+        "has_alternative_id" : [ "CHEBI:11001", "CHEBI:18684" ],
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:16004" ],
+        "inchi_key_string" : [ "JVTAAEKCZFNVCJ-UWTATZPHSA-M" ],
+        "inchi_string" : [ "InChI=1S/C3H6O3/c1-2(4)3(5)6/h2,4H,1H3,(H,5,6)/p-1/t2-/m1/s1" ],
+        "mass" : [ "89.07" ],
+        "monoisotopic_mass" : [ "89.02442" ],
+        "smiles_string" : [ "C[C@@H](O)C(=O)[O-]" ]
+      },
+      "label" : "(R)-lactate",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "CHEBI_16004",
+      "obo_id" : "CHEBI:16004",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : [ {
+        "database" : "gmelin",
+        "id" : "362716",
+        "description" : "gmelin",
+        "url" : null
+      }, {
+        "database" : "kegg.compound",
+        "id" : "C00256",
+        "description" : "kegg.compound",
+        "url" : null
+      }, {
+        "database" : "metacyc.compound",
+        "id" : "D-LACTATE",
+        "description" : "metacyc.compound",
+        "url" : null
+      }, {
+        "database" : "reaxys",
+        "id" : "4655978",
+        "description" : "reaxys",
+        "url" : null
+      } ],
+      "obo_synonym" : [ {
+        "name" : "(2R)-2-hydroxypropanoate",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "(2R)-2-hydroxypropanoate",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "(R)-lactate",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "uniprot_ft",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "D-2-hydroxypropanoate",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "D-2-hydroxypropionate",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "D-lactate",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16004?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16004/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16004/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16004/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16004/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16004/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16004/graph"
+        },
+        "has_role" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16004/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0000087"
+        },
+        "is_deprotonated_form_of" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16004/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0018033"
+        },
+        "is_enantiomer_of" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16004/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0018039"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_422",
+      "lang" : "en",
+      "description" : [ "An optically active form of lactic acid having (<i>S</i>)-configuration." ],
+      "synonyms" : [ "(+)-lactic acid", "(2S)-2-hydroxypropanoic acid", "(2S)-2-hydroxypropanoic acid", "(S)-(+)-lactic acid", "(S)-2-hydroxypropanoic acid", "(S)-2-hydroxypropionic acid", "L-(+)-alpha-hydroxypropionic acid", "L-(+)-lactic acid", "L-Lactic acid", "L-Milchsaeure" ],
+      "annotation" : {
+        "charge" : [ 0.0 ],
+        "database_cross_reference" : [ "cas:79-33-4", "gmelin:362717", "hmdb:HMDB0000190", "kegg.compound:C00186", "knapsack:C00001191", "pubmed:21996028", "pubmed:22336740", "pubmed:22367529", "pubmed:22424924", "pubmed:22443585", "pubmed:22461545", "pubmed:22534372", "pubmed:22538963", "pubmed:22578598", "reaxys:1720251", "wikipedia.en:Lactic_Acid" ],
+        "generalized_empirical_formula" : [ "C3H6O3" ],
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:422" ],
+        "inchi_key_string" : [ "JVTAAEKCZFNVCJ-REOHCLBHSA-N" ],
+        "inchi_string" : [ "InChI=1S/C3H6O3/c1-2(4)3(5)6/h2,4H,1H3,(H,5,6)/t2-/m0/s1" ],
+        "mass" : [ "90.078" ],
+        "monoisotopic_mass" : [ "90.03169" ],
+        "smiles_string" : [ "C[C@H](O)C(=O)O" ]
+      },
+      "label" : "(S)-lactic acid",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "CHEBI_422",
+      "obo_id" : "CHEBI:422",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : [ {
+        "database" : "cas",
+        "id" : "79-33-4",
+        "description" : "cas",
+        "url" : "https://commonchemistry.cas.org/detail?cas_rn=79-33-4"
+      }, {
+        "database" : "gmelin",
+        "id" : "362717",
+        "description" : "gmelin",
+        "url" : null
+      }, {
+        "database" : "hmdb",
+        "id" : "HMDB0000190",
+        "description" : "hmdb",
+        "url" : "http://www.hmdb.ca/metabolites/HMDB0000190"
+      }, {
+        "database" : "kegg.compound",
+        "id" : "C00186",
+        "description" : "kegg.compound",
+        "url" : null
+      }, {
+        "database" : "knapsack",
+        "id" : "C00001191",
+        "description" : "knapsack",
+        "url" : "http://www.knapsackfamily.com/knapsack_core/information.php?word=C00001191"
+      }, {
+        "database" : "pubmed",
+        "id" : "21996028",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/21996028/"
+      }, {
+        "database" : "pubmed",
+        "id" : "22336740",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/22336740/"
+      }, {
+        "database" : "pubmed",
+        "id" : "22367529",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/22367529/"
+      }, {
+        "database" : "pubmed",
+        "id" : "22424924",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/22424924/"
+      }, {
+        "database" : "pubmed",
+        "id" : "22443585",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/22443585/"
+      }, {
+        "database" : "pubmed",
+        "id" : "22461545",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/22461545/"
+      }, {
+        "database" : "pubmed",
+        "id" : "22534372",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/22534372/"
+      }, {
+        "database" : "pubmed",
+        "id" : "22538963",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/22538963/"
+      }, {
+        "database" : "pubmed",
+        "id" : "22578598",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/22578598/"
+      }, {
+        "database" : "reaxys",
+        "id" : "1720251",
+        "description" : "reaxys",
+        "url" : null
+      }, {
+        "database" : "wikipedia.en",
+        "id" : "Lactic_Acid",
+        "description" : "wikipedia.en",
+        "url" : null
+      } ],
+      "obo_synonym" : [ {
+        "name" : "(2S)-2-hydroxypropanoic acid",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "(+)-lactic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "nist",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "(2S)-2-hydroxypropanoic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "(S)-(+)-lactic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "nist",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "(S)-2-hydroxypropanoic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "nist",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "(S)-2-hydroxypropionic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "nist",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "L-(+)-alpha-hydroxypropionic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chemidplus",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "L-(+)-lactic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "nist",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "L-Lactic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "L-Milchsaeure",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_422?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_422/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_422/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_422/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_422/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_422/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_422/graph"
+        },
+        "has_role" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_422/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0000087"
+        },
+        "is_protonated_form_of" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_422/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0018034"
+        },
+        "is_enantiomer_of" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_422/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0018039"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_75772",
+      "lang" : "en",
+      "description" : [ "Any  fungal metabolite produced during a metabolic reaction in Baker's yeast (<em>Saccharomyces cerevisiae </em>)." ],
+      "synonyms" : [ "S. cerevisiae metabolite", "S. cerevisiae metabolites", "S. cerevisiae secondary metabolite", "S. cerevisiae secondary metabolites", "Saccharomyces cerevisiae metabolites", "Saccharomyces cerevisiae secondary metabolites", "baker's yeast metabolite", "baker's yeast metabolites", "baker's yeast secondary metabolite", "baker's yeast secondary metabolites" ],
+      "annotation" : {
+        "has_alternative_id" : [ "CHEBI:76949", "CHEBI:76951" ],
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:75772" ]
+      },
+      "label" : "Saccharomyces cerevisiae metabolite",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "CHEBI_75772",
+      "obo_id" : "CHEBI:75772",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "S. cerevisiae metabolite",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "S. cerevisiae metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "S. cerevisiae secondary metabolite",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "S. cerevisiae secondary metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Saccharomyces cerevisiae metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Saccharomyces cerevisiae secondary metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "baker's yeast metabolite",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "baker's yeast metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "baker's yeast secondary metabolite",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "baker's yeast secondary metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772/graph"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16651/is_deprotonated_form_of?page=0&size=100"
+    }
+  },
+  "page" : {
+    "size" : 100,
+    "totalElements" : 3,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}

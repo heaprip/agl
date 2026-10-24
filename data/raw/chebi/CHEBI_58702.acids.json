@@ -1,0 +1,270 @@
+{
+  "_embedded" : {
+    "terms" : [ {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_44897",
+      "lang" : "en",
+      "description" : [ "A monocarboxylic acid that is acrylic acid substituted by a phosphonooxy group at position 2. It is a metabolic intermediate in pathways like glycolysis and gluconeogenesis." ],
+      "synonyms" : [ "2-(phosphonooxy)-2-propenoic acid", "2-(phosphonooxy)prop-2-enoic acid", "2-(phosphonooxy)prop-2-enoic acid", "2-PHOSPHOENOLPYRUVIC ACID", "PEP", "PHOSPHOENOLPYRUVATE", "Phosphoenolpyruvic acid" ],
+      "annotation" : {
+        "charge" : [ 0.0 ],
+        "database_cross_reference" : [ "cas:138-08-9", "drugbank:DB01819", "hmdb:HMDB0000263", "kegg.compound:C00074", "knapsack:C00000798", "pdb-ccd:PEP", "reaxys:1775389", "wikipedia.en:Phosphoenolpyruvic_acid" ],
+        "generalized_empirical_formula" : [ "C3H5O6P" ],
+        "has_alternative_id" : [ "CHEBI:26055", "CHEBI:44894" ],
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:44897" ],
+        "inchi_key_string" : [ "DTBNBXWJWCWCIK-UHFFFAOYSA-N" ],
+        "inchi_string" : [ "InChI=1S/C3H5O6P/c1-2(3(4)5)9-10(6,7)8/h1H2,(H,4,5)(H2,6,7,8)" ],
+        "mass" : [ "168.041" ],
+        "monoisotopic_mass" : [ "167.98237" ],
+        "smiles_string" : [ "C=C(OP(=O)(O)O)C(=O)O" ]
+      },
+      "label" : "phosphoenolpyruvic acid",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "CHEBI_44897",
+      "obo_id" : "CHEBI:44897",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : [ {
+        "database" : "cas",
+        "id" : "138-08-9",
+        "description" : "cas",
+        "url" : "https://commonchemistry.cas.org/detail?cas_rn=138-08-9"
+      }, {
+        "database" : "drugbank",
+        "id" : "DB01819",
+        "description" : "drugbank",
+        "url" : "https://go.drugbank.com/drugs/DB01819"
+      }, {
+        "database" : "hmdb",
+        "id" : "HMDB0000263",
+        "description" : "hmdb",
+        "url" : "http://www.hmdb.ca/metabolites/HMDB0000263"
+      }, {
+        "database" : "kegg.compound",
+        "id" : "C00074",
+        "description" : "kegg.compound",
+        "url" : null
+      }, {
+        "database" : "knapsack",
+        "id" : "C00000798",
+        "description" : "knapsack",
+        "url" : "http://www.knapsackfamily.com/knapsack_core/information.php?word=C00000798"
+      }, {
+        "database" : "pdb-ccd",
+        "id" : "PEP",
+        "description" : "pdb-ccd",
+        "url" : null
+      }, {
+        "database" : "reaxys",
+        "id" : "1775389",
+        "description" : "reaxys",
+        "url" : null
+      }, {
+        "database" : "wikipedia.en",
+        "id" : "Phosphoenolpyruvic_acid",
+        "description" : "wikipedia.en",
+        "url" : null
+      } ],
+      "obo_synonym" : [ {
+        "name" : "2-(phosphonooxy)prop-2-enoic acid",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "2-(phosphonooxy)-2-propenoic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chemidplus",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "2-(phosphonooxy)prop-2-enoic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "2-PHOSPHOENOLPYRUVIC ACID",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "pdb-ccd",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "PEP",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "PHOSPHOENOLPYRUVATE",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "pdb-ccd",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Phosphoenolpyruvic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_44897?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_44897/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_44897/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_44897/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_44897/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_44897/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_44897/graph"
+        },
+        "has_role" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_44897/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0000087"
+        },
+        "is_protonated_form_of" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_44897/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0018034"
+        },
+        "has_functional_parent" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_44897/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0018038"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_78675",
+      "lang" : "en",
+      "description" : [ "Any metabolite produced by all living cells." ],
+      "synonyms" : [ "essential metabolite", "essential metabolites", "fundamental metabolites" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:78675" ]
+      },
+      "label" : "fundamental metabolite",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "CHEBI_78675",
+      "obo_id" : "CHEBI:78675",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "essential metabolite",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "essential metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "fundamental metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_78675?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_78675/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_78675/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_78675/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_78675/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_78675/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_78675/graph"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_58702/is_deprotonated_form_of?page=0&size=100"
+    }
+  },
+  "page" : {
+    "size" : 100,
+    "totalElements" : 2,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}

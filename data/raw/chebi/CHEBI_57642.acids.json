@@ -1,0 +1,897 @@
+{
+  "_embedded" : {
+    "terms" : [ {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_16016",
+      "lang" : "en",
+      "description" : [ "A ketotriose consisting of acetone bearing hydroxy substituents at positions 1 and 3. The simplest member of the class of ketoses and the parent of the class of glycerones." ],
+      "synonyms" : [ "1,3-Dihydroxy-2-propanone", "1,3-Dihydroxyacetone", "1,3-Dihydroxydimethyl ketone", "1,3-Dihydroxypropan-2-one", "1,3-Dihydroxypropan-2-one", "1,3-Dihydroxypropanone", "1,3-dihydroxypropan-2-one", "1,3-dihydroxypropan-2-one", "1,3-propanediol-2-one", "Bis(hydroxymethyl) ketone", "DHA", "DIHYDROXYACETONE", "Dihydroxyacetone", "Glycerone", "alpha,alpha'-dihydroxyacetone", "dihydroxyacetone" ],
+      "annotation" : {
+        "charge" : [ 0.0 ],
+        "database_cross_reference" : [ "cas:96-26-4", "drugbank:DB01775", "hmdb:HMDB0001882", "kegg.compound:C00184", "kegg.drug:D07841", "metacyc.compound:DIHYDROXYACETONE", "pdb-ccd:2HA", "pubmed:20936361", "pubmed:21549029", "pubmed:21598406", "pubmed:23543734", "pubmed:23554234", "pubmed:23748086", "pubmed:24209782", "reaxys:1740268", "wikipedia.en:Dihydroxyacetone" ],
+        "generalized_empirical_formula" : [ "C3H6O3" ],
+        "has_alternative_id" : [ "CHEBI:14340", "CHEBI:24354", "CHEBI:39809", "CHEBI:5453" ],
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:16016" ],
+        "inchi_key_string" : [ "RXKJFZQQPQGTFL-UHFFFAOYSA-N" ],
+        "inchi_string" : [ "InChI=1S/C3H6O3/c4-1-3(6)2-5/h4-5H,1-2H2" ],
+        "mass" : [ "90.078" ],
+        "monoisotopic_mass" : [ "90.03169" ],
+        "smiles_string" : [ "O=C(CO)CO" ]
+      },
+      "label" : "dihydroxyacetone",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "CHEBI_16016",
+      "obo_id" : "CHEBI:16016",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : [ {
+        "database" : "cas",
+        "id" : "96-26-4",
+        "description" : "cas",
+        "url" : "https://commonchemistry.cas.org/detail?cas_rn=96-26-4"
+      }, {
+        "database" : "drugbank",
+        "id" : "DB01775",
+        "description" : "drugbank",
+        "url" : "https://go.drugbank.com/drugs/DB01775"
+      }, {
+        "database" : "hmdb",
+        "id" : "HMDB0001882",
+        "description" : "hmdb",
+        "url" : "http://www.hmdb.ca/metabolites/HMDB0001882"
+      }, {
+        "database" : "kegg.compound",
+        "id" : "C00184",
+        "description" : "kegg.compound",
+        "url" : null
+      }, {
+        "database" : "kegg.drug",
+        "id" : "D07841",
+        "description" : "kegg.drug",
+        "url" : null
+      }, {
+        "database" : "metacyc.compound",
+        "id" : "DIHYDROXYACETONE",
+        "description" : "metacyc.compound",
+        "url" : null
+      }, {
+        "database" : "pdb-ccd",
+        "id" : "2HA",
+        "description" : "pdb-ccd",
+        "url" : null
+      }, {
+        "database" : "pubmed",
+        "id" : "20936361",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/20936361/"
+      }, {
+        "database" : "pubmed",
+        "id" : "21549029",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/21549029/"
+      }, {
+        "database" : "pubmed",
+        "id" : "21598406",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/21598406/"
+      }, {
+        "database" : "pubmed",
+        "id" : "23543734",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/23543734/"
+      }, {
+        "database" : "pubmed",
+        "id" : "23554234",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/23554234/"
+      }, {
+        "database" : "pubmed",
+        "id" : "23748086",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/23748086/"
+      }, {
+        "database" : "pubmed",
+        "id" : "24209782",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/24209782/"
+      }, {
+        "database" : "reaxys",
+        "id" : "1740268",
+        "description" : "reaxys",
+        "url" : null
+      }, {
+        "database" : "wikipedia.en",
+        "id" : "Dihydroxyacetone",
+        "description" : "wikipedia.en",
+        "url" : null
+      } ],
+      "obo_synonym" : [ {
+        "name" : "1,3-Dihydroxypropan-2-one",
+        "scope" : "hasExactSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "KEGG_COMPOUND",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "1,3-dihydroxypropan-2-one",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "1,3-Dihydroxy-2-propanone",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "1,3-Dihydroxyacetone",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "1,3-Dihydroxydimethyl ketone",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chemidplus",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "1,3-Dihydroxypropan-2-one",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "1,3-Dihydroxypropanone",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chemidplus",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "1,3-dihydroxypropan-2-one",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "1,3-propanediol-2-one",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Bis(hydroxymethyl) ketone",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "hmdb",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "DHA",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "DIHYDROXYACETONE",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "pdb-ccd",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Dihydroxyacetone",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Glycerone",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "alpha,alpha'-dihydroxyacetone",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "hmdb",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "dihydroxyacetone",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "uniprot_ft",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16016?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16016/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16016/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16016/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16016/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16016/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16016/graph"
+        },
+        "has_role" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16016/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0000087"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_16108",
+      "lang" : "en",
+      "description" : [ "A member of the class of glycerone phosphates that consists of glycerone bearing a single phospho substituent." ],
+      "synonyms" : [ "1,3-Dihydroxy-2-propanone monodihydrogen phosphate", "1,3-Dihydroxy-2-propanone phosphate", "1,3-Dihydroxyacetone 1-phosphate", "1-hydroxy-3-(phosphonooxy)-2-Propanone", "1-hydroxy-3-(phosphonooxy)acetone", "2-Propanone, 1-hydroxy-3-(phosphonooxy)-", "3-hydroxy-2-oxopropyl dihydrogen phosphate", "3-hydroxy-2-oxopropyl dihydrogen phosphate", "3-hydroxy-2-oxopropyl phosphate", "DHAP", "Dihydroxyacetone monophosphate", "Dihydroxyacetone phosphate", "Glycerone phosphate", "dihydroxyacetone 3-phosphate", "glycerone monophosphate" ],
+      "annotation" : {
+        "charge" : [ 0.0 ],
+        "database_cross_reference" : [ "cas:57-04-5", "chemspider:648", "drugbank:DB04326", "foodb.food:FDB001618", "hmdb:HMDB0001473", "kegg.compound:C00111", "knapsack:C00007560", "metacyc.compound:DIHYDROXY-ACETONE-PHOSPHATE", "pdb-ccd:13P", "pubmed:10098675", "pubmed:1332571", "pubmed:15882454", "pubmed:20092811", "pubmed:23857558", "pubmed:26602120", "pubmed:29112947", "pubmed:29593097", "pubmed:3119940", "pubmed:31762135", "pubmed:32719541", "pubmed:8931639", "reaxys:1708891", "wikipedia.en:Dihydroxyacetone_phosphate" ],
+        "generalized_empirical_formula" : [ "C3H7O6P" ],
+        "has_alternative_id" : [ "CHEBI:14341", "CHEBI:14342", "CHEBI:24355", "CHEBI:39571", "CHEBI:5454" ],
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:16108" ],
+        "inchi_key_string" : [ "GNGACRATGGDKBX-UHFFFAOYSA-N" ],
+        "inchi_string" : [ "InChI=1S/C3H7O6P/c4-1-3(5)2-9-10(6,7)8/h4H,1-2H2,(H2,6,7,8)" ],
+        "mass" : [ "170.057" ],
+        "monoisotopic_mass" : [ "169.99802" ],
+        "smiles_string" : [ "O=C(CO)COP(=O)(O)O" ]
+      },
+      "label" : "dihydroxyacetone phosphate",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "CHEBI_16108",
+      "obo_id" : "CHEBI:16108",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : [ {
+        "database" : "cas",
+        "id" : "57-04-5",
+        "description" : "cas",
+        "url" : "https://commonchemistry.cas.org/detail?cas_rn=57-04-5"
+      }, {
+        "database" : "chemspider",
+        "id" : "648",
+        "description" : "chemspider",
+        "url" : "http://www.chemspider.com/Chemical-Structure.648.html"
+      }, {
+        "database" : "drugbank",
+        "id" : "DB04326",
+        "description" : "drugbank",
+        "url" : "https://go.drugbank.com/drugs/DB04326"
+      }, {
+        "database" : "foodb.food",
+        "id" : "FDB001618",
+        "description" : "foodb.food",
+        "url" : null
+      }, {
+        "database" : "hmdb",
+        "id" : "HMDB0001473",
+        "description" : "hmdb",
+        "url" : "http://www.hmdb.ca/metabolites/HMDB0001473"
+      }, {
+        "database" : "kegg.compound",
+        "id" : "C00111",
+        "description" : "kegg.compound",
+        "url" : null
+      }, {
+        "database" : "knapsack",
+        "id" : "C00007560",
+        "description" : "knapsack",
+        "url" : "http://www.knapsackfamily.com/knapsack_core/information.php?word=C00007560"
+      }, {
+        "database" : "metacyc.compound",
+        "id" : "DIHYDROXY-ACETONE-PHOSPHATE",
+        "description" : "metacyc.compound",
+        "url" : null
+      }, {
+        "database" : "pdb-ccd",
+        "id" : "13P",
+        "description" : "pdb-ccd",
+        "url" : null
+      }, {
+        "database" : "pubmed",
+        "id" : "10098675",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/10098675/"
+      }, {
+        "database" : "pubmed",
+        "id" : "1332571",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/1332571/"
+      }, {
+        "database" : "pubmed",
+        "id" : "15882454",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/15882454/"
+      }, {
+        "database" : "pubmed",
+        "id" : "20092811",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/20092811/"
+      }, {
+        "database" : "pubmed",
+        "id" : "23857558",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/23857558/"
+      }, {
+        "database" : "pubmed",
+        "id" : "26602120",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/26602120/"
+      }, {
+        "database" : "pubmed",
+        "id" : "29112947",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/29112947/"
+      }, {
+        "database" : "pubmed",
+        "id" : "29593097",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/29593097/"
+      }, {
+        "database" : "pubmed",
+        "id" : "3119940",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/3119940/"
+      }, {
+        "database" : "pubmed",
+        "id" : "31762135",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/31762135/"
+      }, {
+        "database" : "pubmed",
+        "id" : "32719541",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/32719541/"
+      }, {
+        "database" : "pubmed",
+        "id" : "8931639",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/8931639/"
+      }, {
+        "database" : "reaxys",
+        "id" : "1708891",
+        "description" : "reaxys",
+        "url" : null
+      }, {
+        "database" : "wikipedia.en",
+        "id" : "Dihydroxyacetone_phosphate",
+        "description" : "wikipedia.en",
+        "url" : null
+      } ],
+      "obo_synonym" : [ {
+        "name" : "3-hydroxy-2-oxopropyl dihydrogen phosphate",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "1,3-Dihydroxy-2-propanone monodihydrogen phosphate",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chemidplus",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "1,3-Dihydroxy-2-propanone phosphate",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "hmdb",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "1,3-Dihydroxyacetone 1-phosphate",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "hmdb",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "1-hydroxy-3-(phosphonooxy)-2-Propanone",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "hmdb",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "1-hydroxy-3-(phosphonooxy)acetone",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chemidplus",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "2-Propanone, 1-hydroxy-3-(phosphonooxy)-",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chemidplus",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "3-hydroxy-2-oxopropyl dihydrogen phosphate",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "3-hydroxy-2-oxopropyl phosphate",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iubmb",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "DHAP",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Dihydroxyacetone monophosphate",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "hmdb",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Dihydroxyacetone phosphate",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Glycerone phosphate",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "dihydroxyacetone 3-phosphate",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chemidplus",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "glycerone monophosphate",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16108?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16108/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16108/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16108/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16108/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16108/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16108/graph"
+        },
+        "has_role" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16108/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0000087"
+        },
+        "is_protonated_form_of" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16108/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0018034"
+        },
+        "has_functional_parent" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16108/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0018038"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_75772",
+      "lang" : "en",
+      "description" : [ "Any  fungal metabolite produced during a metabolic reaction in Baker's yeast (<em>Saccharomyces cerevisiae </em>)." ],
+      "synonyms" : [ "S. cerevisiae metabolite", "S. cerevisiae metabolites", "S. cerevisiae secondary metabolite", "S. cerevisiae secondary metabolites", "Saccharomyces cerevisiae metabolites", "Saccharomyces cerevisiae secondary metabolites", "baker's yeast metabolite", "baker's yeast metabolites", "baker's yeast secondary metabolite", "baker's yeast secondary metabolites" ],
+      "annotation" : {
+        "has_alternative_id" : [ "CHEBI:76949", "CHEBI:76951" ],
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:75772" ]
+      },
+      "label" : "Saccharomyces cerevisiae metabolite",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "CHEBI_75772",
+      "obo_id" : "CHEBI:75772",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "S. cerevisiae metabolite",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "S. cerevisiae metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "S. cerevisiae secondary metabolite",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "S. cerevisiae secondary metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Saccharomyces cerevisiae metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Saccharomyces cerevisiae secondary metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "baker's yeast metabolite",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "baker's yeast metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "baker's yeast secondary metabolite",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "baker's yeast secondary metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_75772/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_77746",
+      "lang" : "en",
+      "description" : [ "Any mammalian metabolite  produced during a metabolic reaction in humans (<em>Homo sapiens</em>)." ],
+      "synonyms" : [ "H. sapiens metabolite", "H. sapiens metabolites", "Homo sapiens metabolite", "Homo sapiens metabolites" ],
+      "annotation" : {
+        "has_alternative_id" : [ "CHEBI:75770", "CHEBI:77123" ],
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:77746" ]
+      },
+      "label" : "human metabolite",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "CHEBI_77746",
+      "obo_id" : "CHEBI:77746",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "H. sapiens metabolite",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "H. sapiens metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Homo sapiens metabolite",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Homo sapiens metabolites",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_77746/graph"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_57642/is_deprotonated_form_of?page=0&size=100"
+    }
+  },
+  "page" : {
+    "size" : 100,
+    "totalElements" : 4,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}

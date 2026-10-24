@@ -1,0 +1,392 @@
+{
+  "_embedded" : {
+    "terms" : [ {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_32816",
+      "lang" : "en",
+      "description" : [ "A 2-oxo monocarboxylic acid that is the 2-keto derivative of propionic acid. It is a metabolite obtained during glycolysis." ],
+      "synonyms" : [ "2-Oxopropanoic acid", "2-Oxopropanoic acid", "2-Oxopropansaeure", "2-Oxopropionsaeure", "2-ketopropionic acid", "2-oxopropanoic acid", "2-oxopropanoic acid", "Acetylformic acid", "BTS", "Brenztraubensaeure", "CH3COCOOH", "PYRUVIC ACID", "Pyroracemic acid", "Pyruvic acid", "acetylformic acid", "acide pyruvique", "alpha-Oxopropionsaeure", "alpha-ketopropionic acid", "pyruvic acid" ],
+      "annotation" : {
+        "charge" : [ 0.0 ],
+        "database_cross_reference" : [ "beilstein:506211", "cas:127-17-3", "drugbank:DB00119", "ecmdb:ECMDB00243", "gmelin:101087", "hmdb:HMDB0000243", "kegg.compound:C00022", "knapsack:C00001200", "lipidmaps:LMFA01060077", "metacyc.compound:PYRUVATE", "pdb-ccd:PYR", "pubmed:11762589", "pubmed:19260671", "pubmed:22150460", "pubmed:22233273", "pubmed:22735334", "pubmed:22770225", "reaxys:506211", "wikipedia.en:Pyruvic_acid", "ymdb:YMDB00175" ],
+        "generalized_empirical_formula" : [ "C3H4O3" ],
+        "has_alternative_id" : [ "CHEBI:26466", "CHEBI:45253", "CHEBI:8685" ],
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:32816" ],
+        "inchi_key_string" : [ "LCTONWCANYUPML-UHFFFAOYSA-N" ],
+        "inchi_string" : [ "InChI=1S/C3H4O3/c1-2(4)3(5)6/h1H3,(H,5,6)" ],
+        "mass" : [ "88.062" ],
+        "monoisotopic_mass" : [ "88.01604" ],
+        "smiles_string" : [ "CC(=O)C(=O)O" ]
+      },
+      "label" : "pyruvic acid",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "CHEBI_32816",
+      "obo_id" : "CHEBI:32816",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : [ {
+        "database" : "beilstein",
+        "id" : "506211",
+        "description" : "beilstein",
+        "url" : null
+      }, {
+        "database" : "cas",
+        "id" : "127-17-3",
+        "description" : "cas",
+        "url" : "https://commonchemistry.cas.org/detail?cas_rn=127-17-3"
+      }, {
+        "database" : "drugbank",
+        "id" : "DB00119",
+        "description" : "drugbank",
+        "url" : "https://go.drugbank.com/drugs/DB00119"
+      }, {
+        "database" : "ecmdb",
+        "id" : "ECMDB00243",
+        "description" : "ecmdb",
+        "url" : "http://ecmdb.ca/compounds/ECMDB00243"
+      }, {
+        "database" : "gmelin",
+        "id" : "101087",
+        "description" : "gmelin",
+        "url" : null
+      }, {
+        "database" : "hmdb",
+        "id" : "HMDB0000243",
+        "description" : "hmdb",
+        "url" : "http://www.hmdb.ca/metabolites/HMDB0000243"
+      }, {
+        "database" : "kegg.compound",
+        "id" : "C00022",
+        "description" : "kegg.compound",
+        "url" : null
+      }, {
+        "database" : "knapsack",
+        "id" : "C00001200",
+        "description" : "knapsack",
+        "url" : "http://www.knapsackfamily.com/knapsack_core/information.php?word=C00001200"
+      }, {
+        "database" : "lipidmaps",
+        "id" : "LMFA01060077",
+        "description" : "lipidmaps",
+        "url" : "http://www.lipidmaps.org/data/LMSDRecord.php?LMID=LMFA01060077"
+      }, {
+        "database" : "metacyc.compound",
+        "id" : "PYRUVATE",
+        "description" : "metacyc.compound",
+        "url" : null
+      }, {
+        "database" : "pdb-ccd",
+        "id" : "PYR",
+        "description" : "pdb-ccd",
+        "url" : null
+      }, {
+        "database" : "pubmed",
+        "id" : "11762589",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/11762589/"
+      }, {
+        "database" : "pubmed",
+        "id" : "19260671",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/19260671/"
+      }, {
+        "database" : "pubmed",
+        "id" : "22150460",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/22150460/"
+      }, {
+        "database" : "pubmed",
+        "id" : "22233273",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/22233273/"
+      }, {
+        "database" : "pubmed",
+        "id" : "22735334",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/22735334/"
+      }, {
+        "database" : "pubmed",
+        "id" : "22770225",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/22770225/"
+      }, {
+        "database" : "reaxys",
+        "id" : "506211",
+        "description" : "reaxys",
+        "url" : null
+      }, {
+        "database" : "wikipedia.en",
+        "id" : "Pyruvic_acid",
+        "description" : "wikipedia.en",
+        "url" : null
+      }, {
+        "database" : "ymdb",
+        "id" : "YMDB00175",
+        "description" : "ymdb",
+        "url" : "http://www.ymdb.ca/compounds/YMDB00175"
+      } ],
+      "obo_synonym" : [ {
+        "name" : "2-Oxopropanoic acid",
+        "scope" : "hasExactSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "KEGG_COMPOUND",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "2-oxopropanoic acid",
+        "scope" : "hasExactSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "ChEBI",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "2-oxopropanoic acid",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "2-Oxopropanoic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "2-Oxopropansaeure",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chemidplus",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "2-Oxopropionsaeure",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chemidplus",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "2-ketopropionic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chemidplus",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "2-oxopropanoic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "2-oxopropanoic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Acetylformic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "hmdb",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "BTS",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chemidplus",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Brenztraubensaeure",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "CH3COCOOH",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "nist",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "PYRUVIC ACID",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "pdb-ccd",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Pyroracemic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Pyruvic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "acetylformic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "nist",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "acide pyruvique",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "alpha-Oxopropionsaeure",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chemidplus",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "alpha-ketopropionic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "nist",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "pyruvic acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chebi",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_32816?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_32816/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_32816/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_32816/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_32816/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_32816/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_32816/graph"
+        },
+        "has_role" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_32816/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0000087"
+        },
+        "is_protonated_form_of" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_32816/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0018034"
+        },
+        "has_functional_parent" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_32816/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0018038"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms?iri=http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FCHEBI_32816"
+    }
+  },
+  "page" : {
+    "size" : 1,
+    "totalElements" : 1,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}

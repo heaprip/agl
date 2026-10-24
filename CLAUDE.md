@@ -10,7 +10,7 @@ Relation-first формальная система представления с
 
 1. [docs/roadmap.md](docs/roadmap.md) — где мы и что дальше (раздел «Следующие шаги»).
 2. [docs/decisions.md](docs/decisions.md) — решения автора (1–22). Их не пересматривать.
-3. [docs/hypotheses.md](docs/hypotheses.md) — предложения помощника (H0–H50), **не приняты**.
+3. [docs/hypotheses.md](docs/hypotheses.md) — предложения помощника (H0–H51), **не приняты**.
 4. [docs/open-questions.md](docs/open-questions.md) — что решает только автор.
 5. [docs/impl/poc.md](docs/impl/poc.md) — нотация `.agl`, семантика ядра, детерминизм, рефлексия, обучение.
 
@@ -19,7 +19,7 @@ Relation-first формальная система представления с
 - `docs/cases/` — казусы на бумаге: Ньютон, гексокиназа, газообмен, «Праведные», родство;
 - `docs/blind/` — слепые прогоны: агент и 4 модели;
 - `docs/dsl/` — LLM пишет `.agl`: прогон DeepSeek V4.1 Flash, скрытый учитель;
-- `docs/lessons/` — нейронаука, методологии обучения XX века, пучки и топосы;
+- `docs/lessons/` — нейронаука, методологии обучения XX века, пучки и топосы, как мыслители описывают поиск недостающего;
 - `docs/review/` — критический разбор, оценка объёма данных;
 - `docs/origin/` — исходные заметки, не редактируются.
 
@@ -59,7 +59,8 @@ cargo run --release -- --learn viable cases/learning/viability.agl
 cargo run --release -- --concepts cases/kinship.agl  # разложение понятий: уровни, порядок, общий род
 python3 tools/llm_dsl.py run 3              # LLM пишет .agl; вызовы воспроизводятся из docs/dsl/calls
 uv run --python 3.11 --with memote==0.17.0 --with cobra==0.32.1 tools/memote_ref.py build  # казусы memote
-python3 tools/trunk.py build               # ствол из data/raw (офлайн); fetch — из сети
+python3 tools/trunk.py build               # ствол и классы ChEBI из data/raw (офлайн); fetch, fetch-classes — из сети
+cargo run --release --example analogy      # прототип H51: недостающая реакция по аналогии
 ```
 
 ## LLM через RouterAI

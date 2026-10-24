@@ -1,0 +1,224 @@
+{
+  "_embedded" : {
+    "terms" : [ {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_39745",
+      "lang" : "en",
+      "description" : [ "A monovalent inorganic anion that consists of phosphoric acid in which one of the three OH groups has been deprotonated." ],
+      "synonyms" : [ "DIHYDROGENPHOSPHATE ION", "H2PO4(-)", "[PO2(OH)2](-)", "dihydrogen(tetraoxidophosphate)(1-)", "dihydrogen(tetraoxidophosphate)(1-)", "dihydrogenphosphate", "dihydrogenphosphate", "dihydrogentetraoxophosphate(1-)", "dihydrogentetraoxophosphate(1-)", "dihydrogentetraoxophosphate(V)", "dihydrogentetraoxophosphate(V)", "dihydroxidodioxidophosphate(1-)", "dihydroxidodioxidophosphate(1-)" ],
+      "annotation" : {
+        "charge" : [ -1.0 ],
+        "database_cross_reference" : [ "drugbank:DB02831", "gmelin:1999", "pdb-ccd:2HP" ],
+        "generalized_empirical_formula" : [ "H2O4P" ],
+        "has_alternative_id" : [ "CHEBI:29137", "CHEBI:39739" ],
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:39745" ],
+        "inchi_key_string" : [ "NBIIXXVUZAFLBC-UHFFFAOYSA-M" ],
+        "inchi_string" : [ "InChI=1S/H3O4P/c1-5(2,3)4/h(H3,1,2,3,4)/p-1" ],
+        "mass" : [ "96.986" ],
+        "monoisotopic_mass" : [ "96.96962" ],
+        "smiles_string" : [ "[H]OP(=O)([O-])O[H]" ]
+      },
+      "label" : "dihydrogenphosphate",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "CHEBI_39745",
+      "obo_id" : "CHEBI:39745",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : [ {
+        "database" : "drugbank",
+        "id" : "DB02831",
+        "description" : "drugbank",
+        "url" : "https://go.drugbank.com/drugs/DB02831"
+      }, {
+        "database" : "gmelin",
+        "id" : "1999",
+        "description" : "gmelin",
+        "url" : null
+      }, {
+        "database" : "pdb-ccd",
+        "id" : "2HP",
+        "description" : "pdb-ccd",
+        "url" : null
+      } ],
+      "obo_synonym" : [ {
+        "name" : "dihydrogen(tetraoxidophosphate)(1-)",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "dihydrogenphosphate",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "dihydrogentetraoxophosphate(1-)",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "dihydrogentetraoxophosphate(V)",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "dihydroxidodioxidophosphate(1-)",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "DIHYDROGENPHOSPHATE ION",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "pdb-ccd",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "H2PO4(-)",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "[PO2(OH)2](-)",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "dihydrogen(tetraoxidophosphate)(1-)",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "dihydrogenphosphate",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "dihydrogentetraoxophosphate(1-)",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "dihydrogentetraoxophosphate(V)",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "dihydroxidodioxidophosphate(1-)",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_39745?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_39745/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_39745/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_39745/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_39745/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_39745/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_39745/graph"
+        },
+        "is_deprotonated_form_of" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_39745/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0018033"
+        },
+        "is_protonated_form_of" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_39745/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0018034"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms?iri=http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FCHEBI_39745"
+    }
+  },
+  "page" : {
+    "size" : 1,
+    "totalElements" : 1,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}

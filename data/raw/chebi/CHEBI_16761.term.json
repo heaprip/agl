@@ -1,0 +1,209 @@
+{
+  "_embedded" : {
+    "terms" : [ {
+      "iri" : "http://purl.obolibrary.org/obo/CHEBI_16761",
+      "lang" : "en",
+      "description" : [ "A purine ribonucleoside 5'-diphosphate having adenine as the nucleobase." ],
+      "synonyms" : [ "5'-adenylphosphoric acid", "ADENOSINE-5'-DIPHOSPHATE", "ADP", "Adenosine 5'-diphosphate", "Adenosine 5'-diphosphate", "H3adp", "adenosine 5'-(trihydrogen diphosphate)", "adenosine 5'-(trihydrogen diphosphate)" ],
+      "annotation" : {
+        "charge" : [ 0.0 ],
+        "database_cross_reference" : [ "cas:20398-34-9", "cas:58-64-0", "drugbank:DB03431", "gmelin:88452", "kegg.compound:C00008", "kegg.glycan:G11113", "knapsack:C00019353", "pdb-ccd:ADP", "pubmed:16295522", "reaxys:67722" ],
+        "generalized_empirical_formula" : [ "C10H15N5O10P2" ],
+        "has_alternative_id" : [ "CHEBI:13222", "CHEBI:22244", "CHEBI:2342", "CHEBI:40553" ],
+        "has_obo_namespace" : [ "chebi_ontology" ],
+        "id" : [ "CHEBI:16761" ],
+        "inchi_key_string" : [ "XTWYTFMLZFPYCI-KQYNXXCUSA-N" ],
+        "inchi_string" : [ "InChI=1S/C10H15N5O10P2/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(24-10)1-23-27(21,22)25-26(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H2,11,12,13)(H2,18,19,20)/t4-,6-,7-,10-/m1/s1" ],
+        "mass" : [ "427.203" ],
+        "monoisotopic_mass" : [ "427.02941" ],
+        "smiles_string" : [ "Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)(O)OP(=O)(O)O)[C@@H](O)[C@H]1O" ]
+      },
+      "label" : "ADP",
+      "ontology_name" : "chebi",
+      "ontology_prefix" : "CHEBI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/chebi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "CHEBI_16761",
+      "obo_id" : "CHEBI:16761",
+      "in_subset" : [ "3_STAR" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : [ {
+        "database" : "cas",
+        "id" : "20398-34-9",
+        "description" : "cas",
+        "url" : "https://commonchemistry.cas.org/detail?cas_rn=20398-34-9"
+      }, {
+        "database" : "cas",
+        "id" : "58-64-0",
+        "description" : "cas",
+        "url" : "https://commonchemistry.cas.org/detail?cas_rn=58-64-0"
+      }, {
+        "database" : "drugbank",
+        "id" : "DB03431",
+        "description" : "drugbank",
+        "url" : "https://go.drugbank.com/drugs/DB03431"
+      }, {
+        "database" : "gmelin",
+        "id" : "88452",
+        "description" : "gmelin",
+        "url" : null
+      }, {
+        "database" : "kegg.compound",
+        "id" : "C00008",
+        "description" : "kegg.compound",
+        "url" : null
+      }, {
+        "database" : "kegg.glycan",
+        "id" : "G11113",
+        "description" : "kegg.glycan",
+        "url" : null
+      }, {
+        "database" : "knapsack",
+        "id" : "C00019353",
+        "description" : "knapsack",
+        "url" : "http://www.knapsackfamily.com/knapsack_core/information.php?word=C00019353"
+      }, {
+        "database" : "pdb-ccd",
+        "id" : "ADP",
+        "description" : "pdb-ccd",
+        "url" : null
+      }, {
+        "database" : "pubmed",
+        "id" : "16295522",
+        "description" : "pubmed",
+        "url" : "https://pubmed.ncbi.nlm.nih.gov/16295522/"
+      }, {
+        "database" : "reaxys",
+        "id" : "67722",
+        "description" : "reaxys",
+        "url" : null
+      } ],
+      "obo_synonym" : [ {
+        "name" : "Adenosine 5'-diphosphate",
+        "scope" : "hasExactSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "KEGG_COMPOUND",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "adenosine 5'-(trihydrogen diphosphate)",
+        "scope" : "hasExactSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "IUPAC",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "5'-adenylphosphoric acid",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "chemidplus",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "ADENOSINE-5'-DIPHOSPHATE",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "pdb-ccd",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "ADP",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "Adenosine 5'-diphosphate",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "kegg.compound",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "H3adp",
+        "scope" : "hasRelatedSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      }, {
+        "name" : "adenosine 5'-(trihydrogen diphosphate)",
+        "scope" : "hasRelatedSynonym",
+        "type" : "IUPAC NAME",
+        "xrefs" : [ {
+          "database" : null,
+          "id" : "iupac",
+          "description" : null,
+          "url" : null
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16761?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16761/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16761/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16761/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16761/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16761/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16761/graph"
+        },
+        "has_role" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16761/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0000087"
+        },
+        "is_protonated_form_of" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FCHEBI_16761/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FRO_0018034"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms?iri=http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FCHEBI_16761"
+    }
+  },
+  "page" : {
+    "size" : 1,
+    "totalElements" : 1,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}

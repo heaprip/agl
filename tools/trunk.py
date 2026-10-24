@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Loader of the metabolism trunk from Rhea and ChEBI.
 
-    tools/trunk.py fetch   download raw responses into data/raw/ and write MANIFEST
-    tools/trunk.py build   build data/metabolism.agl from data/raw/, offline
+    tools/trunk.py fetch          download raw responses into data/raw/ and write MANIFEST
+    tools/trunk.py fetch-classes  add ChEBI class ancestors (and those of conjugate
+                                  acids) to data/raw/, keeping files already there
+    tools/trunk.py build          build data/metabolism.agl and data/classes.agl
+                                  from data/raw/, offline
 
 Only `fetch` touches the network. `build` checks every raw file against
 MANIFEST and is deterministic: two builds give the same bytes. The kernel
@@ -22,6 +25,7 @@ import urllib.request
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw"
 OUT = ROOT / "data" / "metabolism.agl"
+CLASSES = ROOT / "data" / "classes.agl"
 
 # The ten steps of glycolysis, found in Rhea by EC number (see docs/hypotheses.md, H34).
 REACTIONS = [
@@ -45,6 +49,8 @@ EXTRA_SPECIES = ["15379"]  # dioxygen
 RHEA_URL = "https://www.rhea-db.org/rhea/?query=RHEA:{id}&columns=rhea-id,equation,chebi-id&format=tsv"
 OLS_TERM = "https://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms?iri={iri}"
 OLS_PARENTS = "https://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/{enc}/parents?size=100"
+OLS_ANCESTORS = "https://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/{enc}/ancestors?size=1000"
+OLS_ACIDS = "https://www.ebi.ac.uk/ols4/api/ontologies/chebi/terms/{enc}/is_deprotonated_form_of?size=100"
 
 
 USER_AGENT = "agl-trunk-loader/0.1 (+https://github.com/heaprip/agl)"
@@ -85,10 +91,79 @@ def fetch():
         enc = urllib.parse.quote(urllib.parse.quote(iri, safe=""), safe="")
         parents = get(OLS_PARENTS.format(enc=enc))
         (RAW / "chebi" / f"CHEBI_{cid}.parents.json").write_bytes(parents)
+    files = write_manifest()
+    print(f"fetched {len(REACTIONS)} reactions, {len(species)} species, {len(files)} files")
+
+
+def write_manifest():
     files = sorted(p for p in RAW.rglob("*") if p.is_file() and p.name != "MANIFEST")
     manifest = "".join(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(RAW)}\n" for p in files)
     (RAW / "MANIFEST").write_text(manifest)
-    print(f"fetched {len(REACTIONS)} reactions, {len(species)} species, {len(files)} files")
+    return files
+
+
+def enc_iri(cid):
+    return urllib.parse.quote(urllib.parse.quote(chebi_iri(cid), safe=""), safe="")
+
+
+def fetch_once(path, url):
+    """Download into path unless it is already there: earlier raw files stay as they were."""
+    if not path.exists():
+        path.write_bytes(get(url))
+    return path.read_bytes()
+
+
+def terms(body):
+    return json.loads(body).get("_embedded", {}).get("terms", [])
+
+
+def inchi_core(term):
+    """InChI without the protonation layer: a charged form and its acid share it."""
+    inchi = (term.get("annotation", {}).get("inchi_string") or [None])[0]
+    if inchi is None:
+        return None
+    return "/".join(l for l in inchi.split("/") if not l.startswith("p"))
+
+
+def charge(term):
+    return (term.get("annotation", {}).get("charge") or [0.0])[0]
+
+
+def species_ids():
+    ids = set(EXTRA_SPECIES)
+    for rid, _, _ in REACTIONS:
+        ids.update(rhea_participants((RAW / "rhea" / f"RHEA_{rid}.tsv").read_bytes())[1])
+    return sorted(ids, key=int)
+
+
+def conjugate_acids(cid):
+    """Acids whose deprotonation gives this species, by the relation in ChEBI.
+
+    OLS returns the relation mixed with roles, functional parents and even
+    conjugate bases, so an acid is kept only if its InChI without the
+    protonation layer is the species' own and its charge is higher."""
+    own = terms((RAW / "chebi" / f"CHEBI_{cid}.term.json").read_bytes())[0]
+    acids = []
+    for t in terms((RAW / "chebi" / f"CHEBI_{cid}.acids.json").read_bytes()):
+        aid = t["obo_id"].removeprefix("CHEBI:")
+        term = terms((RAW / "chebi" / f"CHEBI_{aid}.term.json").read_bytes())[0]
+        same = inchi_core(term) is not None and inchi_core(term) == inchi_core(own)
+        if same and charge(term) > charge(own):
+            acids.append(aid)
+    return sorted(acids, key=int)
+
+
+def fetch_classes():
+    for cid in species_ids():
+        body = fetch_once(RAW / "chebi" / f"CHEBI_{cid}.acids.json", OLS_ACIDS.format(enc=enc_iri(cid)))
+        for t in terms(body):
+            aid = t["obo_id"].removeprefix("CHEBI:")
+            fetch_once(RAW / "chebi" / f"CHEBI_{aid}.term.json",
+                       OLS_TERM.format(iri=urllib.parse.quote(chebi_iri(aid), safe="")))
+        for x in [cid] + conjugate_acids(cid):
+            fetch_once(RAW / "chebi" / f"CHEBI_{x}.ancestors.json", OLS_ANCESTORS.format(enc=enc_iri(x)))
+    files = write_manifest()
+    print(f"classes fetched; {len(files)} raw files")
 
 
 def verified_raw():
@@ -180,7 +255,47 @@ def build():
         lines.append(f"fact top_{cid}: top(species: CHEBI_{cid}) @ [curated_db]")
     OUT.write_text("\n".join(lines) + "\n")
     print(f"built {OUT.relative_to(ROOT)}: {len(REACTIONS)} reactions, {len(species)} species")
+    if (RAW / "chebi" / f"CHEBI_{species_ids()[0]}.acids.json").exists():
+        build_classes(manifest_hash)
+
+
+def build_classes(manifest_hash):
+    """data/classes.agl: every ChEBI class of a species, of its conjugate acids and the acids themselves.
+
+    Rhea names charged forms (glycerone phosphate(2-)); ChEBI hangs the
+    chemical classes (ketose phosphate) on the neutral acid. A class is a
+    fact `class_of`; its label is kept as a `# class` comment for reports."""
+    lines = [
+        "# GENERATED by tools/trunk.py build — do not edit.",
+        f"# Sources: ChEBI via OLS (is_a ancestors of species and of their conjugate acids). MANIFEST sha256 {manifest_hash}",
+        "",
+        "relation class_of(species, class)",
+        "",
+    ]
+    labels = {}
+    for cid in species_ids():
+        if not (RAW / "chebi" / f"CHEBI_{cid}.acids.json").exists():
+            raise SystemExit("classes are not fetched: run tools/trunk.py fetch-classes")
+        acids = conjugate_acids(cid)
+        classes = set(acids)
+        for x in [cid] + acids:
+            for t in terms((RAW / "chebi" / f"CHEBI_{x}.ancestors.json").read_bytes()):
+                classes.add(t["obo_id"].removeprefix("CHEBI:"))
+        for a in acids:
+            labels[a] = terms((RAW / "chebi" / f"CHEBI_{a}.term.json").read_bytes())[0]["label"]
+        for x in [cid] + acids:
+            for t in terms((RAW / "chebi" / f"CHEBI_{x}.ancestors.json").read_bytes()):
+                labels[t["obo_id"].removeprefix("CHEBI:")] = t["label"]
+        acid_note = ", ".join(f"CHEBI:{a}" for a in acids) or "none"
+        lines.append(f"# CHEBI:{cid}: {len(classes)} classes; conjugate acids: {acid_note}")
+        for k in sorted(classes, key=int):
+            lines.append(f"fact cl_{cid}_{k}: class_of(species: CHEBI_{cid}, class: CHEBI_{k}) @ [curated_db]")
+        lines.append("")
+    for k in sorted(labels, key=int):
+        lines.append(f"# class CHEBI_{k}: {labels[k]}")
+    CLASSES.write_text("\n".join(lines) + "\n")
+    print(f"built {CLASSES.relative_to(ROOT)}: {len(labels)} classes")
 
 
 if __name__ == "__main__":
-    {"fetch": fetch, "build": build}[sys.argv[1] if len(sys.argv) > 1 else ""]()
+    {"fetch": fetch, "fetch-classes": fetch_classes, "build": build}[sys.argv[1] if len(sys.argv) > 1 else ""]()
