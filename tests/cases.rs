@@ -132,3 +132,31 @@ query close(x: 1) @ expect yes
     assert!(!report.has_errors(), "{:?}", report.errors);
     assert!(report.failed_queries().next().is_none());
 }
+
+#[test]
+fn scan_sees_a_meet_of_three_planes() {
+    let src = "
+axis x
+value x a
+axis y
+value y b
+axis z
+value z c
+fact f1: p(i: k) @ x:a
+rule rq defeasible @ y:b: q(i: ?i) <- p(i: ?i)
+rule rnq defeasible @ z:c: ¬q(i: ?i) <- p(i: ?i)
+";
+    let report = agl::run(&agl::parse(src).unwrap());
+    let found: Vec<String> = report
+        .conflicts
+        .iter()
+        .map(|c| {
+            format!(
+                "{} {}",
+                c.conflict.positive,
+                agl::model::plane_to_string(&c.context)
+            )
+        })
+        .collect();
+    assert_eq!(found, ["q(i: k) {x:a, y:b, z:c}"]);
+}

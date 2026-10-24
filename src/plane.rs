@@ -158,6 +158,10 @@ impl Axes {
         let mut parts: Vec<&str> = parts_a.into_iter().chain(parts_b).collect();
         parts.sort();
         parts.dedup();
+        // A part that contains another adds nothing: `gestation∩law` met with
+        // `bio` stays `gestation∩law`, one region under one name.
+        let all = parts.clone();
+        parts.retain(|p| !all.iter().any(|q| q != p && self.value_within(axis, q, p)));
         Some(parts.join(&MEET.to_string()))
     }
 

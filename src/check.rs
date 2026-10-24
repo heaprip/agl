@@ -114,39 +114,67 @@ pub fn run(prog: &Program) -> Report {
     }
 }
 
-/// Contexts worth checking: every plane in use, and every non-empty meet of two.
-fn contexts(prog: &Program) -> Vec<Plane> {
-    fn push(planes: &mut Vec<Plane>, p: &Plane) {
-        if !planes.contains(p) {
-            planes.push(p.clone());
-        }
-    }
-    let mut planes: Vec<Plane> = Vec::new();
-    prog.facts.iter().for_each(|f| push(&mut planes, &f.plane));
-    prog.rules.iter().for_each(|r| push(&mut planes, &r.plane));
-    prog.planes.values().for_each(|p| push(&mut planes, p));
-    let base = planes.clone();
-    for (i, a) in base.iter().enumerate() {
-        for b in &base[i + 1..] {
-            if let Some(m) = prog.axes.plane_meet(a, b) {
-                push(&mut planes, &m);
+/// Most contexts the contradiction scan visits; past it, a warning.
+const MAX_CONTEXTS: usize = 4096;
+
+/// Contexts worth checking: every plane in use, and every non-empty meet of
+/// any number of them, closed to a fixpoint (meets of three planes and more
+/// included). Returns false if the closure hit `MAX_CONTEXTS`.
+fn contexts(prog: &Program) -> (Vec<Plane>, bool) {
+    let mut planes: BTreeSet<Plane> = BTreeSet::new();
+    prog.facts.iter().for_each(|f| {
+        planes.insert(f.plane.clone());
+    });
+    prog.rules.iter().for_each(|r| {
+        planes.insert(r.plane.clone());
+    });
+    prog.planes.values().for_each(|p| {
+        planes.insert(p.clone());
+    });
+    let base: Vec<Plane> = planes.iter().cloned().collect();
+    let mut frontier: Vec<Plane> = base.clone();
+    let mut complete = true;
+    while !frontier.is_empty() {
+        let mut next = Vec::new();
+        for a in &frontier {
+            for b in &base {
+                if let Some(m) = prog.axes.plane_meet(a, b)
+                    && !planes.contains(&m)
+                {
+                    if planes.len() >= MAX_CONTEXTS {
+                        complete = false;
+                        continue;
+                    }
+                    planes.insert(m.clone());
+                    next.push(m);
+                }
             }
         }
+        frontier = next;
     }
+    let mut planes: Vec<Plane> = planes.into_iter().collect();
     planes.sort_by_key(plane_to_string);
-    planes
+    (planes, complete)
 }
 
 /// A distinct conflict: atom, kind and both source sets.
 type ConflictId = (String, String, Vec<String>, Vec<String>);
 
 fn scan_conflicts(prog: &Program, evals: &mut Evals) -> (Vec<FoundConflict>, BTreeSet<String>) {
-    // One entry per distinct conflict (atom, kind, both source sets); for each,
-    // the canonically smallest context in which it shows. Independent of the
-    // order of statements and of contexts.
-    let mut found: BTreeMap<ConflictId, (String, FoundConflict)> = BTreeMap::new();
+    // One entry per distinct conflict (atom, kind, both source sets), shown in
+    // the widest context where it shows: among contexts no other one of them
+    // contains, the canonically smallest. Independent of the order of
+    // statements and of contexts.
+    let mut found: BTreeMap<ConflictId, Vec<(Plane, eval::Conflict)>> = BTreeMap::new();
     let mut errors = BTreeSet::new();
-    for ctx in contexts(prog) {
+    let (contexts, complete) = contexts(prog);
+    if !complete {
+        errors.insert(format!(
+            "contradiction scan stopped at {MAX_CONTEXTS} plane intersections: \
+             conflicts in the rest are not reported"
+        ));
+    }
+    for ctx in contexts {
         let out = evals.get(&ctx);
         errors.extend(out.errors.iter().cloned());
         for (key, c) in out.conflicts.clone() {
@@ -156,23 +184,22 @@ fn scan_conflicts(prog: &Program, evals: &mut Evals) -> (Vec<FoundConflict>, BTr
                 c.sources_pos.clone(),
                 c.sources_neg.clone(),
             );
-            let name = plane_to_string(&ctx);
-            let keep = found.get(&id).is_none_or(|(old, _)| name < *old);
-            if keep {
-                found.insert(
-                    id,
-                    (
-                        name,
-                        FoundConflict {
-                            context: ctx.clone(),
-                            conflict: c,
-                        },
-                    ),
-                );
-            }
+            found.entry(id).or_default().push((ctx.clone(), c));
         }
     }
-    (found.into_values().map(|(_, f)| f).collect(), errors)
+    let widest = |seen: Vec<(Plane, eval::Conflict)>| {
+        let wide: Vec<&(Plane, eval::Conflict)> = seen
+            .iter()
+            .filter(|(p, _)| !seen.iter().any(|(q, _)| prog.axes.strictly_within(p, q)))
+            .collect();
+        let (context, conflict) = wide
+            .into_iter()
+            .min_by_key(|(p, _)| plane_to_string(p))
+            .expect("a conflict shows in some context")
+            .clone();
+        FoundConflict { context, conflict }
+    };
+    (found.into_values().map(widest).collect(), errors)
 }
 
 /// Where a context belongs, found by the program itself.
