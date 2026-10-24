@@ -3,11 +3,13 @@
 //! A fact or rule is visible in context `c` when `c` lies within its plane;
 //! this gives inheritance down nested planes. Evaluation is a naive fixpoint,
 //! stratum by stratum (an aggregate needs its relations complete), that may
-//! derive both `p` and `¬p`; conflicts are then resolved: strict beats
-//! defeasible, then a declared `defeats`, then the more specific plane. Losers
-//! are blocked and the fixpoint is recomputed without them. Unresolved and
-//! strict-vs-strict conflicts block both sides and are reported, as are
-//! violations of `unique` declarations.
+//! derive both `p` and `¬p`. Conflicts are then settled layer by layer, as in
+//! defeasible logic (`decide`): strict beats defeasible, then the more trusted
+//! side, then a declared `defeats` by team defeat, then the more specific
+//! plane. Losers are blocked and the fixpoint is recomputed without them.
+//! Unresolved and strict-vs-strict conflicts block both sides and are
+//! reported, as are violations of `unique` declarations. `tests/oracle.rs`
+//! checks the result against a reference defeasible logic.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -57,7 +59,8 @@ pub struct Conflict {
 pub struct Outcome {
     pub db: BTreeMap<String, (Atom, Vec<Derivation>)>,
     pub conflicts: BTreeMap<String, Conflict>,
-    /// loser key -> reason
+    /// Why an atom derived in the closure does not hold: the conflict it
+    /// lost, or the premises it fell with.
     pub defeated: BTreeMap<String, String>,
     /// Evaluation errors, such as adding quantities of different dimensions.
     pub errors: BTreeSet<String>,
@@ -90,46 +93,7 @@ pub fn evaluate(prog: &Program, ctx: &Plane) -> Outcome {
             &mut out.errors,
         );
         out.truncated |= truncated;
-        let mut newly = Vec::new();
-        for (key, (atom, derivs)) in &db {
-            if atom.neg {
-                continue;
-            }
-            let ckey = atom.complement().key();
-            let Some((_, cderivs)) = db.get(&ckey) else {
-                continue;
-            };
-            match resolve(prog, derivs, cderivs) {
-                Winner::Pos => {
-                    out.defeated.insert(
-                        ckey.clone(),
-                        format!("defeated by {}", sources(derivs).join(", ")),
-                    );
-                    newly.push(ckey);
-                }
-                Winner::Neg => {
-                    out.defeated.insert(
-                        key.clone(),
-                        format!("defeated by {}", sources(cderivs).join(", ")),
-                    );
-                    newly.push(key.clone());
-                }
-                Winner::None(kind) => {
-                    out.conflicts.insert(
-                        key.clone(),
-                        Conflict {
-                            positive: key.clone(),
-                            kind,
-                            sources_pos: sources(derivs),
-                            sources_neg: sources(cderivs),
-                            blame: vec![],
-                        },
-                    );
-                    newly.push(key.clone());
-                    newly.push(ckey);
-                }
-            }
-        }
+        let newly = decide(prog, &db, &mut out);
         let before = blocked.len();
         blocked.extend(newly);
         if blocked.len() == before {
@@ -139,6 +103,179 @@ pub fn evaluate(prog: &Program, ctx: &Plane) -> Outcome {
             return out;
         }
     }
+}
+
+#[derive(Clone, Copy, PartialEq)]
+enum Label {
+    In,
+    /// Every derivation has a premise out.
+    Out,
+    /// Cannot win its conflict.
+    Lost,
+}
+
+/// Settles conflicts layer by layer, as the proof conditions +∂/−∂ of
+/// defeasible logic do. A derivation is applicable when all its premises are
+/// in, alive while none is out. An atom is in once its applicable derivations
+/// beat every live derivation of its complement; it has lost once even all
+/// its live derivations cannot beat the complement's applicable ones; it is
+/// out once nothing of it is alive. Each criterion of `resolve` favours a
+/// side more as it gains derivations and its opponent loses them, so these
+/// bounds decide a side as soon as undecided atoms can no longer change it.
+/// Both sides of a conflict may lose: that is an unresolved or hard conflict.
+///
+/// An atom that only a loop of undecided atoms supports is out (well-founded
+/// failure). Conflicts still open after that rest on each other in a cycle
+/// and are decided together on everything alive. Returns the losers to block.
+fn decide(prog: &Program, db: &Db, out: &mut Outcome) -> Vec<String> {
+    let mut label: BTreeMap<&str, Label> = BTreeMap::new();
+    let mut stuck = false;
+    loop {
+        let mut changed = false;
+        for (key, (atom, derivs)) in db {
+            if label.contains_key(key.as_str()) {
+                continue;
+            }
+            let (app, live) = split(derivs, &label);
+            let ckey = atom.complement().key();
+            let opponent = db
+                .get_key_value(&ckey)
+                .map(|(k, (_, ds))| (k.as_str(), split(ds, &label)));
+            let decided = match opponent {
+                _ if live.is_empty() => Some(Label::Out),
+                None => (!app.is_empty()).then_some(Label::In),
+                Some((_, (_, clive))) if clive.is_empty() => (!app.is_empty()).then_some(Label::In),
+                Some((ckey, (capp, clive))) => {
+                    let wins = |a: &[&Derivation], b: &[&Derivation]| {
+                        !a.is_empty() && matches!(resolve(prog, db, a, b, key, ckey), Winner::Pos)
+                    };
+                    if wins(&app, &clive) {
+                        Some(Label::In)
+                    } else if !capp.is_empty() && !wins(&live, &capp) {
+                        Some(Label::Lost)
+                    } else if stuck {
+                        Some(if wins(&live, &clive) {
+                            Label::In
+                        } else {
+                            Label::Lost
+                        })
+                    } else {
+                        None
+                    }
+                }
+            };
+            if let Some(l) = decided {
+                label.insert(key, l);
+                changed = true;
+            }
+        }
+        if !changed {
+            // Well-founded failure: what only a loop of undecided atoms could
+            // support, with no base outside the loop, is out.
+            let mut possible: BTreeSet<&str> = BTreeSet::new();
+            loop {
+                let before = possible.len();
+                for (key, (_, derivs)) in db {
+                    let k = key.as_str();
+                    if possible.contains(k)
+                        || matches!(label.get(k), Some(Label::Out | Label::Lost))
+                    {
+                        continue;
+                    }
+                    if label.get(k) == Some(&Label::In)
+                        || derivs
+                            .iter()
+                            .any(|d| real(&d.premises).all(|p| possible.contains(p.as_str())))
+                    {
+                        possible.insert(k);
+                    }
+                }
+                if possible.len() == before {
+                    break;
+                }
+            }
+            for key in db.keys() {
+                if !possible.contains(key.as_str()) && !label.contains_key(key.as_str()) {
+                    label.insert(key, Label::Out);
+                    changed = true;
+                }
+            }
+        }
+        if changed {
+            stuck = false;
+        } else if stuck {
+            break;
+        } else {
+            stuck = true;
+        }
+    }
+    // Report: a loser beside a winner is defeated; two losers are a conflict.
+    let mut newly = Vec::new();
+    for (key, (atom, derivs)) in db {
+        if label.get(key.as_str()) == Some(&Label::Out) {
+            // It fell with its premises: name the ones that fell.
+            let mut fell: Vec<&str> = derivs
+                .iter()
+                .flat_map(|d| real(&d.premises))
+                .filter(|p| matches!(label.get(p.as_str()), Some(Label::Out | Label::Lost)))
+                .map(String::as_str)
+                .collect();
+            fell.sort();
+            fell.dedup();
+            out.defeated.insert(
+                key.clone(),
+                format!("rests on {}, which did not hold", fell.join(", ")),
+            );
+        }
+        if label.get(key.as_str()) != Some(&Label::Lost) {
+            continue;
+        }
+        newly.push(key.clone());
+        let ckey = atom.complement().key();
+        let cderivs = &db[&ckey].1;
+        if label.get(ckey.as_str()) != Some(&Label::Lost) {
+            out.defeated.insert(
+                key.clone(),
+                format!("defeated by {}", sources(cderivs).join(", ")),
+            );
+        } else if !atom.neg {
+            let (app, _) = split(derivs, &label);
+            let (capp, _) = split(cderivs, &label);
+            let kind = match resolve(prog, db, &app, &capp, key, &ckey) {
+                Winner::None(kind) => kind,
+                _ => ConflictKind::Unresolved,
+            };
+            out.conflicts.insert(
+                key.clone(),
+                Conflict {
+                    positive: key.clone(),
+                    kind,
+                    sources_pos: sources(derivs),
+                    sources_neg: sources(cderivs),
+                    blame: vec![],
+                },
+            );
+        }
+    }
+    newly
+}
+
+/// A derivation's applicable form (every premise in) and live form (no
+/// premise out).
+fn split<'a>(
+    derivs: &'a [Derivation],
+    label: &BTreeMap<&str, Label>,
+) -> (Vec<&'a Derivation>, Vec<&'a Derivation>) {
+    let is = |p: &String, l: Label| label.get(p.as_str()) == Some(&l);
+    let app = derivs
+        .iter()
+        .filter(|d| real(&d.premises).all(|p| is(p, Label::In)))
+        .collect();
+    let live = derivs
+        .iter()
+        .filter(|d| !real(&d.premises).any(|p| is(p, Label::Out) || is(p, Label::Lost)))
+        .collect();
+    (app, live)
 }
 
 fn sources(derivs: &[Derivation]) -> Vec<String> {
@@ -154,18 +291,44 @@ enum Winner {
     None(ConflictKind),
 }
 
-fn best_rank(derivs: &[Derivation]) -> usize {
-    derivs.iter().map(|d| d.rank).max().unwrap_or(0)
+/// Derivations of `key` that stand without `key` itself: a derivation that
+/// rests on its own conclusion neither supports it nor needs to be beaten.
+fn founded<'a>(db: &'a Db, key: &str) -> Vec<&'a Derivation> {
+    let mut without: BTreeSet<&str> = BTreeSet::new();
+    let stands = |d: &Derivation, without: &BTreeSet<&str>| {
+        real(&d.premises).all(|p| without.contains(p.as_str()))
+    };
+    loop {
+        let before = without.len();
+        for (k, (_, ds)) in db {
+            if k != key && !without.contains(k.as_str()) && ds.iter().any(|d| stands(d, &without)) {
+                without.insert(k);
+            }
+        }
+        if without.len() == before {
+            break;
+        }
+    }
+    db[key].1.iter().filter(|d| stands(d, &without)).collect()
 }
 
-fn resolve(prog: &Program, pos: &[Derivation], neg: &[Derivation]) -> Winner {
+/// Which side of a conflict wins: `pos`, derivations of `key`, or `neg`,
+/// derivations of its complement `ckey`.
+fn resolve(
+    prog: &Program,
+    db: &Db,
+    pos: &[&Derivation],
+    neg: &[&Derivation],
+    key: &str,
+    ckey: &str,
+) -> Winner {
     let ps = pos.iter().any(|d| d.strict);
     let ns = neg.iter().any(|d| d.strict);
     // Between two sides of the same strength, the more trusted one wins: an
     // LLM proposal against a textbook is a rejected candidate, not a
     // contradiction. Only derivations of the deciding strength count, so a
     // defeasible derivation cannot lend its trust to a strict one.
-    let rank_of = |ds: &[Derivation], strict: bool| {
+    let rank_of = |ds: &[&Derivation], strict: bool| {
         ds.iter()
             .filter(|d| d.strict == strict)
             .map(|d| d.rank)
@@ -187,24 +350,37 @@ fn resolve(prog: &Program, pos: &[Derivation], neg: &[Derivation]) -> Winner {
             }
         }
     }
-    let beats = |a: &[Derivation], b: &[Derivation]| {
-        a.iter().any(|x| {
-            b.iter()
-                .any(|y| prog.defeats.contains(&(x.source.clone(), y.source.clone())))
+    // Team defeat, as in defeasible logic: a side wins by priority when every
+    // derivation of the other side is beaten by one of its own.
+    let (fp, fn_) = (founded(db, key), founded(db, ckey));
+    let pos: Vec<&Derivation> = pos
+        .iter()
+        .copied()
+        .filter(|d| fp.iter().any(|f| std::ptr::eq(*f, *d)))
+        .collect();
+    let neg: Vec<&Derivation> = neg
+        .iter()
+        .copied()
+        .filter(|d| fn_.iter().any(|f| std::ptr::eq(*f, *d)))
+        .collect();
+    let beats = |a: &[&Derivation], b: &[&Derivation]| {
+        b.iter().all(|y| {
+            a.iter()
+                .any(|x| prog.defeats.contains(&(x.source.clone(), y.source.clone())))
         })
     };
-    match (beats(pos, neg), beats(neg, pos)) {
+    match (beats(&pos, &neg), beats(&neg, &pos)) {
         (true, false) => return Winner::Pos,
         (false, true) => return Winner::Neg,
         _ => {}
     }
-    let more_specific = |a: &[Derivation], b: &[Derivation]| {
+    let more_specific = |a: &[&Derivation], b: &[&Derivation]| {
         a.iter().any(|x| {
             b.iter()
                 .all(|y| prog.axes.strictly_within(&x.plane, &y.plane))
         })
     };
-    match (more_specific(pos, neg), more_specific(neg, pos)) {
+    match (more_specific(&pos, &neg), more_specific(&neg, &pos)) {
         (true, false) => Winner::Pos,
         (false, true) => Winner::Neg,
         _ => Winner::None(ConflictKind::Unresolved),
@@ -297,11 +473,79 @@ fn closure(
             .copied()
             .filter(|r| strata.get(&r.head.rel).copied().unwrap_or(0) == level)
             .collect();
-        if fixpoint(&mut db, &layer, blocked, top, errors) {
+        if fixpoint(&mut db, &layer, blocked, errors) {
+            settle(&mut db, top);
             return (db, true);
         }
     }
+    settle(&mut db, top);
     (db, false)
+}
+
+fn real(premises: &[String]) -> impl Iterator<Item = &String> {
+    premises.iter().filter(|p| !p.starts_with(ABSENT))
+}
+
+/// Strength and trust of every derivation, read through the whole closure.
+/// Taken while saturating, they would freeze at the round a rule first fired,
+/// before a premise gained its strict or more trusted derivation.
+///
+/// A derivation is strict when it is a fact, or its rule is strict and every
+/// premise has a strict derivation: the strict closure. A strict derivation's
+/// rank is its weakest premise's best strict rank, so a defeasible derivation
+/// cannot lend trust to a strict one; a defeasible derivation's rank is its
+/// weakest premise's rank. An atom's rank is that of its best derivation,
+/// strength first, as in conflicts: a strict atom's rank is its best strict
+/// derivation's. Both are least fixpoints, so a cycle cannot raise them.
+fn settle(db: &mut Db, top: usize) {
+    let mut strict: BTreeSet<String> = BTreeSet::new();
+    loop {
+        let before = strict.len();
+        for (k, (_, ds)) in db.iter() {
+            if !strict.contains(k)
+                && ds.iter().any(|d| {
+                    d.is_fact || (d.strict && real(&d.premises).all(|p| strict.contains(p)))
+                })
+            {
+                strict.insert(k.clone());
+            }
+        }
+        if strict.len() == before {
+            break;
+        }
+    }
+    for (_, ds) in db.values_mut() {
+        for d in ds.iter_mut().filter(|d| !d.is_fact) {
+            d.strict = d.strict && real(&d.premises).all(|p| strict.contains(p));
+        }
+    }
+    loop {
+        let best: BTreeMap<String, usize> = db
+            .iter()
+            .map(|(k, (_, ds))| {
+                let s = strict.contains(k);
+                let r = ds.iter().filter(|d| d.strict || !s).map(|d| d.rank).max();
+                (k.clone(), r.unwrap_or(0))
+            })
+            .collect();
+        let mut changed = false;
+        for (_, ds) in db.values_mut() {
+            for d in ds.iter_mut().filter(|d| !d.is_fact) {
+                // A strict derivation's premises are all strict atoms.
+                let rank = real(&d.premises)
+                    .map(|p| best.get(p).copied().unwrap_or(0))
+                    .min()
+                    .unwrap_or(top);
+                if rank > d.rank {
+                    d.rank = rank;
+                    changed = true;
+                }
+            }
+        }
+        if !changed {
+            return;
+        }
+    }
 }
 
 /// Saturates `db` with one stratum of rules; returns true if truncated.
@@ -309,7 +553,6 @@ fn fixpoint(
     db: &mut Db,
     rules: &[&Rule],
     blocked: &BTreeSet<String>,
-    top: usize,
     errors: &mut BTreeSet<String>,
 ) -> bool {
     loop {
@@ -334,26 +577,16 @@ fn fixpoint(
                 if !head.is_ground() {
                     continue;
                 }
-                let strict = r.strength == Strength::Strict
-                    && premises
-                        .iter()
-                        .filter(|p| !p.starts_with(ABSENT))
-                        .all(|p| db.get(p).is_some_and(|(_, ds)| ds.iter().any(|d| d.strict)));
-                let rank = premises
-                    .iter()
-                    .filter(|p| !p.starts_with(ABSENT))
-                    .map(|p| db.get(p).map_or(0, |(_, ds)| best_rank(ds)))
-                    .min()
-                    .unwrap_or(top);
+                // The rule's own strength for now; `settle` reads it through the premises.
                 new.push((
                     head,
                     Derivation {
                         source: r.id.clone(),
                         is_fact: false,
-                        strict,
+                        strict: r.strength == Strength::Strict,
                         plane: r.plane.clone(),
                         premises,
-                        rank,
+                        rank: 0,
                     },
                 ));
             }

@@ -340,18 +340,22 @@ fn compare(ranked: bool) {
         failures.is_empty(),
         "{} of {compared} programs differ from the reference; first:\n{}",
         failures.len(),
-        failures[..failures.len().min(std::env::var("AGL_SHOW").ok().and_then(|s| s.parse().ok()).unwrap_or(3))].join("\n")
+        failures[..failures.len().min(
+            std::env::var("AGL_SHOW")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(3)
+        )]
+            .join("\n")
     );
 }
 
 #[test]
-#[ignore = "fails until К1 and К3 of the 2026-10-24 critique are fixed"]
 fn kernel_agrees_with_reference_defeasible_logic() {
     compare(false);
 }
 
 #[test]
-#[ignore = "fails until К1 and К3 of the 2026-10-24 critique are fixed"]
 fn kernel_agrees_with_reference_under_statuses() {
     compare(true);
 }
