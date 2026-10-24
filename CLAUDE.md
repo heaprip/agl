@@ -63,7 +63,7 @@ cargo run --release -- --implications cases/kinship.agl  # что с чем св
 python3 tools/llm_dsl.py run 3              # LLM пишет .agl; вызовы воспроизводятся из docs/dsl/calls
 uv run --python 3.11 --with memote==0.17.0 --with cobra==0.32.1 tools/memote_ref.py build  # казусы memote
 python3 tools/trunk.py build               # ствол и классы ChEBI из data/raw (офлайн); fetch, fetch-classes — из сети
-python3 tools/onto_stats.py stats         # форма онтологии ChEBI (H61): роды, пути, интервалы, изменения между выпусками
+python3 tools/onto_stats.py stats         # форма ChEBI и WordNet (H61): роды, пути, интервалы, изменения между выпусками
 cargo run --release --example analogy      # прототип H51: недостающая реакция по аналогии
 cargo run --release --example bombelli     # веха Джанибекова, шаг 0: аномалия → плоскость пар (AGL_TRACE=1 — ход)
 cargo run --release --example cauchy       # H57 шаг 2: присоединение корня, выбор X² = s по аномалии

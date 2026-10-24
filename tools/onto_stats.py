@@ -2,8 +2,8 @@
 """Shape of real ontologies, for choosing how labels with order and nesting
 should be designed (docs/hypotheses.md, H61).
 
-    tools/onto_stats.py fetch   download pinned ChEBI-lite releases into data/onto/raw/
-                                and write data/onto/MANIFEST
+    tools/onto_stats.py fetch   download pinned releases of ChEBI-lite and Open English
+                                WordNet into data/onto/raw/ and write data/onto/MANIFEST
     tools/onto_stats.py stats   offline: check MANIFEST, print the measurements
 
 What is measured, as distributions (percentiles), not means:
@@ -21,6 +21,10 @@ What is measured, as distributions (percentiles), not means:
 Data: ChEBI, CC BY 4.0, https://www.ebi.ac.uk/chebi/. Releases 200 (June
 2021) and 244 (August 2025) are ChEBI 1.0; 255 (September 2026) is ChEBI 2.0,
 so the 244 → 255 comparison crosses a change of system.
+Open English WordNet (CC BY 4.0), https://en-word.net/: editions 2019, 2021,
+2025 (the "plus" build); nouns only. A genus is a hypernym or instance hypernym; the second
+axis is holonymy (part, member, substance). Synset ids are compared with
+the prefix (ewn-, oewn-) stripped.
 
 Standard library only. Only `fetch` touches the network.
 """
@@ -35,17 +39,27 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "onto" / "raw"
 MANIFEST = ROOT / "data" / "onto" / "MANIFEST"
 ARCHIVE = "https://ftp.ebi.ac.uk/pub/databases/chebi/archive"
-RELEASES = {
-    "200": f"{ARCHIVE}/chebi_legacy/archive/rel200/ontology/chebi_lite.obo.gz",
-    "244": f"{ARCHIVE}/chebi_legacy/archive/rel244/ontology/chebi_lite.obo.gz",
-    "255": f"{ARCHIVE}/rel255/ontology/chebi_lite.obo.gz",
+WN = "https://github.com/globalwordnet/english-wordnet/releases/download"
+# Family -> release -> (file name, url).
+SOURCES = {
+    "chebi": {
+        "200": ("chebi_lite_200.obo.gz", f"{ARCHIVE}/chebi_legacy/archive/rel200/ontology/chebi_lite.obo.gz"),
+        "244": ("chebi_lite_244.obo.gz", f"{ARCHIVE}/chebi_legacy/archive/rel244/ontology/chebi_lite.obo.gz"),
+        "255": ("chebi_lite_255.obo.gz", f"{ARCHIVE}/rel255/ontology/chebi_lite.obo.gz"),
+    },
+    # The 2025 edition without "plus" leaves out instances (proper nouns) and
+    # one direction of meronymy; "plus" is comparable with earlier editions.
+    "wordnet": {
+        y: (f"english-wordnet-{f}.xml.gz", f"{WN}/{y}-edition/english-wordnet-{f}.xml.gz")
+        for y, f in (("2019", "2019"), ("2021", "2021"), ("2025", "2025-plus"))
+    },
 }
 
 
 def fetch():
     RAW.mkdir(parents=True, exist_ok=True)
-    for rel, url in RELEASES.items():
-        path = RAW / f"chebi_lite_{rel}.obo.gz"
+    for name, url in (v for fam in SOURCES.values() for v in fam.values()):
+        path = RAW / name
         if not path.exists():
             with urllib.request.urlopen(url, timeout=300) as r:
                 path.write_bytes(r.read())
@@ -62,11 +76,11 @@ def verified():
             raise SystemExit(f"{name}: content does not match MANIFEST")
 
 
-def load(rel):
+def load_chebi(name):
     """Terms of a release: id -> (is_a parents, has_role targets); obsolete terms dropped."""
     terms = {}
     cur = None
-    with gzip.open(RAW / f"chebi_lite_{rel}.obo.gz", "rt", encoding="utf-8") as f:
+    with gzip.open(RAW / name, "rt", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line.startswith("["):
@@ -99,6 +113,36 @@ def load(rel):
 
 
 terms_list = []
+
+
+def load_wordnet(name):
+    """Noun synsets: id (prefix stripped) -> (hypernyms, holonyms)."""
+    import xml.etree.ElementTree as ET
+
+    def strip(i):
+        return i.split("-", 1)[1]
+
+    terms = {}
+    with gzip.open(RAW / name) as f:
+        for _, el in ET.iterparse(f):
+            if el.tag != "Synset":
+                continue
+            if el.get("partOfSpeech") == "n":
+                genus, whole = set(), set()
+                for r in el.iter("SynsetRelation"):
+                    t = r.get("relType")
+                    if t in ("hypernym", "instance_hypernym"):
+                        genus.add(strip(r.get("target")))
+                    elif t in ("holo_part", "holo_member", "holo_substance"):
+                        whole.add(strip(r.get("target")))
+                terms[strip(el.get("id"))] = (genus, whole)
+            el.clear()
+    return {k: ({p for p in g if p in terms}, w) for k, (g, w) in terms.items()}
+
+
+def load(family, rel):
+    name = SOURCES[family][rel][0]
+    return load_chebi(name) if family == "chebi" else load_wordnet(name)
 
 
 def pct(xs, ps=(50, 90, 99)):
@@ -221,8 +265,8 @@ def ancestors(parents):
     return memo
 
 
-def shape(rel):
-    terms = load(rel)
+def shape(family, rel):
+    terms = load(family, rel)
     parents = {k: v[0] for k, v in terms.items()}
     children = {}
     for k, ps in parents.items():
@@ -233,9 +277,9 @@ def shape(rel):
     n = len(terms)
     multi = sum(len(ps) >= 2 for ps in parents.values())
     roles = [len(v[1]) for v in terms.values()]
-    print(f"== release {rel}: {n} terms, roots {sum(not ps for ps in parents.values())}")
-    print(f"  parents (is_a): {pct([len(p) for p in parents.values()])}; with >= 2: {multi} ({100 * multi / n:.1f}%)")
-    print(f"  roles (has_role): {pct(roles)}; with any: {sum(r > 0 for r in roles)}")
+    print(f"== {family} {rel}: {n} terms, roots {sum(not ps for ps in parents.values())}")
+    print(f"  genera: {pct([len(p) for p in parents.values()])}; with >= 2: {multi} ({100 * multi / n:.1f}%)")
+    print(f"  second axis (roles / wholes): {pct(roles)}; with any: {sum(r > 0 for r in roles)}")
     print(f"  depth, shortest path: {pct(list(short.values()))}")
     print(f"  depth, longest path: {pct(list(long_.values()))}")
     print(f"  longest minus shortest: {pct([long_[t] - short[t] for t in terms])}")
@@ -277,10 +321,11 @@ def compare(a, b, pa, aa, pb, ab):
 
 def stats():
     verified()
-    shapes = {rel: shape(rel) for rel in RELEASES}
-    rels = list(RELEASES)
-    for a, b in zip(rels, rels[1:]):
-        compare(a, b, *shapes[a], *shapes[b])
+    for family, releases in SOURCES.items():
+        shapes = {rel: shape(family, rel) for rel in releases}
+        rels = list(releases)
+        for a, b in zip(rels, rels[1:]):
+            compare(f"{family} {a}", b, *shapes[a], *shapes[b])
 
 
 if __name__ == "__main__":
