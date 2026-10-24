@@ -200,9 +200,27 @@ pub fn permute(prog: &Program, seed: u64) -> Program {
             }
         }
     }
+    let mut concepts = prog.concepts.clone();
+    let mut words = prog.words.clone();
+    let mut compares = prog.compares.clone();
+    let mut covers = prog.covers.clone();
+    rng.shuffle(&mut concepts);
+    rng.shuffle(&mut words);
+    rng.shuffle(&mut compares);
+    rng.shuffle(&mut covers);
+    for c in &mut concepts {
+        rng.shuffle(&mut c.body);
+    }
+    for c in &mut covers {
+        rng.shuffle(c);
+    }
     let mut p = prog.clone();
     p.facts = facts;
     p.rules = rules;
     p.queries = queries;
+    p.concepts = concepts;
+    p.words = words;
+    p.compares = compares;
+    p.covers = covers;
     p
 }

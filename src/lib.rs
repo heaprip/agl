@@ -7,6 +7,7 @@
 //! kernel this implements and `docs/impl/poc.md` for the semantics chosen.
 
 pub mod check;
+pub mod concept;
 pub mod eval;
 pub mod learn;
 pub mod lint;

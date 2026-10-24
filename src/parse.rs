@@ -13,6 +13,10 @@
 //! rule ID strict|defeasible @ SPEC: LITERAL <- LIT, LIT, ...
 //! defeats WINNER LOSER
 //! query LITERAL @ SPEC [expect yes|no|unknown|conflict|gap]
+//! concept NAME(role: ?v, ...) @ SPEC: ATOM, ..., ?a != ?b
+//! word LANG WORD = CONCEPT
+//! cover REL(role) | REL(role) ...
+//! compare NAME @ SPEC vs NAME @ SPEC [expect same|below|above|apart|not_below]
 //! ```
 //!
 //! SPEC is `item + item ...`, where an item is a plane name or `axis:value`.
@@ -64,14 +68,56 @@ pub fn parse(src: &str) -> Result<Program, String> {
             prog.uniques.len(),
             prog.forbids.len(),
         );
+        let (nc, nw, nm) = (prog.concepts.len(), prog.words.len(), prog.compares.len());
         parse_statement(&mut prog, &stmt).map_err(|e| format!("line {line_no}: {e}"))?;
         prog.facts[nf..].iter_mut().for_each(|f| f.line = line_no);
         prog.rules[nr..].iter_mut().for_each(|r| r.line = line_no);
         prog.queries[nq..].iter_mut().for_each(|q| q.line = line_no);
         prog.uniques[nu..].iter_mut().for_each(|u| u.line = line_no);
         prog.forbids[nb..].iter_mut().for_each(|b| b.line = line_no);
+        prog.concepts[nc..]
+            .iter_mut()
+            .for_each(|c| c.line = line_no);
+        prog.words[nw..].iter_mut().for_each(|w| w.line = line_no);
+        prog.compares[nm..]
+            .iter_mut()
+            .for_each(|c| c.line = line_no);
     }
+    compile_concepts(&mut prog);
     Ok(prog)
+}
+
+/// Each sense of a concept becomes a strict rule, so the kernel recognizes the
+/// concept in data. Rule ids number the senses of a name in the canonical order
+/// of their definitions, not in the order of statements or of body literals.
+fn compile_concepts(prog: &mut Program) {
+    let mut senses: Vec<(String, String, Rule)> = prog
+        .concepts
+        .iter()
+        .map(|c| {
+            let rule = Rule {
+                id: String::new(),
+                head: c.head.clone(),
+                body: c.body.clone(),
+                strength: Strength::Strict,
+                plane: c.plane.clone(),
+                line: c.line,
+            };
+            (c.head.rel.clone(), crate::concept::sense_key(c), rule)
+        })
+        .collect();
+    senses.sort_by(|a, b| (&a.0, &a.1).cmp(&(&b.0, &b.1)));
+    let mut k = 0;
+    for i in 0..senses.len() {
+        k = if i > 0 && senses[i - 1].0 == senses[i].0 {
+            k + 1
+        } else {
+            1
+        };
+        let (name, _, mut rule) = senses[i].clone();
+        rule.id = format!("{name}.{k}");
+        prog.rules.push(rule);
+    }
 }
 
 fn statements(src: &str) -> Vec<(usize, String)> {
@@ -307,6 +353,104 @@ fn parse_statement(prog: &mut Program, stmt: &str) -> Result<(), String> {
                 situate,
                 expect,
                 heldout,
+                line: 0,
+            });
+        }
+        "concept" => {
+            let (head_part, body) = split_rule_head(rest)?;
+            let (head, spec) = split_at_plane(head_part)?;
+            let head = parse_atom(head)?;
+            if head.neg {
+                return Err("a concept head is positive".into());
+            }
+            let mut seen = Vec::new();
+            for (_, t) in &head.args {
+                match t {
+                    Term::Var(v) if !seen.contains(v) => seen.push(v.clone()),
+                    _ => return Err("concept roles take distinct variables".into()),
+                }
+            }
+            let body = split_top(body, ',')
+                .into_iter()
+                .map(|l| parse_lit(l.trim()))
+                .collect::<Result<Vec<_>, _>>()?;
+            for lit in &body {
+                let ok = match lit {
+                    Lit::Atom(a) => {
+                        !a.neg && a.args.iter().all(|(_, t)| !matches!(t, Term::Num(..)))
+                    }
+                    Lit::Cmp(Expr::Term(Term::Var(_)), CmpOp::Ne, Expr::Term(Term::Var(_))) => true,
+                    _ => false,
+                };
+                if !ok {
+                    return Err(format!(
+                        "a concept body takes positive atoms without numbers and `?a != ?b`, not `{lit}`"
+                    ));
+                }
+            }
+            let plane = parse_spec(prog, spec)?;
+            prog.concepts.push(Concept {
+                head,
+                body,
+                plane,
+                line: 0,
+            });
+        }
+        "cover" => {
+            let mut alts = Vec::new();
+            for alt in rest.split('|') {
+                let (rel, roles) = parse_role_list(alt)?;
+                let [role] = roles.as_slice() else {
+                    return Err("`cover` alternatives name exactly one role".into());
+                };
+                alts.push((rel, role.clone()));
+            }
+            if alts.len() < 2 {
+                return Err("expected `cover REL(role) | REL(role) ...`".into());
+            }
+            prog.covers.push(alts);
+        }
+        "word" => {
+            let (left, concept) = rest
+                .split_once('=')
+                .ok_or("expected `word LANG WORD = CONCEPT`")?;
+            let parts: Vec<&str> = left.split_whitespace().collect();
+            let [lang, word] = parts.as_slice() else {
+                return Err("expected `word LANG WORD = CONCEPT`".into());
+            };
+            prog.words.push(Word {
+                lang: ident(lang)?.to_string(),
+                word: ident(word)?.to_string(),
+                concept: ident(concept.trim())?.to_string(),
+                line: 0,
+            });
+        }
+        "compare" => {
+            let (left, right) = rest
+                .split_once(" vs ")
+                .ok_or("expected `compare NAME @ SPEC vs NAME @ SPEC`")?;
+            let mut right = right.trim();
+            let mut expect = None;
+            if let Some((r, e)) = right.split_once(" expect ") {
+                expect = Some(match e.trim() {
+                    "same" => Relation::Same,
+                    "below" => Relation::Below,
+                    "above" => Relation::Above,
+                    "apart" => Relation::Apart,
+                    "not_below" => Relation::NotBelow,
+                    other => return Err(format!("unknown relation `{other}`")),
+                });
+                right = r.trim();
+            }
+            let side = |s: &str| -> Result<(String, Plane), String> {
+                let (name, spec) = split_at_plane(s)?;
+                Ok((ident(name)?.to_string(), parse_spec(prog, spec)?))
+            };
+            let (left, right) = (side(left)?, side(right)?);
+            prog.compares.push(Compare {
+                left,
+                right,
+                expect,
                 line: 0,
             });
         }

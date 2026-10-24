@@ -91,8 +91,9 @@ fn current_cases_diagnose_only_the_hobbes_collapse_and_keep_it() {
     }
     // Hobbes' absurdity is wanted in this case: the expectations on lines 68 and 69
     // ask for the collapse, so no removal is offered and the note says why.
-    assert_eq!(
-        found,
-        vec![("theseus.agl".to_string(), Kind::Conflict, vec![], true)]
-    );
+    // Kinship has seven conflicts, all wanted too: several mothers where the
+    // genetic, gestational and legal planes meet. Nothing is offered to remove.
+    let mut want = vec![("kinship.agl".to_string(), Kind::Conflict, vec![], false); 7];
+    want.push(("theseus.agl".to_string(), Kind::Conflict, vec![], true));
+    assert_eq!(found, want);
 }

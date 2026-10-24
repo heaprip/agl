@@ -7,6 +7,7 @@ fn main() -> ExitCode {
     let verbose = args.iter().any(|a| a == "-v");
     let diagnose = args.iter().any(|a| a == "--diagnose");
     let propose = args.iter().any(|a| a == "--propose");
+    let concepts = args.iter().any(|a| a == "--concepts");
     let learn = args
         .iter()
         .position(|a| a == "--learn")
@@ -18,7 +19,9 @@ fn main() -> ExitCode {
         .map(|(_, a)| a)
         .collect();
     if files.is_empty() {
-        eprintln!("usage: agl [-v] [--diagnose] [--propose] [--learn REL] FILE.agl...");
+        eprintln!(
+            "usage: agl [-v] [--diagnose] [--propose] [--concepts] [--learn REL] FILE.agl..."
+        );
         return ExitCode::from(2);
     }
     let mut ok = true;
@@ -82,6 +85,35 @@ fn main() -> ExitCode {
                 }
             }
         }
+        for c in &report.compares {
+            let (status, verdict) = match (&c.verdict, c.compare.expect) {
+                (Ok(v), Some(e)) if *v == e => ("PASS", v.to_string()),
+                (Ok(v), Some(_)) => ("FAIL", v.to_string()),
+                (Ok(v), None) => ("    ", v.to_string()),
+                (Err(_), _) => ("FAIL", "error".to_string()),
+            };
+            let expect = c
+                .compare
+                .expect
+                .map(|e| format!(" (expected {e})"))
+                .unwrap_or_default();
+            println!(
+                "{status} line {}: {} @ {} vs {} @ {} → {verdict}{expect}",
+                c.compare.line,
+                c.compare.left.0,
+                plane_to_string(&c.compare.left.1),
+                c.compare.right.0,
+                plane_to_string(&c.compare.right.1),
+            );
+            if verbose || status == "FAIL" {
+                for l in c.explanation.lines() {
+                    println!("       {l}");
+                }
+            }
+        }
+        if concepts {
+            print!("{}", agl::concept::report(&prog));
+        }
         if diagnose {
             let ds = agl::reflect::diagnose(&prog);
             if ds.is_empty() {
@@ -102,7 +134,10 @@ fn main() -> ExitCode {
                 print!("{}", agl::propose::render(&ps, &notes));
             }
         }
-        if report.has_errors() || report.failed_queries().next().is_some() {
+        if report.has_errors()
+            || report.failed_queries().next().is_some()
+            || report.failed_compares().next().is_some()
+        {
             ok = false;
         }
     }

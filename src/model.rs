@@ -300,6 +300,62 @@ pub struct Forbid {
     pub line: usize,
 }
 
+/// `concept NAME(role: ?v, ...) @ SPEC: BODY`: one sense of a concept. The
+/// body is necessary and sufficient, so the kernel both recognizes the concept
+/// (it is compiled into a strict rule) and compares concepts by their
+/// definitions (`crate::concept`). Senses of one name are a union.
+#[derive(Clone, Debug)]
+pub struct Concept {
+    pub head: Atom,
+    /// Positive atoms and `?a != ?b`.
+    pub body: Vec<Lit>,
+    pub plane: Plane,
+    pub line: usize,
+}
+
+/// `word LANG WORD = CONCEPT`: how a language names a concept.
+#[derive(Clone, Debug)]
+pub struct Word {
+    pub lang: String,
+    pub word: String,
+    pub concept: String,
+    pub line: usize,
+}
+
+/// How two concepts relate by definition.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Relation {
+    Same,
+    /// The left one is a special case of the right one.
+    Below,
+    Above,
+    Apart,
+    /// Against a relation defined by rules: only "below" can be shown.
+    NotBelow,
+}
+
+impl fmt::Display for Relation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            Relation::Same => "same",
+            Relation::Below => "below",
+            Relation::Above => "above",
+            Relation::Apart => "apart",
+            Relation::NotBelow => "not_below",
+        };
+        write!(f, "{s}")
+    }
+}
+
+/// `compare NAME @ SPEC vs NAME @ SPEC [expect RELATION]`.
+#[derive(Clone, Debug)]
+pub struct Compare {
+    pub left: (String, Plane),
+    pub right: (String, Plane),
+    pub expect: Option<Relation>,
+    pub line: usize,
+}
+
 #[derive(Clone, Default, Debug)]
 pub struct Program {
     pub axes: Axes,
@@ -316,4 +372,10 @@ pub struct Program {
     /// Status -> rank, from `status A > B > C`; higher is more trusted.
     pub status_rank: BTreeMap<String, usize>,
     pub forbids: Vec<Forbid>,
+    pub concepts: Vec<Concept>,
+    pub words: Vec<Word>,
+    pub compares: Vec<Compare>,
+    /// `cover female(person) | male(person)`: every individual is in one of
+    /// the alternatives. Used only when concepts are compared.
+    pub covers: Vec<Vec<(String, String)>>,
 }

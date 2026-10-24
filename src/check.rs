@@ -3,6 +3,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use crate::concept;
 use crate::eval::{self, ConflictKind};
 use crate::lint::{self, Diag, Level};
 use crate::model::*;
@@ -13,6 +14,13 @@ pub struct QueryResult {
     /// The plane the query was answered in: its own, narrowed by `situate`.
     pub plane: Plane,
     pub verdict: Verdict,
+    pub explanation: String,
+}
+
+#[derive(Debug)]
+pub struct CompareResult {
+    pub compare: Compare,
+    pub verdict: Result<Relation, String>,
     pub explanation: String,
 }
 
@@ -29,6 +37,7 @@ pub struct Report {
     pub errors: Vec<String>,
     pub conflicts: Vec<FoundConflict>,
     pub queries: Vec<QueryResult>,
+    pub compares: Vec<CompareResult>,
 }
 
 impl Report {
@@ -38,8 +47,16 @@ impl Report {
             .filter(|q| q.query.expect.is_some_and(|e| e != q.verdict))
     }
 
+    pub fn failed_compares(&self) -> impl Iterator<Item = &CompareResult> {
+        self.compares
+            .iter()
+            .filter(|c| c.compare.expect.is_some_and(|e| c.verdict != Ok(e)))
+    }
+
     pub fn has_errors(&self) -> bool {
-        self.diags.iter().any(|d| d.level == Level::Error) || !self.errors.is_empty()
+        self.diags.iter().any(|d| d.level == Level::Error)
+            || !self.errors.is_empty()
+            || self.compares.iter().any(|c| c.verdict.is_err())
     }
 }
 
@@ -72,11 +89,28 @@ pub fn run(prog: &Program) -> Report {
         .iter()
         .map(|q| answer(prog, q, &mut evals, &mut errors))
         .collect();
+    let compares = prog
+        .compares
+        .iter()
+        .map(|c| match concept::compare(prog, c) {
+            Ok(r) => CompareResult {
+                compare: c.clone(),
+                verdict: Ok(r.relation),
+                explanation: r.explanation,
+            },
+            Err(e) => CompareResult {
+                compare: c.clone(),
+                verdict: Err(e.clone()),
+                explanation: format!("{e}\n"),
+            },
+        })
+        .collect();
     Report {
         diags,
         errors: errors.into_iter().collect(),
         conflicts,
         queries,
+        compares,
     }
 }
 
@@ -321,7 +355,28 @@ pub fn render(report: &Report) -> String {
         .collect();
     queries.sort();
     queries.dedup();
+    let mut compares: Vec<String> = report
+        .compares
+        .iter()
+        .map(|c| {
+            let verdict = match &c.verdict {
+                Ok(r) => r.to_string(),
+                Err(_) => "error".into(),
+            };
+            format!(
+                "compare {} @ {} vs {} @ {} -> {verdict}\n{}",
+                c.compare.left.0,
+                plane_to_string(&c.compare.left.1),
+                c.compare.right.0,
+                plane_to_string(&c.compare.right.1),
+                c.explanation
+            )
+        })
+        .collect();
+    compares.sort();
+    compares.dedup();
     lines.extend(conflicts);
     lines.extend(queries);
+    lines.extend(compares);
     lines.join("\n")
 }
