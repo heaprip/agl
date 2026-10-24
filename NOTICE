@@ -1,0 +1,30 @@
+agl — Artificial General Logic
+Copyright 2026 heaprip
+
+Code (src/, tests/, examples/, tools/, cases/, Cargo.toml) is licensed under
+the Apache License, Version 2.0 (see LICENSE).
+
+Documents (docs/, README.md, CLAUDE.md) are licensed under the Creative
+Commons Attribution 4.0 International License (see docs/LICENSE,
+https://creativecommons.org/licenses/by/4.0/).
+
+Third-party data in this repository keeps its own license and is not covered
+by either license above:
+
+- data/raw/chebi, data/onto/raw/chebi_lite_*.obo.gz — ChEBI, EMBL-EBI,
+  https://www.ebi.ac.uk/chebi/, CC BY 4.0.
+- data/raw/rhea — Rhea, SIB Swiss Institute of Bioinformatics,
+  https://www.rhea-db.org/, CC BY 4.0.
+- data/onto/raw/english-wordnet-*.xml.gz — Open English WordNet,
+  https://en-word.net/, CC BY 4.0.
+- data/bigg/e_coli_core.xml — BiGG Models, Systems Biology Research Group,
+  UC San Diego, http://bigg.ucsd.edu/. "BiGG is freely available for
+  non-commercial use"; the model itself is from Orth, Fleming, Palsson,
+  EcoSal Plus 2010.
+
+Files derived from these sources (data/classes.agl, data/metabolism.agl,
+cases built from them) carry the attribution requirements of their sources.
+
+Weights of language models are not stored here: data/llm/MANIFEST lists only
+hashes of slices downloaded by tools/llm_geometry.py from Qwen2.5 (Apache 2.0;
+72B under the Qwen license).

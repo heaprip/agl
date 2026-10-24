@@ -36,3 +36,7 @@ cargo run --release -- cases/trunk/glycolysis.agl`. Где мы — [roadmap](do
 
 Правило ведения: решение принимает только автор. Гипотеза становится решением
 только по его слову и переносится из `hypotheses` в `decisions`.
+
+Лицензия: код — Apache 2.0 ([LICENSE](LICENSE)), документы — CC BY 4.0
+([docs/LICENSE](docs/LICENSE)). Сторонние данные (ChEBI, Rhea, Open English
+WordNet, BiGG) — под своими лицензиями, см. [NOTICE](NOTICE).
