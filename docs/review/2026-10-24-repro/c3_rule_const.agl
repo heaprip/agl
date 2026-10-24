@@ -1,0 +1,6 @@
+relation parenthood(child, parent)
+concept parent(ego: ?e, alter: ?a) @: parenthood(child: ?e, parent: ?a)
+rule rb strict @: b(ego: ?e, alter: ?a) <- parenthood(child: ?e, parent: ?a), ?a != adam
+compare parent @ vs b @ expect not_below
+fact f1: parenthood(child: cain, parent: adam) @
+query b(ego: cain, alter: adam) @ expect unknown

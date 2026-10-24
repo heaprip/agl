@@ -1,0 +1,4 @@
+relation parenthood(child, parent)
+concept a(ego: ?e, alter: ?x) @: parenthood(child: ?e, parent: ?x)
+concept b(alter: ?x, ego: ?e) @: parenthood(child: ?e, parent: ?x)
+compare a @ vs b @ expect same

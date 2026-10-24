@@ -1,0 +1,7 @@
+# q vs ~q unresolved at round 1; but q rests on p, which is defeated by strict ~p.
+fact f1: a(x: k) @
+rule r_p defeasible @: p(x: ?x) <- a(x: ?x)
+rule s_np strict @: ¬p(x: ?x) <- a(x: ?x)
+rule r_q defeasible @: q(x: ?x) <- p(x: ?x)
+rule r_nq defeasible @: ¬q(x: ?x) <- a(x: ?x)
+query q(x: k) @ expect no

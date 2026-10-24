@@ -1,0 +1,2 @@
+relation r(s, t)
+concept big(ego: ?e) @: r(s: ?e, t: ?b1), r(s: ?b1, t: ?b2), r(s: ?b2, t: ?b3), r(s: ?b3, t: ?b4), r(s: ?b4, t: ?b5), r(s: ?b5, t: ?b6), r(s: ?b6, t: ?b7), r(s: ?b1, t: ?b8)

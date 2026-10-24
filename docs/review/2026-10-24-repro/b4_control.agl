@@ -1,0 +1,9 @@
+status high > mid > low
+fact fp: p(x: k) @ [low]
+fact fh: h(x: k) @ [high]
+rule t1 strict @: h2(x: ?x) <- h(x: ?x)
+rule t2 strict @: r(x: ?x) <- h2(x: ?x)
+rule s1 strict @: q(x: ?x) <- p(x: ?x), r(x: ?x)
+fact fe: e(x: k) @ [mid]
+rule s2 strict @: ¬q(x: ?x) <- e(x: ?x)
+query q(x: k) @ expect no

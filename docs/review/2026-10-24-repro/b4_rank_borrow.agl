@@ -1,0 +1,12 @@
+status high > mid > low
+fact fp: p(x: k) @ [low]
+fact fc: c(x: k) @ [high]
+rule rd defeasible @: p(x: ?x) <- c(x: ?x)
+fact fh: h(x: k) @ [high]
+rule t1 strict @: h2(x: ?x) <- h(x: ?x)
+rule t2 strict @: r(x: ?x) <- h2(x: ?x)
+rule s1 strict @: q(x: ?x) <- p(x: ?x), r(x: ?x)
+fact fe: e(x: k) @ [mid]
+rule s2 strict @: ¬q(x: ?x) <- e(x: ?x)
+# strict support of q rests on fp [low]; strict support of ~q on fe [mid]: ~q should win
+query q(x: k) @ expect no

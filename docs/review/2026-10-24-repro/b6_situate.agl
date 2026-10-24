@@ -1,0 +1,8 @@
+axis w
+value w x
+fact b: base(id: k) @
+rule s1 defeasible @: situated(context: k, axis: w, value: x) <- base(id: k)
+rule s2 defeasible @ w:x: ¬situated(context: k, axis: w, value: x) <- base(id: k)
+rule g defeasible @ w:x: good(id: k) <- base(id: k)
+query good(id: k) @ situate k expect unknown
+query situated(context: k, axis: w, value: x) @ w:x expect no
