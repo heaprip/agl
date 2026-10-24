@@ -340,7 +340,8 @@
   оно верно; пучок — данные, согласованные на пересечениях и склеиваемые из
   частей. Родственные: логика контекстов (McCarthy; Buvač и Mason 1993),
   многоконтекстные системы (Brewka и Eiter 2007), контекстуальность
-  (Abramsky и Brandenburger 2011), слияние данных пучками (Robinson 2017).
+  (Abramsky и Brandenburger 2011), мера согласованности (Robinson,
+  arXiv:1805.08927). Операции теории — [lessons/sheaves](lessons/sheaves.md).
   Пучки не дают отменяемости: этот слой — из defeasible logic. Сверка
   нынешнего ядра с определениями — [review](review/2026-10-24-sheaves.md).
 
