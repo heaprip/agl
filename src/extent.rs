@@ -75,10 +75,7 @@ fn matches(pat: &Atom, ground: &Atom) -> bool {
 
 pub fn extents(prog: &Program, pattern: &Atom) -> (Vec<Extent>, bool) {
     let (contexts, complete) = all_contexts(prog);
-    let mut evals = Evals {
-        prog,
-        done: BTreeMap::new(),
-    };
+    let mut evals = Evals::new(prog);
     let pos = Atom {
         neg: false,
         ..pattern.clone()
@@ -145,7 +142,7 @@ pub fn render_extents(exts: &[Extent], complete: bool) -> String {
 }
 
 /// A context and the values of the roles, in role order.
-type Object = (String, String);
+pub type Object = (String, String);
 
 pub struct Implication {
     /// Relations with the same objects, the premise first.
@@ -165,14 +162,14 @@ pub struct Implications {
     pub complete: bool,
 }
 
-pub fn implications(prog: &Program) -> Implications {
+/// Role signature → relation → objects, over every evaluated context, and
+/// whether the closure of intersections was complete.
+pub type Table = BTreeMap<String, BTreeMap<String, BTreeSet<Object>>>;
+
+pub fn table(prog: &Program) -> (Table, bool) {
     let (contexts, complete) = all_contexts(prog);
-    let mut evals = Evals {
-        prog,
-        done: BTreeMap::new(),
-    };
-    // signature -> relation -> objects
-    let mut table: BTreeMap<String, BTreeMap<String, BTreeSet<Object>>> = BTreeMap::new();
+    let mut evals = Evals::new(prog);
+    let mut table: Table = BTreeMap::new();
     for ctx in &contexts {
         let name = plane_to_string(ctx);
         let out = evals.get(ctx);
@@ -186,7 +183,14 @@ pub fn implications(prog: &Program) -> Implications {
                 .or_default()
                 .insert((name.clone(), values.join(", ")));
         }
+        // An outcome is not needed again: keep memory flat over many contexts.
+        evals.done.clear();
     }
+    (table, complete)
+}
+
+pub fn implications(prog: &Program) -> Implications {
+    let (table, complete) = table(prog);
     let mut res = Implications {
         signatures: vec![],
         exact: vec![],

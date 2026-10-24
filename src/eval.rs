@@ -68,15 +68,50 @@ pub struct Outcome {
 }
 
 pub fn evaluate(prog: &Program, ctx: &Plane) -> Outcome {
-    let facts: Vec<&Fact> = prog
-        .facts
-        .iter()
-        .filter(|f| prog.axes.plane_within(ctx, &f.plane))
+    evaluate_in(prog, &Visibility::new(prog), ctx)
+}
+
+/// Facts and rules by plane, built once per program: a context then checks
+/// each distinct plane once instead of each statement.
+pub struct Visibility {
+    facts: BTreeMap<Plane, Vec<usize>>,
+    rules: BTreeMap<Plane, Vec<usize>>,
+}
+
+impl Visibility {
+    pub fn new(prog: &Program) -> Self {
+        let mut facts: BTreeMap<Plane, Vec<usize>> = BTreeMap::new();
+        for (i, f) in prog.facts.iter().enumerate() {
+            facts.entry(f.plane.clone()).or_default().push(i);
+        }
+        let mut rules: BTreeMap<Plane, Vec<usize>> = BTreeMap::new();
+        for (i, r) in prog.rules.iter().enumerate() {
+            rules.entry(r.plane.clone()).or_default().push(i);
+        }
+        Visibility { facts, rules }
+    }
+
+    /// Indices of the statements visible in `ctx`, in program order.
+    fn visible(prog: &Program, by_plane: &BTreeMap<Plane, Vec<usize>>, ctx: &Plane) -> Vec<usize> {
+        let mut out: Vec<usize> = by_plane
+            .iter()
+            .filter(|(p, _)| prog.axes.plane_within(ctx, p))
+            .flat_map(|(_, ix)| ix.iter().copied())
+            .collect();
+        out.sort_unstable();
+        out
+    }
+}
+
+/// `evaluate` with the statements already grouped by plane.
+pub fn evaluate_in(prog: &Program, vis: &Visibility, ctx: &Plane) -> Outcome {
+    let facts: Vec<&Fact> = Visibility::visible(prog, &vis.facts, ctx)
+        .into_iter()
+        .map(|i| &prog.facts[i])
         .collect();
-    let rules: Vec<&Rule> = prog
-        .rules
-        .iter()
-        .filter(|r| prog.axes.plane_within(ctx, &r.plane))
+    let rules: Vec<&Rule> = Visibility::visible(prog, &vis.rules, ctx)
+        .into_iter()
+        .map(|i| &prog.rules[i])
         .collect();
     let (strata, _) = strata(&prog.rules);
     let top = prog.status_rank.values().copied().max().unwrap_or(0);

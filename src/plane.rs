@@ -121,10 +121,26 @@ impl Axes {
         if a.contains(MEET) {
             return a.split(MEET).any(|part| self.value_within(axis, part, b));
         }
-        self.ancestors(axis, a).iter().any(|x| x == b)
+        // Up the chain of parents from `a`, without collecting it.
+        let Some(vals) = self.values.get(axis) else {
+            return a == b;
+        };
+        let mut cur = a;
+        loop {
+            if cur == b {
+                return true;
+            }
+            match vals.get(cur) {
+                Some(Some(parent)) => cur = parent,
+                _ => return false,
+            }
+        }
     }
 
     fn overlap_declared(&self, axis: &str, a: &str, b: &str) -> bool {
+        if self.overlaps.is_empty() {
+            return false;
+        }
         let aa = self.ancestors(axis, a);
         let bb = self.ancestors(axis, b);
         aa.iter().any(|x| {
@@ -137,11 +153,19 @@ impl Axes {
     }
 
     pub fn value_meet(&self, axis: &str, a: &str, b: &str) -> Option<String> {
+        if a == b {
+            return Some(a.to_string());
+        }
         if self.value_within(axis, a, b) {
             return Some(a.to_string());
         }
         if self.value_within(axis, b, a) {
             return Some(b.to_string());
+        }
+        // Two plain values, neither within the other, meet only by a declared
+        // overlap.
+        if !a.contains(MEET) && !b.contains(MEET) && !self.overlap_declared(axis, a, b) {
+            return None;
         }
         let parts_a: Vec<&str> = a.split(MEET).collect();
         let parts_b: Vec<&str> = b.split(MEET).collect();
@@ -177,16 +201,22 @@ impl Axes {
 
     /// Intersection of two planes, or `None` if they are disjoint.
     pub fn plane_meet(&self, a: &Plane, b: &Plane) -> Option<Plane> {
+        // Meet the shared axes first: most pairs are disjoint, and then
+        // nothing is cloned.
+        let mut shared = Vec::new();
+        for (axis, vb) in b {
+            if let Some(va) = a.get(axis) {
+                shared.push((axis, self.value_meet(axis, va, vb)?));
+            }
+        }
         let mut out = a.clone();
         for (axis, vb) in b {
-            match a.get(axis) {
-                None => {
-                    out.insert(axis.clone(), vb.clone());
-                }
-                Some(va) => {
-                    out.insert(axis.clone(), self.value_meet(axis, va, vb)?);
-                }
+            if !a.contains_key(axis) {
+                out.insert(axis.clone(), vb.clone());
             }
+        }
+        for (axis, v) in shared {
+            out.insert(axis.clone(), v);
         }
         Some(out)
     }

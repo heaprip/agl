@@ -65,12 +65,24 @@ impl Report {
 pub(crate) struct Evals<'a> {
     pub(crate) prog: &'a Program,
     pub(crate) done: BTreeMap<Plane, eval::Outcome>,
+    vis: Option<eval::Visibility>,
 }
 
-impl Evals<'_> {
+impl<'a> Evals<'a> {
+    pub(crate) fn new(prog: &'a Program) -> Self {
+        Evals {
+            prog,
+            done: BTreeMap::new(),
+            vis: None,
+        }
+    }
+
     pub(crate) fn get(&mut self, plane: &Plane) -> &eval::Outcome {
         if !self.done.contains_key(plane) {
-            let out = eval::evaluate(self.prog, plane);
+            let vis = self
+                .vis
+                .get_or_insert_with(|| eval::Visibility::new(self.prog));
+            let out = eval::evaluate_in(self.prog, vis, plane);
             self.done.insert(plane.clone(), out);
         }
         &self.done[plane]
@@ -79,10 +91,7 @@ impl Evals<'_> {
 
 pub fn run(prog: &Program) -> Report {
     let diags = lint::lint(prog);
-    let mut evals = Evals {
-        prog,
-        done: BTreeMap::new(),
-    };
+    let mut evals = Evals::new(prog);
     let (conflicts, mut errors) = scan_conflicts(prog, &mut evals);
     let queries: Vec<QueryResult> = prog
         .queries
@@ -217,10 +226,7 @@ pub struct Situation {
 /// a `situated` atom the narrowing rested on, and then the plane has no
 /// grounds.
 pub fn situate(prog: &Program, base: &Plane, context: &str) -> Result<Situation, String> {
-    let mut evals = Evals {
-        prog,
-        done: BTreeMap::new(),
-    };
+    let mut evals = Evals::new(prog);
     situate_in(&mut evals, base, context)
 }
 
