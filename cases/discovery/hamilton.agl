@@ -1,0 +1,47 @@
+# Шаг 4 лестницы H57: вопрос Гамильтона — продолжить комплексные числа.
+# Базис u0 = 1, u1 = i, u2, u3; умножение билинейно и задаётся таблицей
+# произведений единиц: eₐe_b = s·e_c. Таблицы-кандидаты, элементы и пары
+# для закона нормы называет генератор (examples/hamilton.rs); он же
+# объявляет, какие законы действуют: active(law).
+
+# Дано: u0 — единица, квадрат каждой мнимой единицы −1 (копия комплексных
+# чисел), остальное — из таблицы-кандидата.
+rule own strict @: tab(t: ?t, a: ?a, b: ?b, s: ?s, c: ?c) <- table(t: ?t), entry(t: ?t, a: ?a, b: ?b, s: ?s, c: ?c)
+rule one_l strict @: tab(t: ?t, a: u0, b: ?u, s: 1, c: ?u) <- table(t: ?t), unit(u: ?u)
+rule one_r strict @: tab(t: ?t, a: ?u, b: u0, s: 1, c: ?u) <- table(t: ?t), unit(u: ?u), ?u != u0
+rule square strict @: tab(t: ?t, a: ?u, b: ?u, s: -1, c: u0) <- table(t: ?t), unit(u: ?u), ?u != u0
+
+# Переместительность и сочетательность — на единицах: по билинейности этого
+# достаточно.
+rule comm_s strict @: law_broken(t: ?t, law: commutative) <-
+    tab(t: ?t, a: ?a, b: ?b, s: ?s, c: ?c), tab(t: ?t, a: ?b, b: ?a, s: ?r, c: ?d), ?s != ?r
+rule comm_c strict @: law_broken(t: ?t, law: commutative) <-
+    tab(t: ?t, a: ?a, b: ?b, s: ?s, c: ?c), tab(t: ?t, a: ?b, b: ?a, s: ?r, c: ?d), ?c != ?d
+# (ab)d = s1 s2 f, a(bd) = s3 s4 h.
+rule assoc_u strict @: law_broken(t: ?t, law: associative) <-
+    tab(t: ?t, a: ?a, b: ?b, s: ?s1, c: ?c), tab(t: ?t, a: ?c, b: ?d, s: ?s2, c: ?f),
+    tab(t: ?t, a: ?b, b: ?d, s: ?s3, c: ?g), tab(t: ?t, a: ?a, b: ?g, s: ?s4, c: ?h), ?f != ?h
+rule assoc_s strict @: law_broken(t: ?t, law: associative) <-
+    tab(t: ?t, a: ?a, b: ?b, s: ?s1, c: ?c), tab(t: ?t, a: ?c, b: ?d, s: ?s2, c: ?f),
+    tab(t: ?t, a: ?b, b: ?d, s: ?s3, c: ?g), tab(t: ?t, a: ?a, b: ?g, s: ?s4, c: ?f),
+    ?s1 * ?s2 != ?s3 * ?s4
+
+# Закон нормы |xy|² = |x|²|y|² — на парах из выборки.
+rule term strict @: term(t: ?t, x: ?x, y: ?y, a: ?a, b: ?b, c: ?c, v: ?v) <-
+    table(t: ?t, scope: ?k), probe(scope: ?k, x: ?x, y: ?y),
+    coef(p: ?x, u: ?a, c: ?p), coef(p: ?y, u: ?b, c: ?q), tab(t: ?t, a: ?a, b: ?b, s: ?s, c: ?c),
+    ?v = ?s * ?p * ?q
+rule prod strict @: prod(t: ?t, x: ?x, y: ?y, c: ?c, v: ?v) <-
+    term(t: ?t, x: ?x, y: ?y, c: ?c),
+    ?v = sum(?w) over (term(t: ?t, x: ?x, y: ?y, a: ?a, b: ?b, c: ?c, v: ?w))
+rule nprod strict @: norm_prod(t: ?t, x: ?x, y: ?y, n: ?n) <-
+    prod(t: ?t, x: ?x, y: ?y), ?n = sum(?v * ?v) over (prod(t: ?t, x: ?x, y: ?y, c: ?c, v: ?v))
+rule nel strict @: norm(p: ?x, n: ?n) <-
+    coef(p: ?x), ?n = sum(?c * ?c) over (coef(p: ?x, u: ?a, c: ?c))
+rule normlaw strict @: law_broken(t: ?t, law: norm) <-
+    norm_prod(t: ?t, x: ?x, y: ?y, n: ?n), norm(p: ?x, n: ?m), norm(p: ?y, n: ?k), ?n != ?m * ?k
+
+# Таблица выживает, если не нарушен ни один действующий закон.
+rule broken strict @: broken(t: ?t, law: ?l) <- law_broken(t: ?t, law: ?l), active(law: ?l)
+rule survives strict @: survives(t: ?t) <-
+    table(t: ?t), ?n = count(?l) over (broken(t: ?t, law: ?l)), ?n = 0

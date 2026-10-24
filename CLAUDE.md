@@ -67,6 +67,7 @@ cargo run --release --example analogy      # прототип H51: недост�
 cargo run --release --example bombelli     # веха Джанибекова, шаг 0: аномалия → плоскость пар (AGL_TRACE=1 — ход)
 cargo run --release --example cauchy       # H57 шаг 2: присоединение корня, выбор X² = s по аномалии
 cargo run --release --example adjoin -- cases/discovery/adjoin/imaginary.agl  # H57 шаг 3: один приём присоединения
+cargo run --release --example hamilton    # H57 шаг 4: какой закон снять — кватернионы (~30 с)
 ```
 
 ## LLM через RouterAI

@@ -356,3 +356,85 @@ fn adjoining_does_not_depend_on_statement_order() {
         }
     }
 }
+
+/// Step 4 of H57: the eight full tables n = 4 left by the pair stage
+/// (uₐu_b = ±u_c, anticommuting), probes among elements with coefficients in
+/// {−1, 0, 1} on two units. Returns the survivors under the active laws.
+fn hamilton(active: &[&str]) -> (agl::model::Program, Vec<String>) {
+    let mut src = std::fs::read_to_string("cases/discovery/hamilton.agl").unwrap();
+    for u in 0..4 {
+        src.push_str(&format!("fact unit_{u}: unit(u: u{u}) @\n"));
+    }
+    for l in active {
+        src.push_str(&format!("fact active_{l}: active(law: {l}) @\n"));
+    }
+    for i in 0..8 {
+        let s = |k: usize| if i >> k & 1 == 0 { 1 } else { -1 };
+        let t = format!("f{i}");
+        src.push_str(&format!("fact {t}: table(t: {t}, scope: all) @\n"));
+        for (k, (a, b, c)) in [(1, 2, 3), (2, 3, 1), (3, 1, 2)].into_iter().enumerate() {
+            src.push_str(&format!(
+                "fact {t}_{a}{b}: entry(t: {t}, a: u{a}, b: u{b}, s: {}, c: u{c}) @\n\
+                 fact {t}_{b}{a}: entry(t: {t}, a: u{b}, b: u{a}, s: {}, c: u{c}) @\n",
+                s(k),
+                -s(k)
+            ));
+        }
+    }
+    let mut elems = Vec::new();
+    for a in 0..4 {
+        for b in a + 1..4 {
+            for (ca, cb) in [(1, 1), (1, -1)] {
+                let p = format!("x_{a}{b}_{}", if cb > 0 { "p" } else { "m" });
+                src.push_str(&format!(
+                    "fact {p}_a: coef(p: {p}, u: u{a}, c: {ca}) @\nfact {p}_b: coef(p: {p}, u: u{b}, c: {cb}) @\n"
+                ));
+                elems.push(p);
+            }
+        }
+    }
+    for x in &elems {
+        for y in &elems {
+            src.push_str(&format!(
+                "fact pr_{x}_{y}: probe(scope: all, x: {x}, y: {y}) @\n"
+            ));
+        }
+    }
+    let prog = agl::parse(&src).unwrap();
+    let out = evaluate(&prog, &agl::model::Plane::new());
+    let alive = atoms(&out, "survives")
+        .iter()
+        .map(|a| a.args[0].1.to_string())
+        .collect();
+    (prog, alive)
+}
+
+/// Declared before the run (H57, step 4): with commutativity dropped, of the
+/// eight tables exactly two survive — ij = k, jk = i, ki = j (f0) and its
+/// mirror with every sign flipped (f7); with every law kept, none.
+#[test]
+fn hamilton_drops_commutativity_and_finds_quaternions() {
+    assert_eq!(hamilton(&["associative", "norm"]).1, ["f0", "f7"]);
+    assert_eq!(
+        hamilton(&["commutative", "associative", "norm"]).1,
+        Vec::<String>::new()
+    );
+    assert_eq!(
+        hamilton(&["commutative", "associative"]).1,
+        Vec::<String>::new()
+    );
+}
+
+#[test]
+fn hamilton_does_not_depend_on_statement_order() {
+    let (prog, alive) = hamilton(&["associative", "norm"]);
+    for seed in 0..2 {
+        let p = permute(&prog, seed);
+        let out = evaluate(&p, &agl::model::Plane::new());
+        let got: Vec<String> = atoms(&out, "survives")
+            .iter()
+            .map(|a| a.args[0].1.to_string())
+            .collect();
+        assert_eq!(alive, got, "permutation {seed}");
+    }
+}
