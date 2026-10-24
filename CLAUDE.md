@@ -10,7 +10,7 @@ Relation-first формальная система представления с
 
 1. [docs/roadmap.md](docs/roadmap.md) — где мы и что дальше (раздел «Следующие шаги»).
 2. [docs/decisions.md](docs/decisions.md) — решения автора (1–22). Их не пересматривать.
-3. [docs/hypotheses.md](docs/hypotheses.md) — предложения помощника (H0–H47), **не приняты**.
+3. [docs/hypotheses.md](docs/hypotheses.md) — предложения помощника (H0–H48), **не приняты**.
 4. [docs/open-questions.md](docs/open-questions.md) — что решает только автор.
 5. [docs/impl/poc.md](docs/impl/poc.md) — нотация `.agl`, семантика ядра, детерминизм, рефлексия, обучение.
 
@@ -33,8 +33,9 @@ Relation-first формальная система представления с
   - вся случайность — от seed (`src/sim.rs`);
   - вывод не зависит от порядка утверждений.
 
-  Симуляционные тесты (`tests/sim.rs`) — главный ловец ошибок, уже нашли 7
-  настоящих.
+  Симуляционные тесты (`tests/sim.rs`) ловят зависимость от порядка и
+  детерминизм (нашли 4 ошибки, см. poc). Правильность вывода сверяет эталон
+  defeasible logic (`tests/oracle.rs`): он нашёл ошибки К1 и К3 разбора.
 - Сеть трогают только загрузчики (`tools/`). Их выход коммитится вместе с
   MANIFEST хешей, ядро работает офлайн.
 - Ядро без внешних зависимостей. Rust 2024 edition, `cargo fmt`, `cargo clippy` чисто.
@@ -48,6 +49,7 @@ Relation-first формальная система представления с
 cargo test --release                       # всё; ~1 мин
 AGL_SIM_SEEDS=20000 cargo test --release --test sim   # широкий прогон
 AGL_SEED=<n> cargo test --test sim         # повтор упавшего seed
+AGL_SIM_SEEDS=50000 cargo test --release --test oracle  # сверка ядра с эталоном DL
 cargo run --release -- cases/*.agl         # казусы
 cargo run --release -- -v cases/trunk/oxygen.agl      # с цепочками вывода
 cargo run --release -- --diagnose FILE     # рефлексия R1
