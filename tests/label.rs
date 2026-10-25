@@ -85,8 +85,7 @@ fn labels_match_closure() {
                 );
             }
             if labels.number(&names[a]).is_some() {
-                let mut anc = labels.ancestors(&names[a]);
-                anc.sort_unstable();
+                let anc = labels.ancestors(&names[a]);
                 let mut want: Vec<&str> = (0..names.len())
                     .filter(|&b| up[a][b])
                     .map(|b| names[b].as_str())

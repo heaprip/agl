@@ -29,6 +29,8 @@ pub struct Labels {
     by_num: Vec<u32>,
     /// component -> sorted, disjoint, non-adjacent intervals
     iv: Vec<Vec<Interval>>,
+    /// component -> components of its genera, sorted
+    up: Vec<Vec<u32>>,
 }
 
 impl Labels {
@@ -158,6 +160,7 @@ impl Labels {
             num,
             by_num,
             iv,
+            up: cparents,
         }
     }
 
@@ -246,15 +249,29 @@ impl Labels {
         })
     }
 
-    /// Everything `a` is within, `a` included, by name.
+    /// Everything `a` is within, `a` included, by name. Walks up the edges
+    /// between components: as many steps as ancestors, not as nodes.
     pub fn ancestors(&self, a: &str) -> Vec<&str> {
         let Some(i) = self.index(a) else {
             return Vec::new();
         };
-        let x = self.num[self.comp[i] as usize];
-        (0..self.len())
-            .filter(|&b| contains(&self.iv[self.comp[b] as usize], x))
-            .map(|b| self.names[b].as_str())
+        let start = self.comp[i];
+        let mut seen: std::collections::BTreeSet<u32> = [start].into();
+        let mut todo = vec![start];
+        while let Some(c) = todo.pop() {
+            for &p in &self.up[c as usize] {
+                if seen.insert(p) {
+                    todo.push(p);
+                }
+            }
+        }
+        let mut out: Vec<u32> = seen
+            .into_iter()
+            .flat_map(|c| self.members[c as usize].iter().copied())
+            .collect();
+        out.sort_unstable();
+        out.into_iter()
+            .map(|b| self.names[b as usize].as_str())
             .collect()
     }
 
