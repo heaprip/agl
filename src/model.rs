@@ -554,4 +554,10 @@ pub struct Program {
     /// Declared quantities and units (decision 23).
     pub units: crate::units::Units,
     pub nestings: Vec<Nesting>,
+    /// Line of `world clean`: the kernel itself rejects anything given
+    /// ready-made (H72, `docs/impl/clean.md`).
+    pub clean: Option<usize>,
+    /// Statements that leave no other trace in the model, by line: `quantity`,
+    /// `unit`, `cover`, `include` (the last from `parse_file`).
+    pub given: Vec<(usize, String)>,
 }

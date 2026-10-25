@@ -13,6 +13,7 @@ fn main() -> ExitCode {
         .position(|a| a == "--learn")
         .and_then(|i| args.get(i + 1).cloned());
     let implications = args.iter().any(|a| a == "--implications");
+    let explore = args.iter().any(|a| a == "--explore");
     let where_ = args
         .iter()
         .position(|a| a == "--where")
@@ -26,7 +27,7 @@ fn main() -> ExitCode {
         .collect();
     if files.is_empty() {
         eprintln!(
-            "usage: agl [-v] [--diagnose] [--propose] [--concepts] [--implications] [--learn REL] [--where ATOM] FILE.agl..."
+            "usage: agl [-v] [--diagnose] [--propose] [--concepts] [--implications] [--explore] [--learn REL] [--where ATOM] FILE.agl..."
         );
         return ExitCode::from(2);
     }
@@ -151,11 +152,36 @@ fn main() -> ExitCode {
                 print!("{}", agl::reflect::render(&ds));
             }
         }
-        if let Some(target) = &learn {
+        if explore {
+            let clean = report
+                .diags
+                .iter()
+                .all(|d| d.level != agl::lint::Level::Error);
+            if clean {
+                let (rels, domain, why) = agl::bank::relations(&prog);
+                if let Some(why) = why {
+                    println!("explore: {why}");
+                }
+                println!("domain: {}", domain.len());
+                let banks: Vec<_> = rels
+                    .into_iter()
+                    .map(|(r, e)| agl::bank::Bank::grow(r, e, true))
+                    .collect();
+                let kinds = agl::bank::Kinds::build(&banks);
+                print!("{}", agl::bank::render(&banks, &kinds, verbose));
+            } else {
+                println!("explore: fix the errors above first");
+            }
+        }
+        if prog.clean.is_some() && (learn.is_some() || propose) {
+            // A template or a menu of operations is given ready-made (H72).
+            println!("clean world: --learn and --propose take a hand-given template or menu");
+            ok = false;
+        } else if let Some(target) = &learn {
             let (hs, notes) = agl::learn::learn(&prog, target);
             print!("{}", agl::learn::render(&hs, &notes));
         }
-        if propose {
+        if propose && prog.clean.is_none() {
             let (ps, notes) = agl::propose::propose(&prog);
             if ps.is_empty() && notes.is_empty() {
                 println!("proposals: none");

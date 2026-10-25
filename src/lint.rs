@@ -122,7 +122,111 @@ pub fn lint(prog: &Program) -> Vec<Diag> {
             }
         }
     }
+    if prog.clean.is_some() {
+        ready_made(prog, &mut out);
+    }
     out
+}
+
+/// In a clean world (`world clean`, H72) the kernel rejects whatever comes
+/// ready-made instead of being found: numbers and units, arithmetic, order
+/// of numbers, aggregates, hand-given definitions and names, given nesting
+/// and functionality, included libraries. One error per statement.
+fn ready_made(prog: &Program, out: &mut Vec<Diag>) {
+    let mut found: Vec<(usize, Vec<&'static str>)> = Vec::new();
+    let atom = |a: &Atom, kinds: &mut Vec<&'static str>| {
+        if a.args.iter().any(|(_, t)| matches!(t, Term::Num(..))) {
+            kinds.push("number");
+        }
+    };
+    for f in &prog.facts {
+        let mut k = Vec::new();
+        atom(&f.atom, &mut k);
+        found.push((f.line, k));
+    }
+    for r in &prog.rules {
+        let mut k = Vec::new();
+        atom(&r.head, &mut k);
+        for lit in &r.body {
+            match lit {
+                Lit::Atom(a) => atom(a, &mut k),
+                Lit::Cmp(l, op, r) => {
+                    if !matches!(op, CmpOp::Eq | CmpOp::Ne) {
+                        k.push("order of numbers");
+                    }
+                    for e in [l, r] {
+                        expr_kinds(e, &mut k);
+                    }
+                }
+                Lit::Agg { .. } => k.push("aggregate"),
+            }
+        }
+        found.push((r.line, k));
+    }
+    for q in &prog.queries {
+        let mut k = Vec::new();
+        atom(&q.atom, &mut k);
+        found.push((q.line, k));
+    }
+    for b in &prog.forbids {
+        let mut k = Vec::new();
+        atom(&b.atom, &mut k);
+        found.push((b.line, k));
+    }
+    let hand = [
+        prog.concepts
+            .iter()
+            .map(|c| (c.line, "concept"))
+            .collect::<Vec<_>>(),
+        prog.words.iter().map(|w| (w.line, "word")).collect(),
+        prog.compares.iter().map(|c| (c.line, "compare")).collect(),
+        prog.nestings.iter().map(|n| (n.line, "nesting")).collect(),
+        prog.uniques.iter().map(|u| (u.line, "unique")).collect(),
+    ];
+    for (line, kind) in hand.into_iter().flatten() {
+        found.push((line, vec![kind]));
+    }
+    for (line, stmt) in &prog.given {
+        let kind = match stmt.split_whitespace().next() {
+            Some("include") => "include",
+            Some("quantity") => "quantity",
+            Some("unit") => "unit",
+            _ => "cover",
+        };
+        found.push((*line, vec![kind]));
+    }
+    // Rules compiled from a concept share its line: report the line once.
+    found.sort();
+    let mut lines: Vec<(usize, Vec<&'static str>)> = Vec::new();
+    for (line, mut kinds) in found {
+        match lines.last_mut() {
+            Some((l, k)) if *l == line => k.append(&mut kinds),
+            _ => lines.push((line, kinds)),
+        }
+    }
+    for (line, mut kinds) in lines {
+        kinds.sort();
+        kinds.dedup();
+        if !kinds.is_empty() {
+            out.push(err(
+                line,
+                "ready-made",
+                format!("clean world: given ready-made ({})", kinds.join(", ")),
+            ));
+        }
+    }
+}
+
+fn expr_kinds(e: &Expr, kinds: &mut Vec<&'static str>) {
+    match e {
+        Expr::Term(Term::Num(..)) => kinds.push("number"),
+        Expr::Term(_) => {}
+        Expr::Bin(l, _, r) => {
+            kinds.push("arithmetic");
+            expr_kinds(l, kinds);
+            expr_kinds(r, kinds);
+        }
+    }
 }
 
 fn check_roles(prog: &Program, a: &Atom, line: usize, out: &mut Vec<Diag>) {

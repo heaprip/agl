@@ -34,7 +34,10 @@ concept NAME(role: ?v, ...) @ SPEC: ATOM, ..., ?a != ?b
 word LANG WORD = CONCEPT
 cover REL(role) | REL(role) ...
 compare NAME @ SPEC vs NAME @ SPEC [expect same|below|above|apart|not_below|unknown]
+world clean                        # чистый мир (H72): готовое — ошибка `ready-made`
 ```
+
+Чистый мир и банк выражений `--explore` — [clean](clean.md).
 
 В теле правила, кроме атомов, могут стоять:
 

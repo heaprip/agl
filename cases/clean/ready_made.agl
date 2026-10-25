@@ -1,0 +1,22 @@
+# Clean world (H72): every line with the mark below must be rejected as
+# given ready-made, and nothing else. Checked by tests/bank.rs.
+world clean
+relation r(left, right)
+relation w(left, right)
+relation u(left, right)
+fact f1: r(left: a, right: b) @
+fact f2: w(left: a, right: 3) @ # ready
+quantity length m # ready
+unit km = 1000 m # ready
+rule s1 strict @: r(left: ?x, right: ?z) <- r(left: ?x, right: ?y), r(left: ?y, right: ?z)
+rule s2 strict @: u(left: ?x, right: ?y) <- w(left: ?x, right: ?v), ?y = ?v + ?v # ready
+rule s3 strict @: u(left: ?x, right: ?x) <- w(left: ?x, right: ?v), ?v < ?x # ready
+rule s4 strict @: u(left: ?x, right: ?n) <- r(left: ?x, right: ?y), ?n = count(?z) over (r(left: ?y, right: ?z)) # ready
+rule s5 strict @: r(left: ?x, right: ?y) <- r(left: ?y, right: ?x), ?x != ?y
+concept kin(ego: ?e, alter: ?a) @: r(left: ?e, right: ?a) # ready
+word en kin = kin # ready
+compare kin @ vs kin @ # ready
+cover r(left) | w(left) # ready
+unique r(right) by (left) # ready
+nesting n1: r(left, right) by w(left, right) # ready
+include part.agl

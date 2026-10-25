@@ -6,6 +6,7 @@
 //! where planes intersect. See `docs/decisions.md` (decision 17) for the
 //! kernel this implements and `docs/impl/poc.md` for the semantics chosen.
 
+pub mod bank;
 pub mod check;
 pub mod concept;
 pub mod eval;

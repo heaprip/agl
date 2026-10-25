@@ -29,15 +29,26 @@ use crate::units::{Dim, Units};
 /// file) in place, and parses the result. Line numbers in errors refer to the
 /// expanded text.
 pub fn parse_file(path: &std::path::Path) -> Result<Program, String> {
-    parse(&read_expanded(path)?)
+    let mut includes = Vec::new();
+    let text = expand(path, &mut Vec::new(), &mut includes)?;
+    let mut prog = parse(&text)?;
+    prog.given.extend(includes);
+    prog.given.sort();
+    Ok(prog)
 }
 
 /// The text of a file with its includes expanded, for tools that append to it.
 pub fn read_expanded(path: &std::path::Path) -> Result<String, String> {
-    expand(path, &mut Vec::new())
+    expand(path, &mut Vec::new(), &mut Vec::new())
 }
 
-fn expand(path: &std::path::Path, stack: &mut Vec<std::path::PathBuf>) -> Result<String, String> {
+/// Expands includes; `includes` gets the line in the expanded text where
+/// each file included by the top one starts.
+fn expand(
+    path: &std::path::Path,
+    stack: &mut Vec<std::path::PathBuf>,
+    includes: &mut Vec<(usize, String)>,
+) -> Result<String, String> {
     let canon = path
         .canonicalize()
         .map_err(|e| format!("{}: {e}", path.display()))?;
@@ -50,7 +61,12 @@ fn expand(path: &std::path::Path, stack: &mut Vec<std::path::PathBuf>) -> Result
     let mut out = String::new();
     for line in src.lines() {
         match line.trim().strip_prefix("include ") {
-            Some(rel) => out.push_str(&expand(&dir.join(rel.trim()), stack)?),
+            Some(rel) => {
+                if stack.len() == 1 {
+                    includes.push((out.lines().count() + 1, format!("include {}", rel.trim())));
+                }
+                out.push_str(&expand(&dir.join(rel.trim()), stack, includes)?)
+            }
             None => {
                 out.push_str(line);
                 out.push('\n');
@@ -114,6 +130,14 @@ fn parse_names(src: &str) -> Result<Program, String> {
             prog.forbids.len(),
         );
         let (nc, nw, nm) = (prog.concepts.len(), prog.words.len(), prog.compares.len());
+        let kw = stmt.split_whitespace().next().unwrap_or("");
+        if matches!(kw, "quantity" | "unit" | "cover") {
+            prog.given.push((line_no, kw.to_string()));
+        }
+        if stmt == "world clean" {
+            prog.clean = Some(line_no);
+            continue;
+        }
         parse_statement(&mut prog, &u, &stmt).map_err(|e| format!("line {line_no}: {e}"))?;
         prog.facts[nf..].iter_mut().for_each(|f| f.line = line_no);
         prog.rules[nr..].iter_mut().for_each(|r| r.line = line_no);
