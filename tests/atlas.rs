@@ -284,3 +284,77 @@ fn generation_does_not_depend_on_order() {
     };
     assert_eq!(names(a, own_a), names(&b, &own_b));
 }
+
+// Section 7: the CDCL search and the S boundary.
+
+use agl::atlas::models_sat;
+
+#[test]
+fn sat_search_agrees_with_the_old_one() {
+    let pool = [
+        ASSOC,
+        LEFT,
+        RIGHT,
+        COMM,
+        UNIT,
+        "∀x∀y: x·(y·x) = (x·x)·y",
+        "∃x∃y∀z: x·z = z·y",
+        "∀x: x = x·x",
+    ];
+    for (i, a) in pool.iter().enumerate() {
+        for b in &pool[i..] {
+            for c in pool {
+                let (yes, no) = ([law(a), law(b)], [law(c)]);
+                for n in 1..=3 {
+                    assert_eq!(
+                        models(n, &yes, &no).0,
+                        models_sat(n, &yes, &no).0,
+                        "{a} & {b} without {c}, n = {n}"
+                    );
+                }
+            }
+        }
+    }
+    let yes = [law(ASSOC), law(LEFT), law(RIGHT)];
+    for n in 1..=5 {
+        assert_eq!(
+            models(n, &yes, &[]).0,
+            models_sat(n, &yes, &[]).0,
+            "n = {n}"
+        );
+    }
+    assert_eq!(
+        models_sat(6, &yes, &[law(COMM)]).0,
+        models(6, &yes, &[law(COMM)]).0
+    );
+}
+
+/// Criterion 4 as written fails: the widest branch's shortest definition
+/// lets in tables beyond the star at n = 5, 6.
+#[test]
+fn the_widest_shortest_definition_overshoots() {
+    let yes = [
+        law("∃x∃y∀z: x·z = z·y"),
+        law("∀x∀y: x·(x·y) = (x·x)·y"),
+        law(RIGHT),
+    ];
+    let c: Vec<usize> = (1..=6).map(|n| models_sat(n, &yes, &[]).0.len()).collect();
+    assert_eq!(c, [1, 1, 1, 2, 3, 10]);
+}
+
+/// The S boundary of the widest branch, found after that failure: every
+/// definition in it gives the star's counts up to n = 6.
+#[test]
+fn the_s_boundary_of_the_widest_branch_gives_the_star() {
+    let (a, own) = layer(3);
+    let defs = a.definitions(&star_in(a), &small(a));
+    let br = a.branches(&defs, own);
+    let (top, in_top) = &br[0];
+    let s = a.specific(in_top, top);
+    assert_eq!((in_top.len(), s.len()), (59, 7));
+    for d in s {
+        let yes: Vec<&Law> = d.iter().map(|&l| &a.laws[l]).collect();
+        let c: Vec<usize> = (1..=6).map(|n| models_sat(n, &yes, &[]).0.len()).collect();
+        assert_eq!(c, [1, 1, 1, 2, 1, 2]);
+    }
+}

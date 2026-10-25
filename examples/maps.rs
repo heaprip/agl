@@ -1,7 +1,7 @@
 //! H74 §6: the layer of maps of three points against the fork of the small
 //! layer (`docs/impl/atlas.md` §6).
 
-use agl::atlas::{Atlas, Law, Set, generated, models};
+use agl::atlas::{Atlas, Law, Set, generated, models_sat};
 use std::time::Instant;
 
 fn main() {
@@ -56,12 +56,31 @@ fn main() {
         let within = br.iter().all(|(o, _)| o.within(s));
         println!("   contains all others: {within}");
     }
-    let (s, ds) = &br[0];
-    let _ = s;
-    let shortest = ds.iter().min_by_key(|d| d.len()).unwrap();
-    let yes: Vec<&Law> = shortest.iter().map(|&l| &a.laws[l]).collect();
-    for n in 1..=4 {
-        let (m, k) = models(n, &yes, &[]);
-        println!("n = {n}: {} classes, {k} nodes {:?}", m.len(), t.elapsed());
+    let (pos, ds) = &br[0];
+    // Most specific: no law can be swapped for a strictly stronger one that
+    // still holds on every generated entity of the branch.
+    let specific: Vec<&Vec<usize>> = ds
+        .iter()
+        .filter(|d| {
+            d.iter().all(|&l| {
+                !(0..a.laws.len()).any(|m| {
+                    a.holds[m].within(&a.holds[l])
+                        && a.holds[m] != a.holds[l]
+                        && pos.within(&a.holds[m])
+                })
+            })
+        })
+        .collect();
+    println!("widest {} defs, most specific {}", ds.len(), specific.len());
+    let mut tally = std::collections::BTreeMap::new();
+    for d in &specific {
+        let yes: Vec<&Law> = d.iter().map(|&l| &a.laws[l]).collect();
+        let top: u8 = std::env::args().nth(2).map_or(6, |s| s.parse().unwrap());
+        let c: Vec<usize> = (1..=top)
+            .map(|n| models_sat(n, &yes, &[]).0.len())
+            .collect();
+        println!("{c:?} {:?}", t.elapsed());
+        *tally.entry(c).or_insert(0) += 1;
     }
+    println!("{tally:?} {:?}", t.elapsed());
 }

@@ -10,6 +10,7 @@
 //! read in three values on a partial table and isomorphic branches cut (the
 //! least number heuristic of finite model finders such as Mace4).
 
+use crate::sat::{Lit, Solver};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
@@ -564,6 +565,22 @@ impl Atlas {
         out
     }
 
+    /// The most specific of `defs`: those where no law can be swapped for a
+    /// law holding on strictly fewer entities that still holds on every
+    /// entity of `seen` (the S boundary of a version space).
+    pub fn specific<'d>(&self, defs: &'d [Vec<usize>], seen: &Set) -> Vec<&'d Vec<usize>> {
+        let stronger = |l: usize| {
+            (0..self.laws.len()).any(|m| {
+                self.holds[m] != self.holds[l]
+                    && self.holds[m].within(&self.holds[l])
+                    && seen.within(&self.holds[m])
+            })
+        };
+        defs.iter()
+            .filter(|d| !d.iter().any(|&l| stronger(l)))
+            .collect()
+    }
+
     /// Definitions gathered by the entities of `layer` they hold on: one
     /// branch per such set, widest first.
     pub fn branches(&self, defs: &[Vec<usize>], layer: &Set) -> Vec<(Set, Vec<Vec<usize>>)> {
@@ -760,4 +777,242 @@ impl Search<'_> {
         }
         (self.t.cells, self.dom) = (cells, dom);
     }
+}
+
+/// The same as `models`, by the CDCL solver of `sat.rs`; the number is of
+/// conflicts. A cell value is a variable "cell (a, b) is v"; a law for all
+/// values becomes one clause per value of its variables and of its inner
+/// cells; a variable that "there is" becomes an unknown function of the
+/// variables "for all" before it (Skolem), as in the finite model finder
+/// Paradox. Isomorphic tables are cut by the least number rule as clauses:
+/// in the order of cells by their larger index, a value may exceed every
+/// element mentioned before by one at most. Every model found is ruled out
+/// by one more clause, and the search goes on until there is none.
+pub fn models_sat(n: u8, yes: &[&Law], no: &[&Law]) -> (Vec<Table>, usize) {
+    let mut e = Enc::new(n as usize);
+    for l in yes {
+        e.law(&l.prefix, &l.left, &l.right, true);
+    }
+    for l in no {
+        let prefix: Vec<(u8, bool)> = l.prefix.iter().map(|&(v, all)| (v, !all)).collect();
+        e.law(&prefix, &l.left, &l.right, false);
+    }
+    e.least_numbers();
+    let n = n as usize;
+    let mut found = BTreeSet::new();
+    while e.s.solve() {
+        let mut t = Table {
+            n: n as u8,
+            cells: vec![None; n * n],
+        };
+        let mut block = Vec::with_capacity(n * n);
+        for c in 0..n * n {
+            let v = (0..n)
+                .find(|&v| e.s.model(e.cell(c / n, c % n, v)))
+                .unwrap();
+            t.cells[c] = Some(v as u8);
+            block.push(Lit::neg(e.cell(c / n, c % n, v)));
+        }
+        found.insert(t.canonical());
+        e.s.add(&block);
+    }
+    (found.into_iter().collect(), e.s.conflicts)
+}
+
+struct Enc {
+    s: Solver,
+    n: usize,
+}
+
+/// A value a term may take, and the literals that force it.
+type Opt = (usize, Vec<Lit>);
+
+impl Enc {
+    fn new(n: usize) -> Enc {
+        let mut s = Solver::new();
+        for _ in 0..n * n * n {
+            s.var();
+        }
+        let mut e = Enc { s, n };
+        for a in 0..n {
+            for b in 0..n {
+                e.one_of((0..n).map(|v| e.cell(a, b, v)).collect());
+            }
+        }
+        e
+    }
+
+    fn cell(&self, a: usize, b: usize, v: usize) -> usize {
+        (a * self.n + b) * self.n + v
+    }
+
+    fn one_of(&mut self, vars: Vec<usize>) {
+        self.s
+            .add(&vars.iter().map(|&v| Lit::pos(v)).collect::<Vec<_>>());
+        for i in 0..vars.len() {
+            for j in i + 1..vars.len() {
+                self.s.add(&[Lit::neg(vars[i]), Lit::neg(vars[j])]);
+            }
+        }
+    }
+
+    /// The equation (or, with `eq` false, its negation) under the prefix.
+    fn law(&mut self, prefix: &[(u8, bool)], left: &Term, right: &Term, eq: bool) {
+        let n = self.n;
+        // For each variable that "there is": the variables "for all" before
+        // it and the first of its n^k * n solver variables.
+        let mut sk: [Option<(Vec<u8>, usize)>; 3] = [None, None, None];
+        let mut outer: Vec<u8> = Vec::new();
+        for &(v, all) in prefix {
+            if all {
+                outer.push(v);
+            } else {
+                let tuples = n.pow(outer.len() as u32);
+                let base = self.s_vars(tuples * n);
+                for t in 0..tuples {
+                    self.one_of((0..n).map(|w| base + t * n + w).collect());
+                }
+                sk[v as usize] = Some((outer.clone(), base));
+            }
+        }
+        let total = n.pow(outer.len() as u32);
+        for k in 0..total {
+            let mut env = [0usize; 3];
+            let mut r = k;
+            for &v in &outer {
+                env[v as usize] = r % n;
+                r /= n;
+            }
+            let ls = self.roots(left, &env, &sk);
+            let rs = self.roots(right, &env, &sk);
+            for (l, pl) in &ls {
+                for (r, pr) in &rs {
+                    let mut base: Vec<Lit> = pl.iter().chain(pr).map(|&x| !x).collect();
+                    match (l, r) {
+                        (Root::Cell(la, lb), Root::Cell(ra, rb)) => {
+                            for w in 0..n {
+                                let mut c = base.clone();
+                                c.push(Lit::neg(self.cell(*la, *lb, w)));
+                                c.push(if eq {
+                                    Lit::pos(self.cell(*ra, *rb, w))
+                                } else {
+                                    Lit::neg(self.cell(*ra, *rb, w))
+                                });
+                                self.s.add(&c);
+                            }
+                        }
+                        (Root::Cell(a, b), Root::Val(v)) | (Root::Val(v), Root::Cell(a, b)) => {
+                            let x = self.cell(*a, *b, *v);
+                            base.push(if eq { Lit::pos(x) } else { Lit::neg(x) });
+                            self.s.add(&base);
+                        }
+                        (Root::Val(a), Root::Val(b)) => {
+                            if (a == b) != eq {
+                                self.s.add(&base);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn s_vars(&mut self, k: usize) -> usize {
+        let base = self.s.var();
+        for _ in 1..k {
+            self.s.var();
+        }
+        base
+    }
+
+    fn opts(&self, t: &Term, env: &[usize; 3], sk: &[Option<(Vec<u8>, usize)>; 3]) -> Vec<Opt> {
+        match t {
+            Term::Var(v) => match &sk[*v as usize] {
+                None => vec![(env[*v as usize], vec![])],
+                Some((deps, base)) => {
+                    let tuple = deps
+                        .iter()
+                        .rev()
+                        .fold(0, |acc, &d| acc * self.n + env[d as usize]);
+                    (0..self.n)
+                        .map(|w| (w, vec![Lit::pos(base + tuple * self.n + w)]))
+                        .collect()
+                }
+            },
+            Term::Op(a, b) => {
+                let mut out = Vec::new();
+                for (va, pa) in self.opts(a, env, sk) {
+                    for (vb, pb) in self.opts(b, env, sk) {
+                        for w in 0..self.n {
+                            let mut p = pa.clone();
+                            p.extend(&pb);
+                            p.push(Lit::pos(self.cell(va, vb, w)));
+                            out.push((w, p));
+                        }
+                    }
+                }
+                out
+            }
+        }
+    }
+
+    /// The top of a term: a cell whose value is left open, or a value.
+    fn roots(
+        &self,
+        t: &Term,
+        env: &[usize; 3],
+        sk: &[Option<(Vec<u8>, usize)>; 3],
+    ) -> Vec<(Root, Vec<Lit>)> {
+        match t {
+            Term::Op(a, b) => {
+                let mut out = Vec::new();
+                for (va, pa) in self.opts(a, env, sk) {
+                    for (vb, pb) in self.opts(b, env, sk) {
+                        let mut p = pa.clone();
+                        p.extend(&pb);
+                        out.push((Root::Cell(va, vb), p));
+                    }
+                }
+                out
+            }
+            _ => self
+                .opts(t, env, sk)
+                .into_iter()
+                .map(|(v, p)| (Root::Val(v), p))
+                .collect(),
+        }
+    }
+
+    /// The least number rule. `g(k, j)`: some cell before the k-th holds a
+    /// value of at least j.
+    fn least_numbers(&mut self) {
+        let n = self.n;
+        if n < 3 {
+            return;
+        }
+        let mut order: Vec<(usize, usize)> =
+            (0..n).flat_map(|a| (0..n).map(move |b| (a, b))).collect();
+        order.sort_by_key(|&(a, b)| (a.max(b), a, b));
+        let base = self.s_vars((order.len() + 1) * n);
+        let g = |k: usize, j: usize| base + k * n + j;
+        for j in 1..n {
+            self.s.add(&[Lit::neg(g(0, j))]);
+        }
+        for (k, &(a, b)) in order.iter().enumerate() {
+            for j in 1..n {
+                let mut c = vec![Lit::neg(g(k + 1, j)), Lit::pos(g(k, j))];
+                c.extend((j..n).map(|v| Lit::pos(self.cell(a, b, v))));
+                self.s.add(&c);
+            }
+            for v in a.max(b) + 2..n {
+                self.s
+                    .add(&[Lit::neg(self.cell(a, b, v)), Lit::pos(g(k, v - 1))]);
+            }
+        }
+    }
+}
+
+enum Root {
+    Cell(usize, usize),
+    Val(usize),
 }
