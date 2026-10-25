@@ -130,3 +130,55 @@ fn does_not_depend_on_fact_order() {
         }
     }
 }
+
+/// Pairs with h(x) ≥ h(y) + 2 whose hidden weights go the other way.
+fn inversions(w: &World, h: &[usize]) -> usize {
+    let n = w.domain.len();
+    (0..n)
+        .flat_map(|x| (0..n).map(move |y| (x, y)))
+        .filter(|&(x, y)| h[x] >= h[y] + 2 && w.weights[x] < w.weights[y])
+        .count()
+}
+
+/// Fechner's unit (`docs/impl/scale.md` §5): criteria 1, 2 (full world) and
+/// 4 hold; the plates of the world with 2/3 seen are printed — they miss
+/// and do not meet (§6).
+#[test]
+fn fechner_criteria() {
+    use agl::scale::{by_steps, fechner, fechner_plates, observed, steps_flat};
+    let full = world("weights_full");
+    let (p, i) = parts(&full);
+    let h = fechner(p).unwrap();
+    let obs = observed(p, i);
+    let decided: Vec<bool> = obs
+        .iter()
+        .filter_map(|&(x, y, v)| by_steps(&h, x, y).map(|g| g == v))
+        .collect();
+    let wrong = decided.iter().filter(|&&ok| !ok).count();
+    assert!(wrong * 20 <= decided.len(), "criterion 1: {wrong} wrong");
+    assert!(decided.len() * 2 >= obs.len(), "criterion 1: half decided");
+    assert_eq!(inversions(&full, &h), 0, "criterion 2, full");
+
+    let part = world("weights");
+    let (p, i) = parts(&part);
+    let pl = fechner_plates(p, i);
+    for (f, plate) in pl.iter().enumerate() {
+        let h = plate.h.as_ref().unwrap();
+        println!(
+            "plate {f}: decided {} of {}, missed {}, against weights {}",
+            plate.decided,
+            plate.checked,
+            plate.missed,
+            inversions(&part, h)
+        );
+    }
+    println!("flat {}", steps_flat(&pl, part.domain.len()));
+
+    let control = world("shuffled");
+    let (p, i) = parts(&control);
+    let pl = fechner_plates(p, i);
+    let bad = fechner(p).is_none()
+        || !steps_flat(&pl, control.domain.len())
+        || pl.iter().any(|x| x.missed * 20 > x.decided);
+    assert!(bad, "criterion 4");
+}

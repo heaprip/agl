@@ -376,6 +376,149 @@ pub fn render(rels: &[(Name, Ext)], domain: &[Name]) -> String {
             );
         }
         s += &format!("  plates flat: {}\n", flat(&pl, n));
+        s += &render_steps(p, i, domain);
     }
+    s
+}
+
+/// Fechner's measure: the length of the longest chain of the comparison
+/// under each thing, its unit one noticeable step. `None` when the
+/// comparison has a cycle.
+pub fn fechner(p: &Ext) -> Option<Vec<usize>> {
+    let n = p.n();
+    let mut h = vec![0usize; n];
+    // A chain has at most n − 1 steps: relax n times, then one more round
+    // that still changes something means a cycle.
+    for round in 0..=n {
+        let mut changed = false;
+        for x in 0..n {
+            for y in 0..n {
+                if p.get(x, y) && h[x] < h[y] + 1 {
+                    h[x] = h[y] + 1;
+                    changed = true;
+                }
+            }
+        }
+        if !changed {
+            return Some(h);
+        }
+        if round == n {
+            break;
+        }
+    }
+    None
+}
+
+/// Verdict of x against y by the measure: a difference of two steps or more
+/// is "more" (1) or "less" (−1), none is "alike" (0), one step is not
+/// decided — the width of the unit.
+pub fn by_steps(h: &[usize], x: usize, y: usize) -> Option<i8> {
+    match h[x] as isize - h[y] as isize {
+        d if d >= 2 => Some(1),
+        d if d <= -2 => Some(-1),
+        0 => Some(0),
+        _ => None,
+    }
+}
+
+/// One plate of the measure: fitted without part `f`, checked on it.
+#[derive(Clone, Debug)]
+pub struct Steps {
+    pub h: Option<Vec<usize>>,
+    pub decided: usize,
+    pub missed: usize,
+    pub checked: usize,
+}
+
+/// Three plates of Fechner's measure, split as in `plates`.
+pub fn fechner_plates(p: &Ext, i: &Ext) -> [Steps; 3] {
+    let n = p.n();
+    let obs = observed(p, i);
+    std::array::from_fn(|f| {
+        let mut pf = Ext::empty(n);
+        for (k, &(x, y, v)) in obs.iter().enumerate() {
+            match v {
+                1 if k % 3 != f => pf.set(x, y),
+                -1 if k % 3 != f => pf.set(y, x),
+                _ => {}
+            }
+        }
+        let h = fechner(&pf);
+        let (mut decided, mut missed, mut checked) = (0, 0, 0);
+        for (k, &(x, y, v)) in obs.iter().enumerate() {
+            if k % 3 == f {
+                checked += 1;
+                if let Some(g) = h.as_ref().and_then(|h| by_steps(h, x, y)) {
+                    decided += 1;
+                    if g != v {
+                        missed += 1;
+                    }
+                }
+            }
+        }
+        Steps {
+            h,
+            decided,
+            missed,
+            checked,
+        }
+    })
+}
+
+/// No pair is decided differently by two plates.
+pub fn steps_flat(plates: &[Steps; 3], n: usize) -> bool {
+    let hs: Option<Vec<&Vec<usize>>> = plates.iter().map(|p| p.h.as_ref()).collect();
+    let Some(hs) = hs else {
+        return false;
+    };
+    (0..n).all(|x| {
+        (0..n).all(|y| {
+            let mut seen: Vec<i8> = hs.iter().filter_map(|h| by_steps(h, x, y)).collect();
+            seen.dedup();
+            seen.windows(2).all(|w| w[0] == w[1])
+        })
+    })
+}
+
+/// Fechner's measure of the world, printed.
+pub fn render_steps(p: &Ext, i: &Ext, domain: &[Name]) -> String {
+    let n = domain.len();
+    let mut s = String::new();
+    let Some(h) = fechner(p) else {
+        return "  measure: the comparison has a cycle, none\n".to_string();
+    };
+    let top = h.iter().copied().max().unwrap_or(0);
+    let levels: Vec<String> = (0..=top)
+        .map(|l| {
+            let at: Vec<&str> = (0..n)
+                .filter(|&x| h[x] == l)
+                .map(|x| domain[x].as_str())
+                .collect();
+            format!("{l}: {}", at.join(" "))
+        })
+        .collect();
+    s += &format!("  measure in steps: {}\n", levels.join(" | "));
+    let obs = observed(p, i);
+    let decided: Vec<bool> = obs
+        .iter()
+        .map(|&(x, y, v)| by_steps(&h, x, y).is_none_or(|g| g == v))
+        .collect();
+    let undecided = obs
+        .iter()
+        .filter(|&&(x, y, _)| by_steps(&h, x, y).is_none())
+        .count();
+    let wrong = decided.iter().filter(|&&ok| !ok).count();
+    s += &format!(
+        "  on what was seen: {} pairs, {undecided} not decided, {wrong} wrong\n",
+        obs.len()
+    );
+    let pl = fechner_plates(p, i);
+    for (f, plate) in pl.iter().enumerate() {
+        s += &format!(
+            "  plate {f}: decided {} of {}, missed {}\n",
+            plate.decided, plate.checked, plate.missed
+        );
+    }
+    s += &format!("  plates flat: {}\n", steps_flat(&pl, n));
     s
 }
