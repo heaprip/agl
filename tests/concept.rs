@@ -309,3 +309,93 @@ fn many_variables_keep_the_canonical_form_independent_of_atom_order() {
     reversed.reverse();
     assert_eq!(report(&atoms), report(&reversed));
 }
+
+/// Both comparisons in one `compare` (H61, step 5b): on random concepts and
+/// data, what is below by definition is never outside by extent — the
+/// report would carry an error — and every extent verdict is the subset
+/// relation of the answers.
+#[test]
+fn comparison_by_extent_never_contradicts_the_definition() {
+    let root = Plane::new();
+    let (mut checked, mut proposals) = (0, 0);
+    for seed in seeds(60) {
+        let (prog, names) = gen_concepts(seed);
+        let cover = !prog.covers.is_empty();
+        let mut rng = Rng::new(seed ^ 0x5A5A);
+        let mut p = prog.clone();
+        p.facts = gen_facts(&mut rng, cover)
+            .into_iter()
+            .enumerate()
+            .map(|(i, a)| Fact {
+                id: format!("d{i}").into(),
+                atom: a,
+                plane: Plane::new(),
+                status: "given".into(),
+                line: 0,
+            })
+            .collect();
+        p.compares = names
+            .iter()
+            .flat_map(|a| names.iter().map(move |b| (a, b)))
+            .map(|(a, b)| Compare {
+                left: (a.clone(), root.clone()),
+                right: (b.clone(), root.clone()),
+                expect: None,
+                line: 0,
+            })
+            .collect();
+        let ans = answers(
+            &p,
+            &p.facts.iter().map(|f| f.atom.clone()).collect::<Vec<_>>(),
+        );
+        let report = agl::run(&p);
+        assert!(
+            !report.errors.iter().any(|e| e.starts_with("compare")),
+            "seed {seed}: {:?}",
+            report.errors
+        );
+        for c in &report.compares {
+            let Some(e) = &c.extent else { continue };
+            let (a, b) = (of(&ans, &c.compare.left.0), of(&ans, &c.compare.right.0));
+            assert_eq!((e.left, e.right), (a.len(), b.len()), "seed {seed}");
+            if let Some(r) = e.relation {
+                let want = match (a.is_subset(b), b.is_subset(a)) {
+                    (true, true) => Relation::Same,
+                    (true, false) => Relation::Below,
+                    (false, true) => Relation::Above,
+                    (false, false) => Relation::Apart,
+                };
+                assert_eq!(
+                    r, want,
+                    "seed {seed}: {} vs {}",
+                    c.compare.left.0, c.compare.right.0
+                );
+                checked += 1;
+            }
+            proposals += usize::from(e.proposal);
+        }
+    }
+    assert!(
+        checked > 0 && proposals > 0,
+        "{checked} checked, {proposals} proposals"
+    );
+}
+
+#[test]
+fn kinship_compares_carry_both_verdicts() {
+    let prog = agl::parse_file(std::path::Path::new("cases/kinship.agl")).unwrap();
+    let report = agl::run(&prog);
+    assert!(!report.errors.iter().any(|e| e.starts_with("compare")));
+    let find = |a: &str, b: &str| {
+        report
+            .compares
+            .iter()
+            .find(|c| c.compare.left.0 == a && c.compare.right.0 == b)
+            .and_then(|c| c.extent.clone())
+            .unwrap()
+    };
+    // Known from `--implications`: in the data the two are the same.
+    let e = find("uncle", "mothers_brother");
+    assert_eq!(e.relation, Some(Relation::Same));
+    assert!(e.too_few && !e.proposal);
+}

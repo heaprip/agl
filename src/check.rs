@@ -22,6 +22,102 @@ pub struct CompareResult {
     pub compare: Compare,
     pub verdict: Result<Relation, String>,
     pub explanation: String,
+    /// The same pair compared by extent, in the data (H61, step 5b).
+    pub extent: Option<Extent>,
+}
+
+/// A compare by extent: the answers of each side in its own plane, as sets
+/// of role values, and how the sets relate.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Extent {
+    pub left: usize,
+    pub right: usize,
+    /// None when a side has no answers or the sides have different roles.
+    pub relation: Option<Relation>,
+    /// The extent shows an inclusion the definition does not give, on at
+    /// least `PROPOSE_MIN` answers: a proposal, not an answer.
+    pub proposal: bool,
+    /// Such an inclusion, on fewer answers.
+    pub too_few: bool,
+}
+
+/// Fewest answers on the smaller side for a proposal (as `--implications`).
+const PROPOSE_MIN: usize = 3;
+
+impl std::fmt::Display for Extent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.relation {
+            None => write!(
+                f,
+                "by extent: no common data ({} and {})",
+                self.left, self.right
+            ),
+            Some(r) => {
+                write!(f, "by extent {r} ({} and {})", self.left, self.right)?;
+                if self.proposal {
+                    write!(f, ", proposal")?;
+                }
+                if self.too_few {
+                    write!(f, ", too few to propose")?;
+                }
+                Ok(())
+            }
+        }
+    }
+}
+
+/// Accepted atoms of `rel` in `plane`, as sorted role values.
+fn answers(evals: &mut Evals, rel: &str, plane: &Plane) -> BTreeSet<Vec<(String, String)>> {
+    evals
+        .get(plane)
+        .db
+        .values()
+        .filter(|(a, _)| a.rel == rel && !a.neg)
+        .map(|(a, _)| {
+            let mut v: Vec<(String, String)> = a
+                .args
+                .iter()
+                .map(|(r, t)| (r.to_string(), t.to_string()))
+                .collect();
+            v.sort();
+            v
+        })
+        .collect()
+}
+
+fn by_extent(evals: &mut Evals, c: &Compare, def: Option<Relation>) -> Extent {
+    let a = answers(evals, &c.left.0, &c.left.1);
+    let b = answers(evals, &c.right.0, &c.right.1);
+    let roles = |s: &BTreeSet<Vec<(String, String)>>| -> BTreeSet<Vec<String>> {
+        s.iter()
+            .map(|v| v.iter().map(|(r, _)| r.clone()).collect())
+            .collect()
+    };
+    let relation = (!a.is_empty() && !b.is_empty() && roles(&a) == roles(&b)).then(|| {
+        match (a.is_subset(&b), b.is_subset(&a)) {
+            (true, true) => Relation::Same,
+            (true, false) => Relation::Below,
+            (false, true) => Relation::Above,
+            (false, false) => Relation::Apart,
+        }
+    });
+    let given = |e: Relation| {
+        matches!(
+            (e, def),
+            (_, Some(Relation::Same))
+                | (Relation::Below, Some(Relation::Below))
+                | (Relation::Above, Some(Relation::Above))
+        )
+    };
+    let more = relation.is_some_and(|e| e != Relation::Apart && !given(e));
+    let enough = a.len().min(b.len()) >= PROPOSE_MIN;
+    Extent {
+        left: a.len(),
+        right: b.len(),
+        relation,
+        proposal: more && enough,
+        too_few: more && !enough,
+    }
 }
 
 #[derive(Debug)]
@@ -102,15 +198,30 @@ pub fn run(prog: &Program) -> Report {
         .compares
         .iter()
         .map(|c| match concept::compare(prog, c) {
-            Ok(r) => CompareResult {
-                compare: c.clone(),
-                verdict: Ok(r.relation),
-                explanation: r.explanation,
-            },
+            Ok(r) => {
+                let extent = by_extent(&mut evals, c, Some(r.relation));
+                // A definition holds in the data: what it puts below cannot
+                // be outside by extent.
+                if matches!(r.relation, Relation::Below | Relation::Same)
+                    && matches!(extent.relation, Some(Relation::Above | Relation::Apart))
+                {
+                    errors.insert(format!(
+                        "compare {} vs {} (line {}): {} by definition, but {extent}",
+                        c.left.0, c.right.0, c.line, r.relation
+                    ));
+                }
+                CompareResult {
+                    compare: c.clone(),
+                    verdict: Ok(r.relation),
+                    explanation: r.explanation,
+                    extent: Some(extent),
+                }
+            }
             Err(e) => CompareResult {
                 compare: c.clone(),
                 verdict: Err(e.clone()),
                 explanation: format!("{e}\n"),
+                extent: None,
             },
         })
         .collect();
@@ -424,8 +535,13 @@ pub fn render(report: &Report) -> String {
                 Ok(r) => r.to_string(),
                 Err(_) => "error".into(),
             };
+            let extent = c
+                .extent
+                .as_ref()
+                .map(|e| format!("; {e}"))
+                .unwrap_or_default();
             format!(
-                "compare {} @ {} vs {} @ {} -> {verdict}\n{}",
+                "compare {} @ {} vs {} @ {} -> {verdict}{extent}\n{}",
                 c.compare.left.0,
                 plane_to_string(&c.compare.left.1),
                 c.compare.right.0,

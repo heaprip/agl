@@ -103,8 +103,13 @@ fn main() -> ExitCode {
                 .expect
                 .map(|e| format!(" (expected {e})"))
                 .unwrap_or_default();
+            let extent = c
+                .extent
+                .as_ref()
+                .map(|e| format!("; {e}"))
+                .unwrap_or_default();
             println!(
-                "{status} line {}: {} @ {} vs {} @ {} → {verdict}{expect}",
+                "{status} line {}: {} @ {} vs {} @ {} → {verdict}{expect}{extent}",
                 c.compare.line,
                 c.compare.left.0,
                 plane_to_string(&c.compare.left.1),
