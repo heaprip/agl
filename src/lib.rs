@@ -21,6 +21,7 @@ pub mod label;
 pub mod layer;
 pub mod learn;
 pub mod lint;
+pub mod metagraph;
 pub mod model;
 pub mod parse;
 pub mod plane;

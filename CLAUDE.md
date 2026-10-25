@@ -92,6 +92,7 @@ cargo run --release --example develop -- 3 6 target/scratch/journal3.txt  # H74 
 cargo run --release --example universe -- 3 14 9  # диагностический полный A2/A3-прогон; один поток, сейчас может идти > 30 мин и не является приёмкой
 cargo test --release --test universe   # H75 А2: K, S, β, ограничитель, детерминизм (~4 с)
 cargo test --release --test layer      # H75 ступень А: приёмка (~15 с)
+cargo test --release --test identity_extent  # общий контракт: identity != context-indexed extent, metaedges, provenance/retraction
 python3 tools/clean_world.py 3 > cases/clean/all3.agl  # чистый мир: все 512 отношений на 3 элементах (H72)
 cargo run --release -- --explore cases/clean/all3.agl  # банк выражений и роды (~2 с); -v — классы каждого отношения
 python3 tools/hidden_world.py weights 14 1 2/3 > cases/clean/weights.agl  # скрытый вес (H73); shuffled — контроль
