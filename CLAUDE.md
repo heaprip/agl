@@ -48,7 +48,7 @@ Relation-first формальная система представления с
 ## Команды
 
 ```sh
-cargo test --release                       # всё; ~20 с
+cargo test --release                       # всё; ~60 с (журнал с нуля дважды — 35 с)
 AGL_SIM_SEEDS=20000 cargo test --release --test sim   # широкий прогон
 AGL_SEED=<n> cargo test --test sim         # повтор упавшего seed
 AGL_SIM_SEEDS=50000 cargo test --release --test oracle  # сверка ядра с эталоном DL
@@ -76,6 +76,7 @@ python3 tools/onto_stats.py probe wordnet 2025 lazy > target/scratch/wn.agl && c
 cargo test --release --test atlas      # H74: атлас таблиц n ≤ 3, микротеории, слой отображений, SAT-поиск моделей, приёмка по звёздам (~15 с)
 cargo run --release --example maps -- 4 8  # H74 §6–7: развилка на слое отображений 4 точек, граница S, проверка до n = 8 (~6 с)
 cargo run --release --example factor -- 8  # H74 §8: простые и составные сущности до n = 8, разложение
+cargo run --release --example develop -- 3 6 target/scratch/journal3.txt  # H74 §9: развитие с нуля в журнал (~16 с, ~17 КБ; предел 1 МБ)
 python3 tools/clean_world.py 3 > cases/clean/all3.agl  # чистый мир: все 512 отношений на 3 элементах (H72)
 cargo run --release -- --explore cases/clean/all3.agl  # банк выражений и роды (~2 с); -v — классы каждого отношения
 python3 tools/hidden_world.py weights 14 1 2/3 > cases/clean/weights.agl  # скрытый вес (H73); shuffled — контроль

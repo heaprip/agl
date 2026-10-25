@@ -594,6 +594,16 @@ impl Atlas {
     /// Laws holding on the same entities are taken once, by the first. Pairs
     /// first, then triples, each in law order.
     pub fn definitions(&self, ext: &Set, among: &Set) -> Vec<Vec<usize>> {
+        self.definitions_upto(ext, among, usize::MAX).0
+    }
+
+    /// `definitions`, stopping after `limit` of them; and whether it stopped.
+    pub fn definitions_upto(
+        &self,
+        ext: &Set,
+        among: &Set,
+        limit: usize,
+    ) -> (Vec<Vec<usize>>, bool) {
         let mut first: BTreeMap<&Set, usize> = BTreeMap::new();
         for l in self.content(ext) {
             first.entry(&self.holds[l]).or_insert(l);
@@ -607,6 +617,9 @@ impl Atlas {
             for j in i + 1..ls.len() {
                 if cut(h(i).and(h(j))) {
                     out.push(vec![ls[i], ls[j]]);
+                    if out.len() >= limit {
+                        return (out, true);
+                    }
                 }
             }
         }
@@ -619,11 +632,14 @@ impl Atlas {
                 for k in j + 1..ls.len() {
                     if cut(ij.and(h(k))) && !cut(h(i).and(h(k))) && !cut(h(j).and(h(k))) {
                         out.push(vec![ls[i], ls[j], ls[k]]);
+                        if out.len() >= limit {
+                            return (out, true);
+                        }
                     }
                 }
             }
         }
-        out
+        (out, false)
     }
 
     /// The most specific of `defs`: those where no law can be swapped for a
@@ -850,6 +866,11 @@ impl Search<'_> {
 /// element mentioned before by one at most. Every model found is ruled out
 /// by one more clause, and the search goes on until there is none.
 pub fn models_sat(n: u8, yes: &[&Law], no: &[&Law]) -> (Vec<Table>, usize) {
+    models_upto(n, yes, no, usize::MAX)
+}
+
+/// `models_sat`, stopping once more than `limit` classes are found.
+pub fn models_upto(n: u8, yes: &[&Law], no: &[&Law], limit: usize) -> (Vec<Table>, usize) {
     let mut e = Enc::new(n as usize);
     for l in yes {
         e.law(&l.prefix, &l.left, &l.right, true);
@@ -875,6 +896,9 @@ pub fn models_sat(n: u8, yes: &[&Law], no: &[&Law]) -> (Vec<Table>, usize) {
             block.push(Lit::neg(e.cell(c / n, c % n, v)));
         }
         found.insert(t.canonical());
+        if found.len() > limit {
+            break;
+        }
         e.s.add(&block);
     }
     (found.into_iter().collect(), e.s.conflicts)
