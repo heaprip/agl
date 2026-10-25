@@ -126,12 +126,23 @@ pub struct FoundConflict {
     pub conflict: eval::Conflict,
 }
 
+#[derive(Debug, Clone)]
+pub struct Exception {
+    pub context: Plane,
+    pub atom: String,
+    pub by: String,
+}
+
 #[derive(Debug)]
 pub struct Report {
     pub diags: Vec<Diag>,
     /// Evaluation errors, such as dimension mismatches, from any context.
     pub errors: Vec<String>,
     pub conflicts: Vec<FoundConflict>,
+    /// Resolved conflicts: a conclusion that lost to the other side in some
+    /// context, with the widest such context. A law seen on small worlds
+    /// and refuted on a larger one shows here, not in silence.
+    pub exceptions: Vec<Exception>,
     pub queries: Vec<QueryResult>,
     pub compares: Vec<CompareResult>,
 }
@@ -189,6 +200,7 @@ pub fn run(prog: &Program) -> Report {
     let diags = lint::lint(prog);
     let mut evals = Evals::new(prog);
     let (conflicts, mut errors) = scan_conflicts(prog, &mut evals);
+    let exceptions = scan_exceptions(prog, &mut evals);
     let queries: Vec<QueryResult> = prog
         .queries
         .iter()
@@ -229,6 +241,7 @@ pub fn run(prog: &Program) -> Report {
         diags,
         errors: errors.into_iter().collect(),
         conflicts,
+        exceptions,
         queries,
         compares,
     }
@@ -279,6 +292,35 @@ pub(crate) fn contexts(prog: &Program) -> (Vec<Plane>, bool) {
 
 /// A distinct conflict: atom, kind and both source sets.
 type ConflictId = (String, String, Vec<String>, Vec<String>);
+
+/// Atoms that lost to their complement, each in the widest context where
+/// it lost (the canonically smallest among those no other contains).
+fn scan_exceptions(prog: &Program, evals: &mut Evals) -> Vec<Exception> {
+    let mut found: BTreeMap<(String, String), Vec<Plane>> = BTreeMap::new();
+    for ctx in contexts(prog).0 {
+        let out = evals.get(&ctx);
+        for (key, why) in &out.defeated {
+            if let Some(by) = why.strip_prefix("defeated by ") {
+                found
+                    .entry((key.clone(), by.to_string()))
+                    .or_default()
+                    .push(ctx.clone());
+            }
+        }
+    }
+    found
+        .into_iter()
+        .map(|((atom, by), seen)| {
+            let context = seen
+                .iter()
+                .filter(|p| !seen.iter().any(|q| prog.axes.strictly_within(p, q)))
+                .min_by_key(|p| plane_to_string(p))
+                .expect("seen in some context")
+                .clone();
+            Exception { context, atom, by }
+        })
+        .collect()
+}
 
 fn scan_conflicts(prog: &Program, evals: &mut Evals) -> (Vec<FoundConflict>, BTreeSet<String>) {
     // One entry per distinct conflict (atom, kind, both source sets), shown in
@@ -511,6 +553,14 @@ pub fn render(report: &Report) -> String {
             )
         })
         .collect();
+    conflicts.extend(report.exceptions.iter().map(|e| {
+        format!(
+            "exception {} in {} by [{}]",
+            e.atom,
+            plane_to_string(&e.context),
+            e.by
+        )
+    }));
     conflicts.sort();
     let mut queries: Vec<String> = report
         .queries

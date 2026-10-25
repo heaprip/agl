@@ -15,6 +15,7 @@ fn main() -> ExitCode {
     let implications = args.iter().any(|a| a == "--implications");
     let explore = args.iter().any(|a| a == "--explore");
     let hidden = args.iter().any(|a| a == "--scale");
+    let layer = args.iter().any(|a| a == "--layer");
     let where_ = args
         .iter()
         .position(|a| a == "--where")
@@ -28,9 +29,32 @@ fn main() -> ExitCode {
         .collect();
     if files.is_empty() {
         eprintln!(
-            "usage: agl [-v] [--diagnose] [--propose] [--concepts] [--implications] [--explore] [--scale] [--learn REL] [--where ATOM] FILE.agl..."
+            "usage: agl [-v] [--diagnose] [--propose] [--concepts] [--implications] [--explore] [--scale] [--layer] [--learn REL] [--where ATOM] FILE.agl..."
         );
         return ExitCode::from(2);
+    }
+    if layer {
+        // Each file is one world; the findings go out as a world for the
+        // kernel (H75, stage A).
+        let mut worlds = Vec::new();
+        for path in &files {
+            let prog = match agl::parse_file(std::path::Path::new(path)) {
+                Ok(p) => p,
+                Err(e) => {
+                    eprintln!("{path}: parse error: {e}");
+                    return ExitCode::FAILURE;
+                }
+            };
+            let (rels, domain, why) = agl::bank::relations(&prog);
+            if let Some(why) = why {
+                eprintln!("{path}: {why}");
+                return ExitCode::FAILURE;
+            }
+            let exts: Vec<_> = rels.into_iter().map(|(_, e)| e).collect();
+            worlds.push((domain.len(), exts));
+        }
+        print!("{}", agl::layer::to_agl(&agl::layer::explore(&worlds)));
+        return ExitCode::SUCCESS;
     }
     let mut ok = true;
     for path in files {
@@ -62,6 +86,14 @@ fn main() -> ExitCode {
             if !c.conflict.blame.is_empty() {
                 println!("    least trusted: {}", c.conflict.blame.join(", "));
             }
+        }
+        for e in &report.exceptions {
+            println!(
+                "exception: {} lost in {} to {}",
+                e.atom,
+                plane_to_string(&e.context),
+                e.by
+            );
         }
         for r in &report.queries {
             let status = match r.query.expect {

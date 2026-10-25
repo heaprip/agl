@@ -10,7 +10,7 @@ Relation-first формальная система представления с
 
 1. [docs/roadmap.md](docs/roadmap.md) — где мы и что дальше (раздел «Следующие шаги»).
 2. [docs/decisions.md](docs/decisions.md) — решения автора (1–22). Их не пересматривать.
-3. [docs/hypotheses.md](docs/hypotheses.md) — предложения помощника (H0–H74), **не приняты**.
+3. [docs/hypotheses.md](docs/hypotheses.md) — предложения помощника (H0–H75), **не приняты**.
 4. [docs/open-questions.md](docs/open-questions.md) — что решает только автор.
 5. [docs/impl/poc.md](docs/impl/poc.md) — нотация `.agl`, семантика ядра, детерминизм, рефлексия, обучение.
 
@@ -78,6 +78,8 @@ cargo run --release --example maps -- 4 8  # H74 §6–7: развилка на 
 cargo run --release --example factor -- 8  # H74 §8: простые и составные сущности до n = 8, разложение
 cargo test --release --test free      # H74 §10–11: законы как элементы свободной сущности, вывод по Биркгофу и нормальными формами (~14 с)
 cargo run --release --example develop -- 3 6 target/scratch/journal3.txt  # H74 §9: развитие с нуля в журнал (~16 с, ~17 КБ; предел 1 МБ)
+./target/release/agl --layer cases/clean/all2.agl cases/clean/all3.agl > target/scratch/layer.agl && cargo run --release -- target/scratch/layer.agl  # H75 ступень А: отношения между отношениями, законы — совпадения, исключения в отчёте (~5 с)
+cargo test --release --test layer      # H75 ступень А: приёмка (~15 с)
 python3 tools/clean_world.py 3 > cases/clean/all3.agl  # чистый мир: все 512 отношений на 3 элементах (H72)
 cargo run --release -- --explore cases/clean/all3.agl  # банк выражений и роды (~2 с); -v — классы каждого отношения
 python3 tools/hidden_world.py weights 14 1 2/3 > cases/clean/weights.agl  # скрытый вес (H73); shuffled — контроль
