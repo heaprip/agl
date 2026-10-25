@@ -144,13 +144,13 @@ SHA-256 `086c43c8ed918b0b6985061376c41d061bd38688505702093076441b680eeaef`.
 | 7 | метаядро выводится из казусов | метод разработки | regression, oracle, blind, memote | нет единого реестра «требование → тест» кроме этой карты |
 | 8, 13 | Камю — ветка весов, не истина и не аксиома | контекст/форк и многомерная оценка | казус «Праведные» | механизма весов нет |
 | 9 | личный проект, успех открыт | область действия | `vision` | не техническая задача |
-| 10 | relation-first буквально | `EntityId + Intension + Port + Metaedge` | `Atom` с ролями; `Bank` различает shape и extent | ядро всё ещё не допускает отношение как endpoint отношения |
+| 10 | relation-first буквально | `EntityId + Intension + Port + Metaedge` | общий carrier в `eval` и `Bank`; Rust API допускает relation occurrence как endpoint | ссылка на occurrence ещё не проведена через `.agl` и обычные queries |
 | 11 | LLM даёт материал, ядро проверяет | proposal с provenance | DSL-прогоны и локальные эксперименты | нет общего воспроизводимого цикла в стволе |
 | 12 | описывать или предписывать — не решено | тип вопроса/ветки | различение сохранено в документах | сознательно открыто |
 | 14 | intercessio только референс | граница заимствования | документировано | действий нет |
 | 15 | плоскости перекрываются и вкладываются | `Plane`, `Axes`, пересечения | `plane`, `eval`, `extent`, oracle и sim | нет общей связи с intension сущности и restriction provenance |
 | 16 | agl реактивен | режим исполнения | запуск по запросу, R1/R2 | долгоживущий процесс H56 не реализован |
-| 17 | состав v0 | базовый метаконтракт | отрицание, плоскости, defeasible derivations, gaps частично есть | стабильного id отношения, настоящих метарёбер и единой записи `holds` нет |
+| 17 | состав v0 | базовый метаконтракт | derivations мигрированы на стабильные IDs, claims, evidence и projections | единой записи `holds`, DSL-метарёбер и replay ещё нет |
 | 18 | детерминизм по входу и seed | требование ко всем исполнителям | `sim`, `oracle`, канонический порядок, журнал | новый поиск Джанибекова обязан пройти тот же барьер |
 | 19 | первый самостоятельный ствол — гликолиз | доменный ствол | загрузчик, manifest, trunk tests | LLM-цикл и lockfile вывода не завершены |
 | 20 | рефлексия автоматически только в форк | `Proposal -> Fork`, затем решение автора | R1/R2 предлагают, но не применяют | постоянной модели форка и продвижения в ствол нет |
@@ -162,16 +162,16 @@ SHA-256 `086c43c8ed918b0b6985061376c41d061bd38688505702093076441b680eeaef`.
 
 | Узел | Объект контракта | Что уже есть | Проверка | Честный статус |
 | --- | --- | --- | --- | --- |
-| R — отношение первично | `Entity/Intension`, role-labelled link | `model::Atom`, `bank::Shape`, `layer::Query` | cases, bank, layer | частично: `Atom` остаётся фактом, а не first-class entity |
-| M — метаребро | `Metaedge`, relation as endpoint | только косвенные записи о правилах и выводах | нет killer test | отсутствует |
-| P — плоскость | context + restriction | `Plane`, `Axes`, пересечения | oracle, sim, extent | реализована для программ, не для сущностей общего IR |
-| G — основание | derivation/provenance DAG | `eval::Derivation`, `journal::Record` | verbose reports, journal tests | две несовместимые формы; нет provenance у общей сущности |
+| R — отношение первично | `Entity/Intension`, role-labelled link | `eval::Derivation`, `bank::Entry`, `layer::Query` используют общий carrier; layer сохраняет все IDs равного extent | metacore, identity_extent, layer | частично: DSL `Atom` ещё не ссылается на relation occurrence |
+| M — метаребро | `Metaedge`, relation as endpoint | общий `Metaedge` и индекс endpoints | identity_extent | есть в Rust API, отсутствует в DSL/query path |
+| P — плоскость | context + restriction | context-indexed `Projection`, раздельные evaluation/source contexts | oracle, metacore, identity_extent | restriction проверен для `Ext`, но не стал общей категорией контекстов |
+| G — основание | derivation/provenance DAG | общий AND/OR `ClaimId/Evidence` внутри evaluator, Bank и Metagraph | oracle, metacore, identity_extent | нет общего journal/replay и меры независимости линий |
 | D — разложение | intension graph, homomorphism, factors | `concept`, `bank`, `free`, `factor` | concept/bank/free tests | сильные части есть, общего носителя нет |
 | T — род и надёжность знания | context axis + evidence policy | линейный rank | oracle | род знания и независимость линий не формализованы |
 | S — ствол | accepted context-indexed records | trunk data/cases | trunk, memote | нет общей версии и lockfile состояния |
 | F — форк | persistent branch of proposals | предложение как вывод CLI | propose tests | хранения ветви нет |
 | A — закрепление | named reusable intension + evidence threshold | журнал H74 имитировал; ложное закрепление удалено | journal regression | общего механизма нет |
-| V — пересмотр | refuter invalidates dependent evidence | блокировка конфликтующих выводов внутри прогона | oracle | AGM, deprecation и межверсионный пересмотр отсутствуют |
+| V — пересмотр | refuter invalidates dependent evidence | `Metagraph` сохраняет retracted/unsupported историю; evaluator блокирует конфликт | oracle, identity_extent | нет AGM/deprecation, версий и journal replay |
 | H — пробел | typed gap on question/interface | `gap` в DSL и отчёте | cases | не управляет мобилизацией поиска |
 | C — цена пути | cost/distortion semiring | размер формулы и число попыток локально | benchmark only | отсутствует как семантика |
 | N — точный вектор/номер | stable identity + derived coordinates | dense bits, labels, law vectors | bits/label/atlas | смешаны id, координата и extent; форма не выбрана |

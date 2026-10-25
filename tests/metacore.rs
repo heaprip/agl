@@ -6,8 +6,8 @@ use std::collections::BTreeSet;
 
 use agl::bank::{Bank, Ext};
 use agl::eval::evaluate;
-use agl::meta::Intension;
-use agl::model::{Name, Plane};
+use agl::meta::{ClaimId, Evidence, EvidenceState, Intension, Metagraph};
+use agl::model::{Name, Plane, Strength};
 
 fn occurrence_ids(src: &str) -> BTreeSet<String> {
     let out = evaluate(&agl::parse(src).unwrap(), &Plane::new());
@@ -72,6 +72,55 @@ rule lift strict @: q(x: ?x) <- p(x: ?x)
 }
 
 #[test]
+fn retracting_one_alternative_keeps_the_claim_supported() {
+    let src = "
+fact left: p(x: a) @
+fact right: p(x: a) @
+rule lift strict @: q(x: ?x) <- p(x: ?x)
+";
+    let out = evaluate(&agl::parse(src).unwrap(), &Plane::new());
+    let mut graph = Metagraph::new();
+    for (_, derivations) in out.db.values() {
+        for derivation in derivations {
+            graph.add_evidence(derivation.evidence.clone()).unwrap();
+        }
+    }
+    for (_, derivations) in out.db.values() {
+        for derivation in derivations {
+            graph.add_entity(derivation.entity.clone()).unwrap();
+        }
+    }
+    for projection in out.db.projections() {
+        graph.add_projection(projection).unwrap();
+    }
+
+    let left = graph
+        .evidence()
+        .find(|evidence| evidence.operation == "left")
+        .unwrap()
+        .id
+        .clone();
+    let lift = graph
+        .evidence()
+        .find(|evidence| evidence.operation == "lift")
+        .unwrap()
+        .id
+        .clone();
+    let refuter = Evidence::new(
+        ClaimId::named("event", "refute-left"),
+        "test-refuter",
+        Vec::new(),
+        Strength::Strict,
+        Plane::new(),
+    );
+    graph.add_evidence(refuter.clone()).unwrap();
+    graph.retract(left.clone(), refuter.id).unwrap();
+
+    assert_eq!(graph.evidence_state(&left), Some(EvidenceState::Retracted));
+    assert_eq!(graph.evidence_state(&lift), Some(EvidenceState::Active));
+}
+
+#[test]
 fn bank_entity_and_claim_survive_context_change() {
     let extent = Ext::from_pairs(2, &[(0, 0), (0, 1), (1, 1)]);
     let root = Bank::grow_in(Name::from("r"), extent.clone(), Plane::new(), true);
@@ -85,6 +134,7 @@ fn bank_entity_and_claim_survive_context_change() {
     for (a, b) in root.entries.iter().zip(&situated.entries) {
         assert_eq!(a.shape, b.shape);
         assert_eq!(a.entity.id, b.entity.id);
+        assert_eq!(a.construction, b.construction);
         assert_eq!(a.projection.claim, b.projection.claim);
         assert_eq!(a.projection.extent, b.projection.extent);
         assert_ne!(a.evidence.id, b.evidence.id);

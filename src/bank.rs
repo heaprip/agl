@@ -101,6 +101,39 @@ impl Ext {
         self.bits.iter().map(|w| w.count_ones() as usize).sum()
     }
 
+    pub fn pairs(&self) -> Vec<(usize, usize)> {
+        (0..self.n)
+            .flat_map(|a| (0..self.n).filter_map(move |b| self.get(a, b).then_some((a, b))))
+            .collect()
+    }
+
+    pub fn difference(&self, other: &Ext) -> Vec<(usize, usize)> {
+        self.pairs()
+            .into_iter()
+            .filter(|&(a, b)| !other.get(a, b))
+            .collect()
+    }
+
+    /// Reindex a source domain into a target domain; `None` forgets a point.
+    pub fn restrict(&self, point_map: &[Option<usize>], target_n: usize) -> Result<Ext, String> {
+        if point_map.len() != self.n {
+            return Err(format!(
+                "restriction maps {} points, relation has {}",
+                point_map.len(),
+                self.n
+            ));
+        }
+        if let Some(point) = point_map.iter().flatten().find(|&&p| p >= target_n) {
+            return Err(format!("restriction target {point} is outside {target_n}"));
+        }
+        let pairs = self
+            .pairs()
+            .into_iter()
+            .filter_map(|(a, b)| Some((point_map[a]?, point_map[b]?)))
+            .collect::<Vec<_>>();
+        Ok(Ext::from_pairs(target_n, &pairs))
+    }
+
     fn diagonal(n: usize) -> Self {
         let mut e = Ext::empty(n);
         (0..n).for_each(|i| e.set(i, i));
@@ -373,6 +406,9 @@ pub enum Build {
 #[derive(Clone, Debug)]
 pub struct Entry {
     pub entity: Entity,
+    /// Context-independent support for the construction itself.
+    pub construction: Evidence,
+    /// Context-indexed support for this exact projection.
     pub evidence: Evidence,
     pub projection: Projection<Ext>,
     pub shape: Shape,
@@ -483,9 +519,10 @@ impl Bank {
         };
         let shape_text = shape.to_string();
         let claim = ClaimId::derived("bank-projection", [self.rel.as_str(), shape_text.as_str()]);
-        let (operation, premises, intension) = match build {
+        let (operation, premises, projection_premises, intension) = match build {
             Build::Rel => (
                 format!("bank-source:{}", self.rel),
+                Vec::new(),
                 Vec::new(),
                 Intension::Primitive {
                     source: format!("relation:{}", self.rel),
@@ -494,8 +531,9 @@ impl Bank {
             Build::Id => (
                 "bank-identity".to_string(),
                 Vec::new(),
+                Vec::new(),
                 Intension::Primitive {
-                    source: format!("identity:n={}", ext.n()),
+                    source: "identity".into(),
                 },
             ),
             Build::Glue { a, b, m, head } => {
@@ -513,6 +551,10 @@ impl Bank {
                 (
                     format!("bank-glue:m={m}:head={},{}", head.0, head.1),
                     vec![
+                        left.construction.conclusion.clone(),
+                        right.construction.conclusion.clone(),
+                    ],
+                    vec![
                         left.projection.claim.clone(),
                         right.projection.claim.clone(),
                     ],
@@ -525,18 +567,31 @@ impl Bank {
                 )
             }
         };
-        let evidence = Evidence::new(
-            claim,
+        let provisional = Entity::new(intension.clone(), Vec::new());
+        let construction_claim = ClaimId::derived("entity", [provisional.id.as_str()]);
+        let construction = Evidence::new(
+            construction_claim.clone(),
             operation,
             premises,
             Strength::Strict,
-            self.context.clone(),
+            Plane::new(),
         );
-        let entity = Entity::new(intension, vec![evidence.id.clone()]);
+        let entity = Entity::new(intension, vec![construction.id.clone()]);
+        let evidence = Evidence::new_situated(
+            claim,
+            format!("bank-project:{}", self.rel),
+            std::iter::once(construction_claim)
+                .chain(projection_premises)
+                .collect(),
+            Strength::Strict,
+            self.context.clone(),
+            Plane::new(),
+        );
         let projection = Projection::new(&entity, self.context.clone(), ext, &evidence);
         self.classes[class].push(self.entries.len());
         self.entries.push(Entry {
             entity,
+            construction,
             evidence,
             projection,
             shape,

@@ -2,7 +2,8 @@
 //! Names of gluings and laws ("composition", "associative") are only here.
 
 use agl::bank::Ext;
-use agl::layer::{Found, Query, explore, holds, table, to_agl};
+use agl::layer::{Found, Image, Query, explore, holds, table, to_agl};
+use agl::meta::{EntityId, Intension};
 
 /// Every binary relation on `n` points.
 fn all(n: usize) -> Vec<Ext> {
@@ -26,6 +27,31 @@ fn composition() -> Query {
         .into_iter()
         .find(|q| q.to_string() == "{x,y | R(x,a), S(a,y)}")
         .expect("composition is one of the gluings")
+}
+
+#[test]
+fn equal_extents_keep_all_relation_occurrences() {
+    let empty = Ext::empty(1);
+    let table = table(&composition(), &[empty.clone(), empty]);
+    assert!(table.iter().all(|image| image == &Image::Many(vec![0, 1])));
+}
+
+#[test]
+fn query_exposes_ordered_open_intension() {
+    let query = composition();
+    let intension = query.intension(&[EntityId::named("test", "r"), EntityId::named("test", "s")]);
+    let Intension::Glue {
+        parts,
+        wiring,
+        interface,
+        ..
+    } = intension
+    else {
+        panic!("a layer query must be a glue intension")
+    };
+    assert_eq!(parts.len(), 2);
+    assert!(!wiring.is_empty());
+    assert_eq!(interface, ["var:0", "var:1"]);
 }
 
 #[test]

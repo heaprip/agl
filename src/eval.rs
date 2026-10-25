@@ -46,7 +46,7 @@ impl Derivation {
     }
 
     pub fn plane(&self) -> &Plane {
-        &self.evidence.context
+        &self.evidence.source_context
     }
 }
 
@@ -216,11 +216,12 @@ fn make_derivation(
 ) -> Derivation {
     let premise_claims: Vec<ClaimId> = premises.iter().map(|&id| db.claim_id(id)).collect();
     let conclusion_claim = ClaimId::named("atom", &conclusion.key());
-    let evidence = Evidence::new(
+    let evidence = Evidence::new_situated(
         conclusion_claim,
         source.to_string(),
         premise_claims.clone(),
         strength,
+        db.context.clone(),
         plane,
     );
     let intension = if is_fact {

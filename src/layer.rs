@@ -12,6 +12,7 @@
 //! here.
 
 use crate::bank::Ext;
+use crate::meta::{EntityId, Intension};
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
@@ -166,6 +167,40 @@ impl Query {
         }
         out
     }
+
+    /// The same query as a shared open-structure intension. Repeated hole
+    /// occurrences stay repeated parts; equal variables become port wiring;
+    /// the ordered head remains the boundary.
+    pub fn intension(&self, holes: &[EntityId]) -> Intension {
+        let mut by_variable: BTreeMap<u8, Vec<String>> = BTreeMap::new();
+        let mut parts = Vec::with_capacity(self.atoms.len());
+        for (i, &(hole, left, right)) in self.atoms.iter().enumerate() {
+            parts.push(holes[hole as usize].clone());
+            by_variable
+                .entry(left)
+                .or_default()
+                .push(format!("atom:{i}:in"));
+            by_variable
+                .entry(right)
+                .or_default()
+                .push(format!("atom:{i}:out"));
+        }
+        let mut wiring = Vec::new();
+        for ports in by_variable.values() {
+            if let Some(first) = ports.first() {
+                wiring.extend(ports[1..].iter().map(|port| (first.clone(), port.clone())));
+            }
+        }
+        Intension::Glue {
+            operation: "layer-query".into(),
+            parts,
+            wiring,
+            interface: vec![
+                format!("var:{}", self.head.0),
+                format!("var:{}", self.head.1),
+            ],
+        }
+    }
 }
 
 /// The core of a query, relabelled: heads first, then variables by first
@@ -280,6 +315,58 @@ pub enum Term {
     Glue(Box<Term>, Box<Term>),
 }
 
+/// All relation occurrences denoted by one table cell. The overwhelmingly
+/// common singleton case stays allocation-free; `Many` preserves identities
+/// which happen to share an extent.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Image {
+    None,
+    One(u32),
+    Many(Vec<u32>),
+}
+
+impl Image {
+    fn from_sorted(mut values: Vec<u32>) -> Self {
+        values.sort_unstable();
+        values.dedup();
+        match values.len() {
+            0 => Image::None,
+            1 => Image::One(values[0]),
+            _ => Image::Many(values),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        matches!(self, Image::None)
+    }
+
+    fn iter(&self) -> ImageIter<'_> {
+        match self {
+            Image::None => ImageIter::None,
+            Image::One(value) => ImageIter::One(Some(value)),
+            Image::Many(values) => ImageIter::Many(values.iter()),
+        }
+    }
+}
+
+enum ImageIter<'a> {
+    None,
+    One(Option<&'a u32>),
+    Many(std::slice::Iter<'a, u32>),
+}
+
+impl<'a> Iterator for ImageIter<'a> {
+    type Item = &'a u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            ImageIter::None => None,
+            ImageIter::One(value) => value.take(),
+            ImageIter::Many(values) => values.next(),
+        }
+    }
+}
+
 impl Term {
     fn depth(&self) -> usize {
         match self {
@@ -322,12 +409,37 @@ impl Term {
 
     /// The relation the expression names on relations `at`, by the table of
     /// the gluing; none where the world lacks the extent.
-    fn value(&self, table: &[Option<u32>], k: usize, at: [u32; 3]) -> Option<u32> {
+    fn values(&self, table: &[Image], k: usize, at: [u32; 3]) -> Image {
+        match self {
+            Term::Hole(h) => Image::One(at[*h as usize]),
+            Term::Glue(a, b) => {
+                let (lefts, rights) = (a.values(table, k, at), b.values(table, k, at));
+                if let (Image::One(left), Image::One(right)) = (&lefts, &rights) {
+                    return table[*left as usize * k + *right as usize].clone();
+                }
+                let mut out = Vec::new();
+                for &left in lefts.iter() {
+                    for &right in rights.iter() {
+                        out.extend(table[left as usize * k + right as usize].iter().copied());
+                    }
+                }
+                Image::from_sorted(out)
+            }
+        }
+    }
+
+    /// Allocation-free evaluator when every table cell is single-valued.
+    fn value_single(&self, table: &[Image], k: usize, at: [u32; 3]) -> Option<u32> {
         match self {
             Term::Hole(h) => Some(at[*h as usize]),
             Term::Glue(a, b) => {
-                let (a, b) = (a.value(table, k, at)?, b.value(table, k, at)?);
-                table[a as usize * k + b as usize]
+                let left = a.value_single(table, k, at)?;
+                let right = b.value_single(table, k, at)?;
+                match table[left as usize * k + right as usize] {
+                    Image::None => None,
+                    Image::One(value) => Some(value),
+                    Image::Many(_) => unreachable!("single-valued table contains a multi-image"),
+                }
             }
         }
     }
@@ -397,14 +509,25 @@ fn canonical(l: &Term, r: &Term) -> (Term, Term) {
 
 /// Whether two expressions name one relation on every triple of the
 /// world's relations where both are defined.
-pub fn holds(t: &[Option<u32>], k: usize, l: &Term, r: &Term) -> bool {
+pub fn holds(t: &[Image], k: usize, l: &Term, r: &Term) -> bool {
+    let single = t.iter().all(|image| !matches!(image, Image::Many(_)));
     let k32 = k as u32;
     for a in 0..k32 {
         for b in 0..k32 {
             for c in 0..k32 {
-                let (x, y) = (l.value(t, k, [a, b, c]), r.value(t, k, [a, b, c]));
-                if x.is_some() && y.is_some() && x != y {
-                    return false;
+                if single {
+                    let (x, y) = (
+                        l.value_single(t, k, [a, b, c]),
+                        r.value_single(t, k, [a, b, c]),
+                    );
+                    if x.is_some() && y.is_some() && x != y {
+                        return false;
+                    }
+                } else {
+                    let (x, y) = (l.values(t, k, [a, b, c]), r.values(t, k, [a, b, c]));
+                    if !x.is_empty() && !y.is_empty() && x != y {
+                        return false;
+                    }
                 }
             }
         }
@@ -414,18 +537,21 @@ pub fn holds(t: &[Option<u32>], k: usize, l: &Term, r: &Term) -> bool {
 
 /// The gluing on every pair of the world's relations: the number of the
 /// relation with its extent, if the world holds one.
-pub fn table(query: &Query, rels: &[Ext]) -> Vec<Option<u32>> {
-    let index: BTreeMap<&Ext, u32> = rels
-        .iter()
-        .enumerate()
-        .map(|(i, e)| (e, i as u32))
-        .collect();
+pub fn table(query: &Query, rels: &[Ext]) -> Vec<Image> {
+    let mut index: BTreeMap<&Ext, Vec<u32>> = BTreeMap::new();
+    for (i, extent) in rels.iter().enumerate() {
+        index.entry(extent).or_default().push(i as u32);
+    }
     let k = rels.len();
-    let mut table = vec![None; k * k];
+    let mut table = vec![Image::None; k * k];
     for r in 0..k {
         for s in 0..k {
             let e = query.eval(&[&rels[r], &rels[s]]);
-            table[r * k + s] = index.get(&e).copied();
+            table[r * k + s] = index
+                .get(&e)
+                .cloned()
+                .map(Image::from_sorted)
+                .unwrap_or(Image::None);
         }
     }
     table
@@ -444,25 +570,42 @@ pub fn explore(worlds: &[(usize, Vec<Ext>)]) -> Vec<Found> {
         for (n, rels) in worlds {
             let k = rels.len();
             let table = table(&query, rels);
-            total.push((*n, table.iter().all(|t| t.is_some())));
+            total.push((*n, table.iter().all(|t| !t.is_empty())));
             tables.push((*n, k, table));
         }
         let (_, k0, t0) = &tables[0];
-        let mut classes: BTreeMap<Vec<Option<u32>>, Vec<usize>> = BTreeMap::new();
-        for (i, term) in terms.iter().enumerate() {
-            let mut sig = Vec::with_capacity(k0 * k0 * k0);
-            for a in 0..*k0 as u32 {
-                for b in 0..*k0 as u32 {
-                    for c in 0..*k0 as u32 {
-                        sig.push(term.value(t0, *k0, [a, b, c]));
+        let single = t0.iter().all(|image| !matches!(image, Image::Many(_)));
+        let mut members: Vec<Vec<usize>> = if single {
+            let mut classes: BTreeMap<Vec<Option<u32>>, Vec<usize>> = BTreeMap::new();
+            for (i, term) in terms.iter().enumerate() {
+                let mut sig = Vec::with_capacity(k0 * k0 * k0);
+                for a in 0..*k0 as u32 {
+                    for b in 0..*k0 as u32 {
+                        for c in 0..*k0 as u32 {
+                            sig.push(term.value_single(t0, *k0, [a, b, c]));
+                        }
                     }
                 }
+                classes.entry(sig).or_default().push(i);
             }
-            classes.entry(sig).or_default().push(i);
-        }
+            classes.into_values().filter(|c| c.len() > 1).collect()
+        } else {
+            let mut classes: BTreeMap<Vec<Image>, Vec<usize>> = BTreeMap::new();
+            for (i, term) in terms.iter().enumerate() {
+                let mut sig = Vec::with_capacity(k0 * k0 * k0);
+                for a in 0..*k0 as u32 {
+                    for b in 0..*k0 as u32 {
+                        for c in 0..*k0 as u32 {
+                            sig.push(term.values(t0, *k0, [a, b, c]));
+                        }
+                    }
+                }
+                classes.entry(sig).or_default().push(i);
+            }
+            classes.into_values().filter(|c| c.len() > 1).collect()
+        };
         let mut seen = std::collections::BTreeSet::new();
         let mut laws = Vec::new();
-        let mut members: Vec<Vec<usize>> = classes.into_values().filter(|c| c.len() > 1).collect();
         members.sort();
         for class in members {
             let rep = &terms[class[0]];

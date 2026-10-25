@@ -1,7 +1,10 @@
 # Killer test: identity отдельно от extent
 
-Статус: обязательная приёмка следующего общего фундамента. Это спецификация
-теста, не выбранная реализация типов.
+Статус: обязательная приёмка общего фундамента. Пункты 1–8 выполняются
+`tests/identity_extent.rs` через production `Bank` и общий `meta::Metagraph`;
+пункт 9 проверен каноническим snapshot при обратном порядке независимых
+вставок. В пункте 10 CQ-core уже не сливает IDs (`Bank` и `layer`), но второй
+physical storage и e-graph baseline ещё отсутствуют.
 
 ## Что он должен убить
 
@@ -70,11 +73,19 @@ Metaedge {
 
 Evidence {
     id: EvidenceId,
-    premises: [EvidenceId],
+    conclusion: ClaimId,
+    premises: [ClaimId],
     operation: Operation,
     strength: strict | defeasible,
+    context: ContextId,
+    source_context: ContextId,
 }
 ```
+
+`ClaimId` — OR-узел: его может поддерживать любое активное evidence с таким
+conclusion. `Evidence` — AND-узел: активны должны быть все premise claims.
+Это уточнение появилось при переносе настоящего `eval::Derivation`; список
+`EvidenceId` ошибочно выбирал бы один proof path вместо proposition.
 
 `ExactRelation` может быть плотным или разреженным, но представление не
 участвует в identity.
