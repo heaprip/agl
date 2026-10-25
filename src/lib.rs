@@ -23,6 +23,7 @@ pub mod parse;
 pub mod plane;
 pub mod propose;
 pub mod reflect;
+pub mod rewrite;
 pub mod sat;
 pub mod scale;
 pub mod sim;

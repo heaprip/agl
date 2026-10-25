@@ -2,6 +2,7 @@
 
 use agl::atlas::{self, Atlas, Law, models_sat};
 use agl::free::{Derived, Eq, Free, language};
+use agl::rewrite::Theory;
 use std::collections::BTreeSet;
 
 /// A law's text in a form not depending on which renaming was kept: the
@@ -81,6 +82,12 @@ const IDEM: &str = "∀x: x = x·x";
 /// Laws "for all" of the language derived from `axioms` on F(3, depth),
 /// and those holding on every model of the axioms up to `n`.
 fn both(axioms: &[&str], depth: u8, n: u8) -> (BTreeSet<String>, BTreeSet<String>) {
+    let (derived, semantic, _) = all(axioms, depth, n);
+    (derived, semantic)
+}
+
+/// As `both`, with the number of classes of F(3, depth) after gluing.
+fn all(axioms: &[&str], depth: u8, n: u8) -> (BTreeSet<String>, BTreeSet<String>, usize) {
     let small = Free::new(3, 2);
     let lang = language(&small);
     let find = |s: &str| {
@@ -114,7 +121,28 @@ fn both(axioms: &[&str], depth: u8, n: u8) -> (BTreeSet<String>, BTreeSet<String
         .filter(|e| models.iter().all(|t| e.holds(&small, t)))
         .map(|e| e.show(&small))
         .collect();
-    (derived, semantic)
+    let classes = (0..d.free.len() as u32).filter(|&e| d.find(e) == e).count();
+    (derived, semantic, classes)
+}
+
+/// Laws "for all" of the language decided by normal forms: the rules
+/// completed from `axioms`, and how many normal forms were built.
+fn by_rules(axioms: &[&str]) -> (BTreeSet<String>, Theory) {
+    let f = Free::new(3, 2);
+    let lang = language(&f);
+    let pairs: Vec<_> = axioms
+        .iter()
+        .map(|s| lang.iter().find(|e| e.show(&f) == *s).unwrap())
+        .map(|e| (f.term(e.left), f.term(e.right)))
+        .collect();
+    let mut th = Theory::complete(&pairs);
+    let derived = lang
+        .iter()
+        .filter(|e| e.prefix.iter().all(|&(_, a)| a))
+        .filter(|e| th.ground(&f.term(e.left)) == th.ground(&f.term(e.right)))
+        .map(|e| e.show(&f))
+        .collect();
+    (derived, th)
 }
 
 #[test]
@@ -128,6 +156,9 @@ fn derivation_is_sound_on_small_tables() {
         let (derived, semantic) = both(&axioms, 3, 3);
         let wrong: Vec<_> = derived.difference(&semantic).collect();
         assert!(wrong.is_empty(), "{axioms:?}: {wrong:?}");
+        let (derived, _) = by_rules(&axioms);
+        let wrong: Vec<_> = derived.difference(&semantic).collect();
+        assert!(wrong.is_empty(), "{axioms:?} by rules: {wrong:?}");
     }
 }
 
@@ -140,7 +171,17 @@ fn syntax_meets_semantics() {
         (vec![COMM], 3),
         (vec![IDEM, ASSOC], 5),
     ] {
-        let (derived, semantic) = both(&axioms, 3, n);
+        let (derived, semantic, classes) = all(&axioms, 3, n);
+        // Normal forms decide the same, building fewer elements than
+        // F(3, 3) has classes; completion ends except for x·x = x.
+        let (rules, th) = by_rules(&axioms);
+        assert_eq!(rules, semantic, "{axioms:?} by rules");
+        assert!(
+            th.built() <= classes,
+            "{axioms:?}: {} > {classes}",
+            th.built()
+        );
+        assert_eq!(th.finished, !axioms.contains(&IDEM), "{axioms:?}");
         let missing: Vec<_> = semantic.difference(&derived).take(5).collect();
         let wrong: Vec<_> = derived.difference(&semantic).take(5).collect();
         assert!(
@@ -157,4 +198,12 @@ fn derivation_does_not_depend_on_order() {
     let (a, _) = both(&[IDEM, ASSOC], 3, 1);
     let (b, _) = both(&[ASSOC, IDEM], 3, 1);
     assert_eq!(a, b);
+    for (x, y) in [
+        ([IDEM, ASSOC], [ASSOC, IDEM]),
+        ([ASSOC, COMM], [COMM, ASSOC]),
+    ] {
+        let (a, ta) = by_rules(&x);
+        let (b, tb) = by_rules(&y);
+        assert_eq!((a, ta.show()), (b, tb.show()));
+    }
 }
