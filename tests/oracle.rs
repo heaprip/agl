@@ -322,7 +322,7 @@ fn compare(ranked: bool) {
         }
         compared += 1;
         let out = agl::eval::evaluate(&prog, &Plane::new());
-        let kernel: BTreeSet<String> = out.db.keys().cloned().collect();
+        let kernel: BTreeSet<String> = out.db.keys().map(|k| k.to_string()).collect();
         if kernel != plus {
             let only_k: Vec<&String> = kernel.difference(&plus).collect();
             let only_r: Vec<&String> = plus.difference(&kernel).collect();

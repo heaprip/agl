@@ -267,10 +267,10 @@ fn situate_in(evals: &mut Evals, base: &Plane, context: &str) -> Result<Situatio
                 )
             })?;
             grounds.push_str(&eval::explain(out, key));
-            used.insert(key.clone());
+            used.insert(key.to_string());
         }
         if next == plane {
-            let lost: Vec<&String> = used.iter().filter(|k| !out.db.contains_key(*k)).collect();
+            let lost: Vec<&String> = used.iter().filter(|k| !out.db.contains_key(k)).collect();
             if let Some(k) = lost.first() {
                 let why = out
                     .defeated

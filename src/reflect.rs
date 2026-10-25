@@ -86,7 +86,7 @@ fn support(out: &Outcome, key: &str) -> BTreeSet<String> {
             if !d.is_fact {
                 rules.insert(d.source.to_string());
             }
-            stack.extend(d.premises.iter().cloned());
+            stack.extend(out.db.premise_keys(d).map(str::to_string));
         }
     }
     rules

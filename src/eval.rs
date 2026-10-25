@@ -28,9 +28,158 @@ pub struct Derivation {
     pub is_fact: bool,
     pub strict: bool,
     pub plane: Plane,
-    pub premises: Vec<String>,
+    /// Atoms of the database by number, ordered by their keys; `Db::key`
+    /// gives the text.
+    pub premises: Box<[Id]>,
     /// Trust: a fact's status rank; for a rule, its weakest premise.
     pub rank: usize,
+}
+
+/// The number of an atom in a closure: its place in the database (H61,
+/// step 3b). Numbers follow insertion; everything that shapes the output
+/// walks the database in key order.
+pub type Id = u32;
+
+/// Premise numbers from here on name an aggregate that found nothing.
+const ABSENT_ID: Id = 1 << 31;
+
+/// The closure: atoms with their derivations, by number. The key, the
+/// printed atom, is stored once and indexes the atoms in text order, so two
+/// atoms are the same when they print the same, as before numbers.
+#[derive(Default, Debug)]
+pub struct Db {
+    entries: Vec<(Atom, Vec<Derivation>)>,
+    keys: Vec<Name>,
+    index: BTreeMap<Name, Id>,
+    /// Premises of aggregates that found nothing, by number past `ABSENT_ID`.
+    absent: Vec<Name>,
+    absent_index: BTreeMap<Name, Id>,
+}
+
+impl Db {
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
+    pub fn id(&self, key: &str) -> Option<Id> {
+        self.index.get(key).copied()
+    }
+
+    pub fn get(&self, key: &str) -> Option<&(Atom, Vec<Derivation>)> {
+        self.id(key).map(|i| &self.entries[i as usize])
+    }
+
+    pub fn contains_key(&self, key: &str) -> bool {
+        self.index.contains_key(key)
+    }
+
+    /// The text of an atom or of a premise that records an absence.
+    pub fn key(&self, id: Id) -> &str {
+        if id >= ABSENT_ID {
+            &self.absent[(id - ABSENT_ID) as usize]
+        } else {
+            &self.keys[id as usize]
+        }
+    }
+
+    pub fn at(&self, id: Id) -> &(Atom, Vec<Derivation>) {
+        &self.entries[id as usize]
+    }
+
+    /// The premises of a derivation, as text, in their order.
+    pub fn premise_keys<'s>(&'s self, d: &Derivation) -> impl Iterator<Item = &'s str> {
+        d.premises.iter().map(|&p| self.key(p))
+    }
+
+    /// Numbers of the atoms in key order.
+    pub fn ids(&self) -> impl Iterator<Item = Id> + '_ {
+        self.index.values().copied()
+    }
+
+    /// Atoms in key order.
+    pub fn iter(&self) -> impl Iterator<Item = (&Name, &(Atom, Vec<Derivation>))> {
+        self.index
+            .iter()
+            .map(|(k, &i)| (k, &self.entries[i as usize]))
+    }
+
+    pub fn keys(&self) -> impl Iterator<Item = &Name> {
+        self.index.keys()
+    }
+
+    pub fn values(&self) -> impl Iterator<Item = &(Atom, Vec<Derivation>)> {
+        self.index.values().map(|&i| &self.entries[i as usize])
+    }
+
+    /// The number of the atom with this key, adding it if new.
+    fn insert(&mut self, key: &str, atom: impl FnOnce() -> Atom) -> (Id, bool) {
+        if let Some(i) = self.id(key) {
+            return (i, false);
+        }
+        let i = self.entries.len() as Id;
+        assert!(i < ABSENT_ID, "too many atoms to number");
+        let key = Name::from(key);
+        self.entries.push((atom(), Vec::with_capacity(1)));
+        self.keys.push(key.clone());
+        self.index.insert(key, i);
+        (i, true)
+    }
+
+    /// The number of a premise given as text: an atom of the database, or
+    /// an absence.
+    fn premise(&mut self, key: &str) -> Id {
+        if !key.starts_with(ABSENT) {
+            return self.id(key).expect("a premise is an atom of the closure");
+        }
+        if let Some(&i) = self.absent_index.get(key) {
+            return i;
+        }
+        let i = ABSENT_ID + self.absent.len() as Id;
+        let key = Name::from(key);
+        self.absent.push(key.clone());
+        self.absent_index.insert(key, i);
+        i
+    }
+
+    /// Premises as a set, ordered by key, as when they were text.
+    fn premises(&self, mut ps: Vec<Id>) -> Box<[Id]> {
+        ps.sort_by(|&a, &b| self.key(a).cmp(self.key(b)));
+        ps.dedup();
+        ps.into_boxed_slice()
+    }
+
+    /// Adds a derivation unless the atom has it already; returns whether it
+    /// was added.
+    fn derive(&mut self, id: Id, d: Derivation) -> bool {
+        let ds = &mut self.entries[id as usize].1;
+        if ds
+            .iter()
+            .any(|x| x.source == d.source && x.premises == d.premises)
+        {
+            return false;
+        }
+        ds.push(d);
+        true
+    }
+}
+
+impl std::ops::Index<&str> for Db {
+    type Output = (Atom, Vec<Derivation>);
+    fn index(&self, key: &str) -> &Self::Output {
+        self.get(key).expect("an atom of the closure")
+    }
+}
+
+impl<'a> IntoIterator for &'a Db {
+    type Item = (&'a Name, &'a (Atom, Vec<Derivation>));
+    type IntoIter = Box<dyn Iterator<Item = Self::Item> + 'a>;
+    fn into_iter(self) -> Self::IntoIter {
+        Box::new(self.iter())
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -57,7 +206,7 @@ pub struct Conflict {
 
 #[derive(Default, Debug)]
 pub struct Outcome {
-    pub db: BTreeMap<String, (Atom, Vec<Derivation>)>,
+    pub db: Db,
     pub conflicts: BTreeMap<String, Conflict>,
     /// Why an atom derived in the closure does not hold: the conflict it
     /// lost, or the premises it fell with.
@@ -184,27 +333,34 @@ enum Label {
 /// and are decided together on everything alive. Returns the losers to block.
 fn decide(prog: &Program, db: &Db, out: &mut Outcome) -> Vec<String> {
     let founded = Founded::new(db);
-    let mut label: BTreeMap<&str, Label> = BTreeMap::new();
+    // The complement of each atom, read from its key: `¬` leads a negation.
+    let comp: Vec<Option<Id>> = (0..db.len() as Id)
+        .map(|i| {
+            let k = db.key(i);
+            match k.strip_prefix('¬') {
+                Some(pos) => db.id(pos),
+                None => db.id(&format!("¬{k}")),
+            }
+        })
+        .collect();
+    let mut label: Vec<Option<Label>> = vec![None; db.len()];
     let mut stuck = false;
     loop {
         let mut changed = false;
-        for (key, (atom, derivs)) in db {
-            if label.contains_key(key.as_str()) {
+        for i in db.ids() {
+            if label[i as usize].is_some() {
                 continue;
             }
+            let derivs = &db.at(i).1;
             let (app, live) = split(derivs, &label);
-            let ckey = atom.complement().key();
-            let opponent = db
-                .get_key_value(&ckey)
-                .map(|(k, (_, ds))| (k.as_str(), split(ds, &label)));
+            let opponent = comp[i as usize].map(|c| (c, split(&db.at(c).1, &label)));
             let decided = match opponent {
                 _ if live.is_empty() => Some(Label::Out),
                 None => (!app.is_empty()).then_some(Label::In),
                 Some((_, (_, clive))) if clive.is_empty() => (!app.is_empty()).then_some(Label::In),
-                Some((ckey, (capp, clive))) => {
+                Some((c, (capp, clive))) => {
                     let wins = |a: &[&Derivation], b: &[&Derivation]| {
-                        !a.is_empty()
-                            && matches!(resolve(prog, &founded, a, b, key, ckey), Winner::Pos)
+                        !a.is_empty() && matches!(resolve(prog, &founded, a, b, i, c), Winner::Pos)
                     };
                     if wins(&app, &clive) {
                         Some(Label::In)
@@ -222,38 +378,40 @@ fn decide(prog: &Program, db: &Db, out: &mut Outcome) -> Vec<String> {
                 }
             };
             if let Some(l) = decided {
-                label.insert(key, l);
+                label[i as usize] = Some(l);
                 changed = true;
             }
         }
         if !changed {
             // Well-founded failure: what only a loop of undecided atoms could
             // support, with no base outside the loop, is out.
-            let mut possible: BTreeSet<&str> = BTreeSet::new();
+            let mut possible = vec![false; db.len()];
             loop {
-                let before = possible.len();
-                for (key, (_, derivs)) in db {
-                    let k = key.as_str();
-                    if possible.contains(k)
-                        || matches!(label.get(k), Some(Label::Out | Label::Lost))
-                    {
+                let mut grew = false;
+                for i in db.ids() {
+                    let k = i as usize;
+                    if possible[k] || matches!(label[k], Some(Label::Out | Label::Lost)) {
                         continue;
                     }
-                    if label.get(k) == Some(&Label::In)
-                        || derivs
+                    if label[k] == Some(Label::In)
+                        || db
+                            .at(i)
+                            .1
                             .iter()
-                            .any(|d| real(&d.premises).all(|p| possible.contains(p.as_str())))
+                            .any(|d| real(&d.premises).all(|p| possible[p as usize]))
                     {
-                        possible.insert(k);
+                        possible[k] = true;
+                        grew = true;
                     }
                 }
-                if possible.len() == before {
+                if !grew {
                     break;
                 }
             }
-            for key in db.keys() {
-                if !possible.contains(key.as_str()) && !label.contains_key(key.as_str()) {
-                    label.insert(key, Label::Out);
+            for i in db.ids() {
+                let k = i as usize;
+                if !possible[k] && label[k].is_none() {
+                    label[k] = Some(Label::Out);
                     changed = true;
                 }
             }
@@ -268,44 +426,45 @@ fn decide(prog: &Program, db: &Db, out: &mut Outcome) -> Vec<String> {
     }
     // Report: a loser beside a winner is defeated; two losers are a conflict.
     let mut newly = Vec::new();
-    for (key, (atom, derivs)) in db {
-        if label.get(key.as_str()) == Some(&Label::Out) {
+    for (key, &i) in &db.index {
+        let (atom, derivs) = db.at(i);
+        if label[i as usize] == Some(Label::Out) {
             // It fell with its premises: name the ones that fell.
             let mut fell: Vec<&str> = derivs
                 .iter()
                 .flat_map(|d| real(&d.premises))
-                .filter(|p| matches!(label.get(p.as_str()), Some(Label::Out | Label::Lost)))
-                .map(String::as_str)
+                .filter(|&p| matches!(label[p as usize], Some(Label::Out | Label::Lost)))
+                .map(|p| db.key(p))
                 .collect();
             fell.sort();
             fell.dedup();
             out.defeated.insert(
-                key.clone(),
+                key.to_string(),
                 format!("rests on {}, which did not hold", fell.join(", ")),
             );
         }
-        if label.get(key.as_str()) != Some(&Label::Lost) {
+        if label[i as usize] != Some(Label::Lost) {
             continue;
         }
-        newly.push(key.clone());
-        let ckey = atom.complement().key();
-        let cderivs = &db[&ckey].1;
-        if label.get(ckey.as_str()) != Some(&Label::Lost) {
+        newly.push(key.to_string());
+        let c = comp[i as usize].expect("a lost atom has a complement");
+        let cderivs = &db.at(c).1;
+        if label[c as usize] != Some(Label::Lost) {
             out.defeated.insert(
-                key.clone(),
+                key.to_string(),
                 format!("defeated by {}", sources(cderivs).join(", ")),
             );
         } else if !atom.neg {
             let (app, _) = split(derivs, &label);
             let (capp, _) = split(cderivs, &label);
-            let kind = match resolve(prog, &founded, &app, &capp, key, &ckey) {
+            let kind = match resolve(prog, &founded, &app, &capp, i, c) {
                 Winner::None(kind) => kind,
                 _ => ConflictKind::Unresolved,
             };
             out.conflicts.insert(
-                key.clone(),
+                key.to_string(),
                 Conflict {
-                    positive: key.clone(),
+                    positive: key.to_string(),
                     kind,
                     sources_pos: sources(derivs),
                     sources_neg: sources(cderivs),
@@ -321,9 +480,9 @@ fn decide(prog: &Program, db: &Db, out: &mut Outcome) -> Vec<String> {
 /// premise out).
 fn split<'a>(
     derivs: &'a [Derivation],
-    label: &BTreeMap<&str, Label>,
+    label: &[Option<Label>],
 ) -> (Vec<&'a Derivation>, Vec<&'a Derivation>) {
-    let is = |p: &String, l: Label| label.get(p.as_str()) == Some(&l);
+    let is = |p: Id, l: Label| label[p as usize] == Some(l);
     let app = derivs
         .iter()
         .filter(|d| real(&d.premises).all(|p| is(p, Label::In)))
@@ -348,11 +507,11 @@ enum Winner {
     None(ConflictKind),
 }
 
-/// `founded` for one database, each key computed once: `decide` asks for the
-/// same keys on every pass while the database stays the same.
+/// `founded` for one database, each atom computed once: `decide` asks for
+/// the same atoms on every pass while the database stays the same.
 struct Founded<'a> {
     db: &'a Db,
-    memo: std::cell::RefCell<BTreeMap<String, Vec<&'a Derivation>>>,
+    memo: std::cell::RefCell<BTreeMap<Id, Vec<&'a Derivation>>>,
 }
 
 impl<'a> Founded<'a> {
@@ -363,65 +522,54 @@ impl<'a> Founded<'a> {
         }
     }
 
-    fn get(&self, key: &str) -> Vec<&'a Derivation> {
-        if let Some(ds) = self.memo.borrow().get(key) {
+    fn get(&self, id: Id) -> Vec<&'a Derivation> {
+        if let Some(ds) = self.memo.borrow().get(&id) {
             return ds.clone();
         }
-        let ds = founded(self.db, key);
-        self.memo.borrow_mut().insert(key.to_string(), ds.clone());
+        let ds = founded(self.db, id);
+        self.memo.borrow_mut().insert(id, ds.clone());
         ds
     }
 }
 
-/// Derivations of `key` that stand without `key` itself: a derivation that
-/// rests on its own conclusion neither supports it nor needs to be beaten.
-fn founded<'a>(db: &'a Db, key: &str) -> Vec<&'a Derivation> {
+/// Derivations of atom `id` that stand without it: a derivation that rests
+/// on its own conclusion neither supports it nor needs to be beaten.
+fn founded(db: &Db, id: Id) -> Vec<&Derivation> {
     // Every atom of the closure was derived from facts. If no chain of
-    // premises leads from `key` back to `key`, none of its premises needs it,
+    // premises leads from `id` back to `id`, none of its premises needs it,
     // so every derivation stands; the search below is needed only on a cycle.
-    let mut seen: BTreeSet<&str> = BTreeSet::new();
-    let mut stack: Vec<&str> = db[key]
-        .1
-        .iter()
-        .flat_map(|d| real(&d.premises).map(String::as_str))
-        .collect();
+    let derivs = &db.at(id).1;
+    let mut seen: BTreeSet<Id> = BTreeSet::new();
+    let mut stack: Vec<Id> = derivs.iter().flat_map(|d| real(&d.premises)).collect();
     let mut cyclic = false;
     while let Some(k) = stack.pop() {
-        if k == key {
+        if k == id {
             cyclic = true;
             break;
         }
         if !seen.insert(k) {
             continue;
         }
-        let Some((_, ds)) = db.get(k) else {
-            cyclic = true; // not in the closure: let the full search judge
-            break;
-        };
-        stack.extend(
-            ds.iter()
-                .flat_map(|d| real(&d.premises).map(String::as_str)),
-        );
+        stack.extend(db.at(k).1.iter().flat_map(|d| real(&d.premises)));
     }
     if !cyclic {
-        return db[key].1.iter().collect();
+        return derivs.iter().collect();
     }
-    let mut without: BTreeSet<&str> = BTreeSet::new();
-    let stands = |d: &Derivation, without: &BTreeSet<&str>| {
-        real(&d.premises).all(|p| without.contains(p.as_str()))
-    };
+    let mut without = vec![false; db.len()];
+    let stands = |d: &Derivation, without: &[bool]| real(&d.premises).all(|p| without[p as usize]);
     loop {
-        let before = without.len();
-        for (k, (_, ds)) in db {
-            if k != key && !without.contains(k.as_str()) && ds.iter().any(|d| stands(d, &without)) {
-                without.insert(k);
+        let mut grew = false;
+        for k in 0..db.len() as Id {
+            if k != id && !without[k as usize] && db.at(k).1.iter().any(|d| stands(d, &without)) {
+                without[k as usize] = true;
+                grew = true;
             }
         }
-        if without.len() == before {
+        if !grew {
             break;
         }
     }
-    db[key].1.iter().filter(|d| stands(d, &without)).collect()
+    derivs.iter().filter(|d| stands(d, &without)).collect()
 }
 
 /// Which side of a conflict wins: `pos`, derivations of `key`, or `neg`,
@@ -431,8 +579,8 @@ fn resolve(
     founded: &Founded,
     pos: &[&Derivation],
     neg: &[&Derivation],
-    key: &str,
-    ckey: &str,
+    key: Id,
+    ckey: Id,
 ) -> Winner {
     let ps = pos.iter().any(|d| d.strict);
     let ns = neg.iter().any(|d| d.strict);
@@ -546,7 +694,6 @@ pub fn strata(rules: &[Rule]) -> (BTreeMap<String, usize>, Vec<String>) {
     (level, cyclic)
 }
 
-type Db = BTreeMap<String, (Atom, Vec<Derivation>)>;
 type Binding = BTreeMap<String, Term>;
 
 #[allow(clippy::too_many_arguments)]
@@ -560,7 +707,7 @@ fn closure(
     errors: &mut BTreeSet<String>,
     naive: bool,
 ) -> (Db, bool) {
-    let mut db: Db = BTreeMap::new();
+    let mut db = Db::default();
     for f in facts {
         let key = f.atom.key();
         if blocked.contains(&key) {
@@ -571,13 +718,11 @@ fn closure(
             is_fact: true,
             strict: true,
             plane: f.plane.clone(),
-            premises: vec![],
+            premises: Box::default(),
             rank: prog.status_rank.get(&f.status).copied().unwrap_or(0),
         };
-        db.entry(key)
-            .or_insert_with(|| (f.atom.clone(), vec![]))
-            .1
-            .push(d);
+        let (id, _) = db.insert(&key, || f.atom.clone());
+        db.entries[id as usize].1.push(d);
     }
     let mut levels: Vec<usize> = rules
         .iter()
@@ -667,7 +812,7 @@ fn nest(db: &mut Db, n: &Nesting) -> bool {
         }
         if a.rel == n.edge {
             if let Some((x, y)) = pick(a, &n.edge_roles) {
-                edges.push((k.clone(), x, y));
+                edges.push((k.to_string(), x, y));
             }
         } else if a.rel == n.rel
             && ds
@@ -675,7 +820,7 @@ fn nest(db: &mut Db, n: &Nesting) -> bool {
                 .any(|d| d.source != base_id && d.source != step_id)
             && let Some((z, y)) = pick(a, &n.roles)
         {
-            given.push((k.clone(), z, y));
+            given.push((k.to_string(), z, y));
         }
     }
     // Nodes by printed term; a given N(z, y) is an edge to a fresh copy of y
@@ -735,15 +880,8 @@ fn nest(db: &mut Db, n: &Nesting) -> bool {
         holds.entry(z.to_string()).or_default().insert(k.clone());
     }
     let mut atoms: BTreeMap<String, Atom> = derived.into_iter().map(|(a, k)| (k, a)).collect();
-    let mut new: Vec<(String, Derivation)> = Vec::new();
-    let derivation = |source: &Name, premises: Vec<String>| Derivation {
-        source: source.clone(),
-        is_fact: false,
-        strict: true,
-        plane: Plane::new(),
-        premises,
-        rank: 0,
-    };
+    // (key, source, premise keys)
+    let mut new: Vec<(String, &Name, Vec<String>)> = Vec::new();
     for (ek, x, y) in &edges {
         let base = Atom::new(
             n.rel.clone(),
@@ -755,7 +893,7 @@ fn nest(db: &mut Db, n: &Nesting) -> bool {
         );
         let bk = base.key();
         atoms.entry(bk.clone()).or_insert(base);
-        new.push((bk, derivation(&base_id, vec![ek.clone()])));
+        new.push((bk, &base_id, vec![ek.clone()]));
         for nk in holds.get(&y.to_string()).into_iter().flatten() {
             // N(y, w) for this edge's genus y gives N(x, w).
             let w = db
@@ -772,30 +910,33 @@ fn nest(db: &mut Db, n: &Nesting) -> bool {
             );
             let hk = head.key();
             atoms.entry(hk.clone()).or_insert(head);
-            let mut premises = vec![ek.clone(), nk.clone()];
-            premises.sort();
-            premises.dedup();
-            new.push((hk, derivation(&step_id, premises)));
+            new.push((hk, &step_id, vec![ek.clone(), nk.clone()]));
         }
     }
+    // Atoms first, then derivations: a premise may be an atom made here.
+    for (key, _, _) in &new {
+        db.insert(key, || atoms[key].clone());
+    }
     let mut added = false;
-    for (key, d) in new {
-        let atom = atoms.get(&key).cloned().expect("atom of a derivation");
-        let entry = db.entry(key).or_insert_with(|| (atom, vec![]));
-        if !entry
-            .1
-            .iter()
-            .any(|x| x.source == d.source && x.premises == d.premises)
-        {
-            entry.1.push(d);
-            added = true;
-        }
+    for (key, source, premises) in new {
+        let ps = premises.iter().map(|k| db.premise(k)).collect();
+        let d = Derivation {
+            source: source.clone(),
+            is_fact: false,
+            strict: true,
+            plane: Plane::new(),
+            premises: db.premises(ps),
+            rank: 0,
+        };
+        let id = db.id(&key).expect("an atom made above");
+        added |= db.derive(id, d);
     }
     added
 }
 
-fn real(premises: &[String]) -> impl Iterator<Item = &String> {
-    premises.iter().filter(|p| !p.starts_with(ABSENT))
+/// Premises that are atoms, not absences.
+fn real(premises: &[Id]) -> impl Iterator<Item = Id> + '_ {
+    premises.iter().copied().filter(|&p| p < ABSENT_ID)
 }
 
 /// Strength and trust of every derivation, read through the whole closure.
@@ -810,42 +951,45 @@ fn real(premises: &[String]) -> impl Iterator<Item = &String> {
 /// strength first, as in conflicts: a strict atom's rank is its best strict
 /// derivation's. Both are least fixpoints, so a cycle cannot raise them.
 fn settle(db: &mut Db, top: usize) {
-    let mut strict: BTreeSet<String> = BTreeSet::new();
+    let mut strict = vec![false; db.len()];
     loop {
-        let before = strict.len();
-        for (k, (_, ds)) in db.iter() {
-            if !strict.contains(k)
+        let mut grew = false;
+        for (k, (_, ds)) in db.entries.iter().enumerate() {
+            if !strict[k]
                 && ds.iter().any(|d| {
-                    d.is_fact || (d.strict && real(&d.premises).all(|p| strict.contains(p)))
+                    d.is_fact || (d.strict && real(&d.premises).all(|p| strict[p as usize]))
                 })
             {
-                strict.insert(k.clone());
+                strict[k] = true;
+                grew = true;
             }
         }
-        if strict.len() == before {
+        if !grew {
             break;
         }
     }
-    for (_, ds) in db.values_mut() {
+    for (_, ds) in db.entries.iter_mut() {
         for d in ds.iter_mut().filter(|d| !d.is_fact) {
-            d.strict = d.strict && real(&d.premises).all(|p| strict.contains(p));
+            d.strict = d.strict && real(&d.premises).all(|p| strict[p as usize]);
         }
     }
     loop {
-        let best: BTreeMap<String, usize> = db
+        let best: Vec<usize> = db
+            .entries
             .iter()
+            .enumerate()
             .map(|(k, (_, ds))| {
-                let s = strict.contains(k);
+                let s = strict[k];
                 let r = ds.iter().filter(|d| d.strict || !s).map(|d| d.rank).max();
-                (k.clone(), r.unwrap_or(0))
+                r.unwrap_or(0)
             })
             .collect();
         let mut changed = false;
-        for (_, ds) in db.values_mut() {
+        for (_, ds) in db.entries.iter_mut() {
             for d in ds.iter_mut().filter(|d| !d.is_fact) {
                 // A strict derivation's premises are all strict atoms.
                 let rank = real(&d.premises)
-                    .map(|p| best.get(p).copied().unwrap_or(0))
+                    .map(|p| best[p as usize])
                     .min()
                     .unwrap_or(top);
                 if rank > d.rank {
@@ -889,11 +1033,13 @@ fn lazy_allowed(prog: &Program, n: &Nesting) -> bool {
 pub(crate) struct Lazy {
     nest: Nesting,
     labels: crate::label::Labels,
-    terms: BTreeMap<String, Term>,
-    /// x -> (genus, key of the edge atom)
-    out: BTreeMap<String, Vec<(String, String)>>,
-    /// z -> (y, key) of N atoms from elsewhere
-    given: BTreeMap<String, Vec<(String, String)>>,
+    /// node, by its number in `labels` -> its term; a fresh copy `\0y` of a
+    /// genus has the genus's term
+    terms: Vec<Term>,
+    /// (x, genus, edge atom), by x, then by key of the edge atom
+    out: Vec<(u32, u32, Id)>,
+    /// (z, fresh copy of y, N atom from elsewhere), by z, then by key
+    given: Vec<(u32, u32, Id)>,
 }
 
 impl Lazy {
@@ -902,56 +1048,93 @@ impl Lazy {
             let get = |r: &str| a.args.iter().find(|(x, _)| x == r).map(|(_, t)| t.clone());
             Some((get(&roles.0)?, get(&roles.1)?))
         };
-        let mut terms: BTreeMap<String, Term> = BTreeMap::new();
-        let mut out: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
-        let mut given: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
-        let mut graph: Vec<(String, String)> = Vec::new();
-        for (k, (a, _)) in db {
+        // (atom, x, y) of edges and (atom, z, y) of N atoms, in key order.
+        let mut edges: Vec<(Id, Term, Term)> = Vec::new();
+        let mut given: Vec<(Id, Term, Term)> = Vec::new();
+        for i in db.ids() {
+            let a = &db.at(i).0;
             if a.neg {
                 continue;
             }
             if a.rel == n.edge
                 && let Some((x, y)) = pick(a, &n.edge_roles)
             {
-                let (sx, sy) = (x.to_string(), y.to_string());
-                terms.insert(sx.clone(), x);
-                terms.insert(sy.clone(), y);
-                out.entry(sx.clone())
-                    .or_default()
-                    .push((sy.clone(), k.clone()));
-                graph.push((sx, sy));
+                edges.push((i, x, y));
             } else if a.rel == n.rel
                 && let Some((z, y)) = pick(a, &n.roles)
             {
-                let (sz, sy) = (z.to_string(), y.to_string());
-                terms.insert(sz.clone(), z);
-                terms.insert(sy.clone(), y);
-                given
-                    .entry(sz.clone())
-                    .or_default()
-                    .push((sy.clone(), k.clone()));
-                graph.push((sz, format!("\0{sy}")));
+                given.push((i, z, y));
             }
         }
-        let labels =
-            crate::label::Labels::build(graph.iter().map(|(a, b)| (a.as_str(), b.as_str())));
+        // Nodes by printed term; a symbol is its own text.
+        fn name(t: &Term) -> std::borrow::Cow<'_, str> {
+            match t {
+                Term::Sym(s) => std::borrow::Cow::Borrowed(s.as_str()),
+                t => std::borrow::Cow::Owned(t.to_string()),
+            }
+        }
+        let fresh = |t: &Term| format!("\0{t}");
+        let labels = {
+            let graph: Vec<(std::borrow::Cow<str>, std::borrow::Cow<str>)> = edges
+                .iter()
+                .map(|(_, x, y)| (name(x), name(y)))
+                .chain(
+                    given
+                        .iter()
+                        .map(|(_, z, y)| (name(z), std::borrow::Cow::Owned(fresh(y)))),
+                )
+                .collect();
+            crate::label::Labels::build(graph.iter().map(|(a, b)| (a.as_ref(), b.as_ref())))
+        };
+        let node = |s: &str| labels.node(s).expect("a node of the graph");
+        let mut terms: Vec<Term> = vec![Term::Sym(Name::default()); labels.len()];
+        let mut out: Vec<(u32, u32, Id)> = Vec::with_capacity(edges.len());
+        for (e, x, y) in edges {
+            let (nx, ny) = (node(&name(&x)), node(&name(&y)));
+            out.push((nx, ny, e));
+            terms[nx as usize] = x;
+            terms[ny as usize] = y;
+        }
+        let mut from: Vec<(u32, u32, Id)> = Vec::with_capacity(given.len());
+        for (k, z, y) in given {
+            let (nz, ny) = (node(&name(&z)), node(&fresh(&y)));
+            from.push((nz, ny, k));
+            terms[nz as usize] = z;
+            terms[ny as usize] = y;
+        }
+        // Stable: within a node, key order stays.
+        out.sort_by_key(|&(x, _, _)| x);
+        from.sort_by_key(|&(z, _, _)| z);
         Lazy {
             nest: n.clone(),
             labels,
             terms,
             out,
-            given,
+            given: from,
         }
+    }
+
+    /// Edges out of a node, or N atoms from elsewhere out of it.
+    fn starting(list: &[(u32, u32, Id)], node: Option<u32>) -> &[(u32, u32, Id)] {
+        let Some(x) = node else {
+            return &[];
+        };
+        let lo = list.partition_point(|&(a, _, _)| a < x);
+        let hi = list.partition_point(|&(a, _, _)| a <= x);
+        &list[lo..hi]
     }
 
     /// Does N(x, y) follow from the edges: a path of edges to y, or of edges
     /// and then a given N atom?
     fn holds(&self, x: &str, y: &str) -> bool {
-        self.labels.reaches(x, y)
-            || self.out.get(x).is_some_and(|qs| {
+        self.labels.reaches(x, y) || {
+            let qs = Self::starting(&self.out, self.labels.node(x));
+            !qs.is_empty() && {
                 let fresh = format!("\0{y}");
-                qs.iter().any(|(q, _)| self.labels.within(q, &fresh))
-            })
+                qs.iter()
+                    .any(|&(_, q, _)| self.labels.within(self.labels.name_at(q), &fresh))
+            }
+        }
     }
 
     /// Pairs (x, y) where N holds, with x or y fixed when given.
@@ -1012,13 +1195,23 @@ impl Lazy {
         out.into_iter().collect()
     }
 
+    /// The term of a node, or of the genus whose fresh copy it is.
+    fn term(&self, s: &str) -> &Term {
+        let i = self
+            .labels
+            .node(s)
+            .or_else(|| self.labels.node(&format!("\0{s}")))
+            .expect("a node of the nesting");
+        &self.terms[i as usize]
+    }
+
     /// The two-role atom N(x, y).
     fn atom(&self, x: &str, y: &str) -> Atom {
         Atom::new(
             self.nest.rel.clone(),
             vec![
-                (self.nest.roles.0.clone(), self.terms[x].clone()),
-                (self.nest.roles.1.clone(), self.terms[y].clone()),
+                (self.nest.roles.0.clone(), self.term(x).clone()),
+                (self.nest.roles.1.clone(), self.term(y).clone()),
             ],
             false,
         )
@@ -1036,51 +1229,47 @@ impl Lazy {
             .filter(|z| !z.starts_with('\0') && self.labels.within(x, z))
             .collect();
         cone.retain(|z| self.holds(z, y));
+        // Atoms first: a step rests on the next atom of the cone.
+        let made: Vec<(&str, Id)> = cone
+            .into_iter()
+            .map(|z| {
+                let head = self.atom(z, y);
+                (z, db.insert(&head.key(), || head).0)
+            })
+            .collect();
         let (base_id, step_id) = (self.nest.base_id(), self.nest.step_id());
-        let derivation = |source: &Name, premises: Vec<String>| Derivation {
-            source: source.clone(),
-            is_fact: false,
-            strict: true,
-            plane: Plane::new(),
-            premises,
-            rank: 0,
-        };
-        for z in cone {
-            let head = self.atom(z, y);
-            let key = head.key();
-            let mut ds: Vec<Derivation> = Vec::new();
-            for (q, ek) in self.out.get(z).into_iter().flatten() {
+        let fy = self.labels.node(&fresh);
+        for (z, id) in made {
+            let mut ds: Vec<(&Name, Vec<Id>)> = Vec::new();
+            for &(_, q, e) in Self::starting(&self.out, self.labels.node(z)) {
+                let q = self.labels.name_at(q);
                 if q == y {
-                    ds.push(derivation(&base_id, vec![ek.clone()]));
+                    ds.push((&base_id, vec![e]));
                 }
-                let mut via: Vec<String> = Vec::new();
+                let mut via: Vec<Id> = Vec::new();
                 if self.holds(q, y) {
-                    via.push(self.atom(q, y).key());
+                    via.push(db.id(&self.atom(q, y).key()).expect("an atom of the cone"));
                 }
                 via.extend(
-                    self.given
-                        .get(q.as_str())
-                        .into_iter()
-                        .flatten()
-                        .filter(|(w, _)| w == y)
-                        .map(|(_, k)| k.clone()),
+                    Self::starting(&self.given, self.labels.node(q))
+                        .iter()
+                        .filter(|&&(_, w, _)| Some(w) == fy)
+                        .map(|&(_, _, k)| k),
                 );
                 for nk in via {
-                    let mut premises = vec![ek.clone(), nk];
-                    premises.sort();
-                    premises.dedup();
-                    ds.push(derivation(&step_id, premises));
+                    ds.push((&step_id, vec![e, nk]));
                 }
             }
-            let entry = db.entry(key).or_insert_with(|| (head, vec![]));
-            for d in ds {
-                if !entry
-                    .1
-                    .iter()
-                    .any(|x| x.source == d.source && x.premises == d.premises)
-                {
-                    entry.1.push(d);
-                }
+            for (source, ps) in ds {
+                let d = Derivation {
+                    source: source.clone(),
+                    is_fact: false,
+                    strict: true,
+                    plane: Plane::new(),
+                    premises: db.premises(ps),
+                    rank: 0,
+                };
+                db.derive(id, d);
             }
         }
     }
@@ -1102,85 +1291,88 @@ fn fixpoint(
     lazy: &BTreeMap<String, Lazy>,
 ) -> bool {
     // Atoms new in the last round; None in the first round: all are new.
-    let mut fresh: Option<BTreeSet<String>> = None;
+    let mut fresh: Option<BTreeSet<Id>> = None;
     loop {
         let mut added = false;
-        let index = Index::new(db.iter());
-        let delta = fresh
-            .as_ref()
-            .filter(|_| !naive)
-            .map(|f| Index::new(db.iter().filter(|(k, _)| f.contains(*k))));
-        let mut new: Vec<(Atom, Derivation)> = Vec::new();
-        let wanted: std::cell::RefCell<BTreeSet<(String, String, String)>> = Default::default();
-        for r in rules {
-            let mut matches = Vec::new();
-            let body = schedule(r);
-            let mut ctx = Matcher {
-                index: &index,
-                forced: None,
-                lazy,
-                wanted: &wanted,
-                rule: &r.id,
-                errors: &mut *errors,
-            };
-            match &delta {
-                None => ctx.body(&body, 0, &mut Binding::new(), &mut Vec::new(), &mut matches),
-                Some(d) => {
-                    for (i, _) in body
-                        .iter()
-                        .enumerate()
-                        .filter(|(_, l)| matches!(l, Lit::Atom(_)))
-                    {
-                        ctx.forced = Some((i, d));
-                        ctx.body(&body, 0, &mut Binding::new(), &mut Vec::new(), &mut matches);
+        let (new, wanted) = {
+            let index = Index::new(db, db.ids());
+            let delta = fresh
+                .as_ref()
+                .filter(|_| !naive)
+                .map(|f| Index::new(db, db.ids().filter(|i| f.contains(i))));
+            let mut new: Vec<(Atom, &Rule, Vec<Pre>)> = Vec::new();
+            let wanted: std::cell::RefCell<BTreeSet<(String, String, String)>> = Default::default();
+            for r in rules {
+                let mut matches = Vec::new();
+                let body = schedule(r);
+                let mut ctx = Matcher {
+                    db,
+                    index: &index,
+                    forced: None,
+                    lazy,
+                    wanted: &wanted,
+                    rule: &r.id,
+                    errors: &mut *errors,
+                };
+                match &delta {
+                    None => ctx.body(&body, 0, &mut Binding::new(), &mut Vec::new(), &mut matches),
+                    Some(d) => {
+                        for (i, _) in body
+                            .iter()
+                            .enumerate()
+                            .filter(|(_, l)| matches!(l, Lit::Atom(_)))
+                        {
+                            ctx.forced = Some((i, d));
+                            ctx.body(&body, 0, &mut Binding::new(), &mut Vec::new(), &mut matches);
+                        }
+                    }
+                }
+                for (binding, premises) in matches {
+                    let head = subst(&r.head, &binding);
+                    if head.is_ground() {
+                        new.push((head, *r, premises));
                     }
                 }
             }
-            for (binding, mut premises) in matches {
-                // A body is a conjunction: its premises form a set, not a sequence.
-                premises.sort();
-                premises.dedup();
-                let head = subst(&r.head, &binding);
-                if !head.is_ground() {
-                    continue;
-                }
-                // The rule's own strength for now; `settle` reads it through the premises.
-                new.push((
-                    head,
-                    Derivation {
-                        source: r.id.clone(),
-                        is_fact: false,
-                        strict: r.strength == Strength::Strict,
-                        plane: r.plane.clone(),
-                        premises,
-                        rank: 0,
-                    },
-                ));
-            }
+            (new, wanted.into_inner())
+        };
+        // Atoms of lazy nestings that matches rest on, with their cones. They
+        // held already, so they give no new match. Made before the heads, so
+        // that the premises can be numbered; no rule here derives them.
+        for (rel, x, y) in wanted {
+            lazy[&rel].cone(&x, &y, db);
         }
-        let mut born: BTreeSet<String> = BTreeSet::new();
-        for (head, d) in new {
+        let mut born: BTreeSet<Id> = BTreeSet::new();
+        for (head, r, premises) in new {
             let key = head.key();
             if blocked.contains(&key) {
                 continue;
             }
-            if !db.contains_key(&key) {
-                born.insert(key.clone());
+            // A body is a conjunction: its premises form a set, not a sequence.
+            let ps = premises
+                .into_iter()
+                .map(|p| match p {
+                    Pre::Id(i) => i,
+                    Pre::Key(k) => db.premise(&k),
+                })
+                .collect();
+            let premises = db.premises(ps);
+            let (id, is_new) = db.insert(&key, || head);
+            if is_new {
+                born.insert(id);
             }
-            let entry = db.entry(key).or_insert_with(|| (head, vec![]));
-            if !entry
-                .1
-                .iter()
-                .any(|x| x.source == d.source && x.premises == d.premises)
-            {
-                entry.1.push(d);
-                added = true;
-            }
-        }
-        // Atoms of lazy nestings that matches rest on, with their cones. They
-        // held already, so they give no new match.
-        for (rel, x, y) in wanted.into_inner() {
-            lazy[&rel].cone(&x, &y, db);
+            // The rule's own strength for now; `settle` reads it through the premises.
+            added |= db.derive(
+                id,
+                Derivation {
+                    source: r.id.clone(),
+                    is_fact: false,
+                    strict: r.strength == Strength::Strict,
+                    plane: r.plane.clone(),
+                    premises,
+                    rank: 0,
+                },
+            );
         }
         if db.len() > MAX_ATOMS {
             return true;
@@ -1191,6 +1383,14 @@ fn fixpoint(
         }
         fresh = Some(born);
     }
+}
+
+/// A premise while a round matches: an atom of the database, or the key of
+/// one not made yet (a lazy atom) or of an absence.
+#[derive(Clone)]
+enum Pre {
+    Id(Id),
+    Key(String),
 }
 
 fn expr_vars(e: &Expr, out: &mut BTreeSet<String>) {
@@ -1293,33 +1493,30 @@ fn schedule(r: &Rule) -> Vec<Lit> {
 /// role, so a pattern with a known symbol does not scan the whole relation.
 /// Numbers are not indexed: they compare with a tolerance.
 struct Index<'a> {
-    by_rel: BTreeMap<String, Vec<(&'a String, &'a Atom)>>,
-    by_sym: BTreeMap<String, Vec<(&'a String, &'a Atom)>>,
+    by_rel: BTreeMap<(Name, bool), Vec<(Id, &'a Atom)>>,
+    by_sym: BTreeMap<SymKey, Vec<(Id, &'a Atom)>>,
 }
 
-fn rel_key(rel: &str, neg: bool) -> String {
-    format!("{rel}\u{1}{neg}")
-}
-
-fn sym_key(rel: &str, neg: bool, role: &str, sym: &str) -> String {
-    format!("{rel}\u{1}{neg}\u{1}{role}\u{1}{sym}")
-}
+/// (relation, negated, role, symbol)
+type SymKey = (Name, bool, Name, Name);
 
 impl<'a> Index<'a> {
-    fn new(atoms: impl Iterator<Item = (&'a String, &'a (Atom, Vec<Derivation>))>) -> Self {
-        let mut by_rel: BTreeMap<String, Vec<_>> = BTreeMap::new();
-        let mut by_sym: BTreeMap<String, Vec<_>> = BTreeMap::new();
-        for (k, (a, _)) in atoms {
+    /// Indexes the atoms `ids` in their order.
+    fn new(db: &'a Db, ids: impl Iterator<Item = Id>) -> Self {
+        let mut by_rel: BTreeMap<_, Vec<_>> = BTreeMap::new();
+        let mut by_sym: BTreeMap<_, Vec<_>> = BTreeMap::new();
+        for i in ids {
+            let a = &db.at(i).0;
             by_rel
-                .entry(rel_key(&a.rel, a.neg))
+                .entry((a.rel.clone(), a.neg))
                 .or_default()
-                .push((k, a));
+                .push((i, a));
             for (role, t) in &a.args {
                 if let Term::Sym(v) = t {
                     by_sym
-                        .entry(sym_key(&a.rel, a.neg, role, v))
+                        .entry((a.rel.clone(), a.neg, role.clone(), v.clone()))
                         .or_default()
-                        .push((k, a));
+                        .push((i, a));
                 }
             }
         }
@@ -1329,7 +1526,7 @@ impl<'a> Index<'a> {
     /// Atoms that can match `pat` under `binding`: the shortest list among
     /// the roles with a known symbol, else the whole relation. Lists keep
     /// database order, so matching order does not change.
-    fn candidates(&self, pat: &Atom, binding: &Binding) -> &[(&'a String, &'a Atom)] {
+    fn candidates(&self, pat: &Atom, binding: &Binding) -> &[(Id, &'a Atom)] {
         let mut best: Option<&Vec<_>> = None;
         for (role, t) in &pat.args {
             let sym = match t {
@@ -1340,7 +1537,8 @@ impl<'a> Index<'a> {
                 },
                 Term::Num(..) => continue,
             };
-            let Some(list) = self.by_sym.get(&sym_key(&pat.rel, pat.neg, role, sym)) else {
+            let key = (pat.rel.clone(), pat.neg, role.clone(), sym.clone());
+            let Some(list) = self.by_sym.get(&key) else {
                 return &[];
             };
             if best.is_none_or(|b| list.len() < b.len()) {
@@ -1351,13 +1549,14 @@ impl<'a> Index<'a> {
             Some(list) => list,
             None => self
                 .by_rel
-                .get(&rel_key(&pat.rel, pat.neg))
+                .get(&(pat.rel.clone(), pat.neg))
                 .map_or(&[], Vec::as_slice),
         }
     }
 }
 
 struct Matcher<'a> {
+    db: &'a Db,
     index: &'a Index<'a>,
     /// The atom literal at this position matches only atoms of this index
     /// (the last round's new atoms).
@@ -1376,8 +1575,8 @@ impl Matcher<'_> {
         lits: &[Lit],
         i: usize,
         binding: &mut Binding,
-        premises: &mut Vec<String>,
-        out: &mut Vec<(Binding, Vec<String>)>,
+        premises: &mut Vec<Pre>,
+        out: &mut Vec<(Binding, Vec<Pre>)>,
     ) {
         if i == lits.len() {
             out.push((binding.clone(), premises.clone()));
@@ -1392,8 +1591,8 @@ impl Matcher<'_> {
                     // A lazy relation does not change within the stratum.
                     (Some((at, _)), Some(_)) if at == i => return,
                     (_, Some(l)) => self.lazy_atom(l, pat, binding),
-                    (Some((at, d)), None) if at == i => self.atom(d, pat, binding),
-                    _ => self.atom(self.index, pat, binding),
+                    (Some((at, d)), None) if at == i => self.atom_pre(d, pat, binding),
+                    _ => self.atom_pre(self.index, pat, binding),
                 };
                 for (b, k) in found {
                     let mut b = b;
@@ -1457,7 +1656,7 @@ impl Matcher<'_> {
     /// Matches of `pat` on a lazy nesting: the pairs the labels give, each
     /// as the two-role atom the rules would derive, and atoms of N already in
     /// the database (facts, atoms made earlier).
-    fn lazy_atom(&self, l: &Lazy, pat: &Atom, binding: &Binding) -> Vec<(Binding, String)> {
+    fn lazy_atom(&self, l: &Lazy, pat: &Atom, binding: &Binding) -> Vec<(Binding, Pre)> {
         let side = |role: &str| -> (Option<String>, Option<&str>) {
             match pat.args.iter().find(|(r, _)| r == role).map(|(_, t)| t) {
                 Some(Term::Var(v)) => match binding.get(v) {
@@ -1481,29 +1680,37 @@ impl Matcher<'_> {
                 self.wanted
                     .borrow_mut()
                     .insert((l.nest.rel.to_string(), a, b));
-                out.push((bind, key));
+                out.push((bind, Pre::Key(key)));
             }
         }
         out.extend(
             self.atom(self.index, pat, binding)
                 .into_iter()
-                .filter(|(_, k)| !seen.contains(k)),
+                .filter(|&(_, k)| !seen.contains(self.db.key(k)))
+                .map(|(b, k)| (b, Pre::Id(k))),
         );
         out
     }
 
-    fn atom(&self, index: &Index, pat: &Atom, binding: &Binding) -> Vec<(Binding, String)> {
+    fn atom(&self, index: &Index, pat: &Atom, binding: &Binding) -> Vec<(Binding, Id)> {
         let mut out = Vec::new();
-        for (k, ground) in index.candidates(pat, binding) {
+        for &(k, ground) in index.candidates(pat, binding) {
             if !fits(pat, ground, binding) {
                 continue;
             }
             let mut b = binding.clone();
             if unify(pat, ground, &mut b) {
-                out.push((b, (*k).clone()));
+                out.push((b, k));
             }
         }
         out
+    }
+
+    fn atom_pre(&self, index: &Index, pat: &Atom, binding: &Binding) -> Vec<(Binding, Pre)> {
+        self.atom(index, pat, binding)
+            .into_iter()
+            .map(|(b, k)| (b, Pre::Id(k)))
+            .collect()
     }
 
     /// Distinct solutions of `over` under `binding`, folded in a canonical
@@ -1515,8 +1722,8 @@ impl Matcher<'_> {
         expr: &Expr,
         over: &[Atom],
         binding: &Binding,
-    ) -> Option<(Term, Vec<String>)> {
-        let mut solutions: Vec<(Binding, Vec<String>)> = vec![(binding.clone(), vec![])];
+    ) -> Option<(Term, Vec<Pre>)> {
+        let mut solutions: Vec<(Binding, Vec<Id>)> = vec![(binding.clone(), vec![])];
         for pat in over {
             let mut next = Vec::new();
             for (b, used) in &solutions {
@@ -1528,24 +1735,25 @@ impl Matcher<'_> {
             }
             solutions = next;
         }
-        let mut distinct: BTreeMap<String, (Binding, Vec<String>)> = BTreeMap::new();
+        let mut distinct: BTreeMap<String, (Binding, Vec<Id>)> = BTreeMap::new();
         for (b, used) in solutions {
             let key: Vec<String> = b.iter().map(|(k, v)| format!("{k}={v}")).collect();
             distinct.entry(key.join(";")).or_insert((b, used));
         }
-        let mut used_all: Vec<String> = distinct.values().flat_map(|(_, u)| u.clone()).collect();
-        used_all.sort();
+        let mut used_all: Vec<Id> = distinct.values().flat_map(|(_, u)| u.clone()).collect();
+        used_all.sort_by(|&a, &b| self.db.key(a).cmp(self.db.key(b)));
         used_all.dedup();
+        let mut used_all: Vec<Pre> = used_all.into_iter().map(Pre::Id).collect();
         if distinct.is_empty() {
             // Reasoning from absence must show in the grounds: say what was
             // looked for and not found. Marked with ∅, it is not an atom key.
             let mut looked: Vec<String> =
                 over.iter().map(|a| subst(a, binding).to_string()).collect();
             looked.sort();
-            used_all = vec![format!(
+            used_all = vec![Pre::Key(format!(
                 "{ABSENT}none in this context: {}",
                 looked.join(", ")
-            )];
+            ))];
         }
         if func == AggFn::Count {
             return Some((Term::Num(distinct.len() as f64, Dim::NONE), used_all));
@@ -1856,7 +2064,7 @@ fn support_facts(prog: &Program, db: &Db, key: &str) -> Vec<(usize, String)> {
             if d.is_fact {
                 out.insert((d.rank, labelled(prog, &d.source)));
             }
-            stack.extend(d.premises.iter().cloned());
+            stack.extend(db.premise_keys(d).map(str::to_string));
         }
     }
     out.into_iter().collect()
@@ -1913,15 +2121,16 @@ pub fn explain(out: &Outcome, key: &str) -> String {
 
 /// The derivation shown in explanations, chosen independently of insertion
 /// order: strict first, then facts, then by source and premises.
-fn canonical(derivs: &[Derivation]) -> &Derivation {
+fn canonical<'a>(db: &Db, derivs: &'a [Derivation]) -> &'a Derivation {
+    let keys = |d: &Derivation| db.premise_keys(d).collect::<Vec<_>>();
     derivs
         .iter()
         .min_by(|a, b| {
-            (!a.strict, !a.is_fact, &a.source, &a.premises).cmp(&(
+            (!a.strict, !a.is_fact, &a.source, keys(a)).cmp(&(
                 !b.strict,
                 !b.is_fact,
                 &b.source,
-                &b.premises,
+                keys(b),
             ))
         })
         .expect("a derived atom has at least one derivation")
@@ -1943,7 +2152,7 @@ fn explain_rec(
         s.push_str(&format!("{pad}{key}  (not derived)\n"));
         return;
     };
-    let d = canonical(derivs);
+    let d = canonical(&out.db, derivs);
     let kind = if d.is_fact {
         "fact"
     } else if d.strict {
@@ -1959,7 +2168,7 @@ fn explain_rec(
     if !seen.insert(key.to_string()) || depth > 12 {
         return;
     }
-    for p in &d.premises {
+    for p in out.db.premise_keys(d) {
         explain_rec(out, p, depth + 1, seen, s);
     }
 }

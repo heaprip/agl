@@ -27,7 +27,11 @@ fn text(out: &Outcome) -> String {
             .map(|d| {
                 format!(
                     "{} {} {} {:?} {:?}",
-                    d.source, d.strict, d.rank, d.plane, d.premises
+                    d.source,
+                    d.strict,
+                    d.rank,
+                    d.plane,
+                    out.db.premise_keys(d).collect::<Vec<_>>()
                 )
             })
             .collect();

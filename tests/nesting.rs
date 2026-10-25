@@ -32,7 +32,10 @@ fn closures(src: &str) -> String {
         for (k, (_, ds)) in &out.db {
             let mut ds: Vec<String> = ds
                 .iter()
-                .map(|d| format!("{} {} {} {:?}", d.source, d.strict, d.rank, d.premises))
+                .map(|d| {
+                    let ps: Vec<&str> = out.db.premise_keys(d).collect();
+                    format!("{} {} {} {:?}", d.source, d.strict, d.rank, ps)
+                })
                 .collect();
             ds.sort();
             s += &format!("{k}: {ds:?}\n");
@@ -209,10 +212,13 @@ fn lazy_matches_whole(lazy: &str, whole: &str, what: &str) -> (usize, usize) {
     let (mut made, mut all) = (0, 0);
     for p in planes {
         let (ol, ow) = (evaluate(&pl, &p), evaluate(&pw, &p));
-        let show = |ds: &Vec<agl::eval::Derivation>| {
+        let show = |db: &agl::eval::Db, ds: &Vec<agl::eval::Derivation>| {
             let mut v: Vec<String> = ds
                 .iter()
-                .map(|d| format!("{} {} {} {:?}", d.source, d.strict, d.rank, d.premises))
+                .map(|d| {
+                    let ps: Vec<&str> = db.premise_keys(d).collect();
+                    format!("{} {} {} {:?}", d.source, d.strict, d.rank, ps)
+                })
                 .collect();
             v.sort();
             v
@@ -221,7 +227,9 @@ fn lazy_matches_whole(lazy: &str, whole: &str, what: &str) -> (usize, usize) {
             match ol.db.get(k) {
                 // A given atom of `n` no rule asked for keeps only its fact.
                 Some((_, dl)) if a.rel == "n" && dl.iter().all(|d| d.is_fact) => {}
-                Some((_, dl)) => assert_eq!(show(dl), show(ds), "{what}: {k} in {p:?}"),
+                Some((_, dl)) => {
+                    assert_eq!(show(&ol.db, dl), show(&ow.db, ds), "{what}: {k} in {p:?}")
+                }
                 None => assert_eq!(a.rel, "n", "{what}: {k} missing in {p:?}"),
             }
         }

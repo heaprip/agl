@@ -165,6 +165,15 @@ impl Labels {
         self.names.binary_search_by(|s| s.as_str().cmp(name)).ok()
     }
 
+    /// A node's rank by name: the number `name_at` reads back.
+    pub fn node(&self, name: &str) -> Option<u32> {
+        self.index(name).map(|i| i as u32)
+    }
+
+    pub fn name_at(&self, node: u32) -> &str {
+        &self.names[node as usize]
+    }
+
     pub fn len(&self) -> usize {
         self.names.len()
     }
