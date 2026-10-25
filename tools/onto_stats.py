@@ -21,6 +21,13 @@ should be designed (docs/hypotheses.md, H61).
                                 (is_a) and role (has_role, roles' is_a), and 50 questions
                                 "has x role r" from seed 1; `one`: a single nesting for
                                 both hierarchies (H61, step 4)
+    tools/onto_stats.py fca chebi RELEASE DIR
+                                offline: write DIR/edges.tsv (is_a), DIR/roles.tsv
+                                (has_role) and DIR/names.tsv, input of examples/fca.rs
+    tools/onto_stats.py propose chebi A B
+                                offline: proposals "A within B" by extent in release A
+                                and how many hold in release B; an independent count
+                                for examples/fca.rs (H61, step 5a)
     tools/onto_stats.py replay  offline: lay the edits between releases onto the numbers
                                 of the earlier one, for three forms of a number (H61)
 
@@ -649,6 +656,88 @@ def axes(rel, one):
     sys.stdout.write("".join(out))
 
 
+def fca_dump(rel, out):
+    verified()
+    out = pathlib.Path(out)
+    out.mkdir(parents=True, exist_ok=True)
+    terms = load("chebi", rel)
+    edges = sorted((t, p) for t, (ps, _) in terms.items() for p in ps)
+    roles = sorted((t, r) for t, (_, rs) in terms.items() for r in rs)
+    (out / "edges.tsv").write_text("".join(f"{a}\t{b}\n" for a, b in edges))
+    (out / "roles.tsv").write_text("".join(f"{a}\t{b}\n" for a, b in roles))
+    names = []
+    with gzip.open(RAW / SOURCES["chebi"][rel][0], "rt", encoding="utf-8") as f:
+        cur = None
+        for line in f:
+            if line.startswith("id: "):
+                cur = line[4:].strip()
+            elif line.startswith("name: ") and cur in terms:
+                names.append((cur, line[6:].strip()))
+                cur = None
+    (out / "names.tsv").write_text("".join(f"{a}\t{b}\n" for a, b in sorted(names)))
+
+
+def proposals(rel):
+    """Proposals by extent: for a class A with at least 3 species (strict
+    descendants), the classes B that hold all of them, are not above A by
+    the edges, and are minimal among such B; and the roles R that all of
+    them have, A has not by the edges, minimal among such R."""
+    terms = load("chebi", rel)
+    parents = {t: ps for t, (ps, _) in terms.items()}
+    anc = ancestors(parents)
+    roles = {t for t in terms if t == ROLE or ROLE in anc[t]}
+    has = {t: hr for t, (_, hr) in terms.items() if hr}
+    desc = {}
+    for t, a in anc.items():
+        for g in a:
+            desc.setdefault(g, set()).add(t)
+
+    def role_set(t):
+        return {q for y in {t} | anc[t] for r in has.get(y, ()) for q in {r} | anc[r]}
+
+    rs = {}
+    out_c, out_r, partial = [], [], []
+    for a in sorted(desc):
+        sp = desc[a]
+        if len(sp) < 3:
+            continue
+        up = anc[a] | {a}
+        common = set.intersection(*(anc[s] | {s} for s in sp)) - up
+        mins = {b for b in common if not any(c != b and c in common and b in anc[c] for c in common)}
+        out_c += [(a, b) for b in sorted(mins)]
+        # Control: direct genera of species that hold some species, not all.
+        some = {g for s in sp for g in parents[s]} - up - common - sp
+        partial += [(a, b) for b in sorted(some)]
+        if a not in roles:
+            for s in sp:
+                if s not in rs:
+                    rs[s] = role_set(s)
+            have = role_set(a)
+            cr = set.intersection(*(rs[s] for s in sp)) - have
+            mins = {r for r in cr if not any(q != r and q in cr and r in anc[q] for q in cr)}
+            out_r += [(a, r) for r in sorted(mins)]
+    return out_c, out_r, partial
+
+
+def propose(a, b):
+    verified()
+    pc, pr, pp = proposals(a)
+    terms = load("chebi", b)
+    parents = {t: ps for t, (ps, _) in terms.items()}
+    anc = ancestors(parents)
+    has = {t: hr for t, (_, hr) in terms.items() if hr}
+
+    def role_set(t):
+        return {q for y in {t} | anc[t] for r in has.get(y, ()) for q in {r} | anc[r]}
+
+    hc = sum(x in anc and y in anc[x] for x, y in pc)
+    hr = sum(x in anc and y in role_set(x) for x, y in pr)
+    print(f"proposals in {a}: within {len(pc)}, of them hold in {b}: {hc}")
+    print(f"proposals in {a}: role {len(pr)}, of them hold in {b}: {hr}")
+    hp = sum(x in anc and y in anc[x] for x, y in pp)
+    print(f"control in {a}: a genus of some species, not all: {len(pp)}, of them hold in {b}: {hp}")
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd == "fetch":
@@ -663,6 +752,10 @@ if __name__ == "__main__":
         releases(sys.argv[2], sys.argv[3], sys.argv[4])
     elif cmd == "axes":
         axes(sys.argv[2], sys.argv[3:] == ["one"])
+    elif cmd == "fca":
+        fca_dump(sys.argv[3], sys.argv[4])
+    elif cmd == "propose":
+        propose(sys.argv[3], sys.argv[4])
     elif cmd == "replay":
         replay()
     else:

@@ -67,6 +67,7 @@ python3 tools/onto_stats.py stats         # форма ChEBI и WordNet (H61): �
 python3 tools/onto_stats.py replay        # H61: правки между выпусками на трёх формах номера (~15 с)
 python3 tools/onto_stats.py releases chebi 244 255 > target/scratch/chebi2.agl && cargo run --release -- target/scratch/chebi2.agl  # H61 шаг 7: ChEBI целиком, два выпуска — две плоскости (~5 с, 1,6 ГБ)
 python3 tools/onto_stats.py axes 255 > target/scratch/axes.agl && cargo run --release -- target/scratch/axes.agl  # H61 шаг 4: две оси, строение и роль (~3 с)
+python3 tools/onto_stats.py fca chebi 255 target/scratch/fca255 && cargo run --release --example fca -- target/scratch/fca255  # H61 шаг 5а: объём и содержание битами (~30 с); второй каталог — проверка следующим выпуском
 python3 tools/llm_geometry.py fetch       # матрицы выхода Qwen2.5 0.5B–72B в data/cache/llm (~6 ГБ, вне git)
 uv run --python 3.12 --with numpy==2.2.6 tools/llm_geometry.py run [noise]  # H62: векторы понятий против WordNet (~5 мин)
 cargo run --release --example labels -- target/scratch/chebi255.tsv  # H61: метки вложенности; рёбра — tools/onto_stats.py edges chebi 255
