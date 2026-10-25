@@ -13,6 +13,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use crate::meta::{ClaimId, Entity, Evidence, Intension, Projection};
 use crate::model::*;
 use crate::units::Dim;
 
@@ -25,15 +26,28 @@ const MAX_ATOMS: usize = 100_000;
 
 #[derive(Clone, Debug)]
 pub struct Derivation {
-    pub source: Name,
+    pub entity: Entity,
+    pub evidence: Evidence,
     pub is_fact: bool,
-    pub strict: bool,
-    pub plane: Plane,
     /// Atoms of the database by number, ordered by their keys; `Db::key`
     /// gives the text.
     pub premises: Box<[Id]>,
     /// Trust: a fact's status rank; for a rule, its weakest premise.
     pub rank: usize,
+}
+
+impl Derivation {
+    pub fn source(&self) -> &str {
+        &self.evidence.operation
+    }
+
+    pub fn strict(&self) -> bool {
+        self.evidence.strength == Strength::Strict
+    }
+
+    pub fn plane(&self) -> &Plane {
+        &self.evidence.context
+    }
 }
 
 /// The number of an atom in a closure: its place in the database (H61,
@@ -49,6 +63,7 @@ const ABSENT_ID: Id = 1 << 31;
 /// atoms are the same when they print the same, as before numbers.
 #[derive(Default, Debug)]
 pub struct Db {
+    context: Plane,
     entries: Vec<(Atom, Vec<Derivation>)>,
     keys: Vec<Name>,
     index: BTreeMap<Name, Id>,
@@ -116,6 +131,30 @@ impl Db {
         self.index.values().map(|&i| &self.entries[i as usize])
     }
 
+    /// Stable proposition node shared by all alternative derivations.
+    pub fn claim_id(&self, id: Id) -> ClaimId {
+        ClaimId::named("atom", self.key(id))
+    }
+
+    /// Every relation occurrence projected into this evaluated context.
+    pub fn projections(&self) -> Vec<Projection<Atom>> {
+        let mut out = Vec::new();
+        for id in self.ids() {
+            let (atom, derivations) = self.at(id);
+            let claim = self.claim_id(id);
+            for derivation in derivations {
+                out.push(Projection {
+                    claim: claim.clone(),
+                    entity: derivation.entity.id.clone(),
+                    context: self.context.clone(),
+                    extent: atom.clone(),
+                    evidence: derivation.evidence.id.clone(),
+                });
+            }
+        }
+        out
+    }
+
     /// The number of the atom with this key, adding it if new.
     fn insert(&mut self, key: &str, atom: impl FnOnce() -> Atom) -> (Id, bool) {
         if let Some(i) = self.id(key) {
@@ -157,14 +196,50 @@ impl Db {
     /// was added.
     fn derive(&mut self, id: Id, d: Derivation) -> bool {
         let ds = &mut self.entries[id as usize].1;
-        if ds
-            .iter()
-            .any(|x| x.source == d.source && x.premises == d.premises)
-        {
+        if ds.iter().any(|x| x.evidence.id == d.evidence.id) {
             return false;
         }
         ds.push(d);
         true
+    }
+}
+
+fn make_derivation(
+    db: &Db,
+    conclusion: &Atom,
+    source: &Name,
+    is_fact: bool,
+    strength: Strength,
+    plane: Plane,
+    premises: Box<[Id]>,
+    rank: usize,
+) -> Derivation {
+    let premise_claims: Vec<ClaimId> = premises.iter().map(|&id| db.claim_id(id)).collect();
+    let conclusion_claim = ClaimId::named("atom", &conclusion.key());
+    let evidence = Evidence::new(
+        conclusion_claim,
+        source.to_string(),
+        premise_claims.clone(),
+        strength,
+        plane,
+    );
+    let intension = if is_fact {
+        Intension::Primitive {
+            source: source.to_string(),
+        }
+    } else {
+        Intension::Derive {
+            operation: source.to_string(),
+            premises: premise_claims,
+        }
+    };
+    let entity = Entity::new(intension, vec![evidence.id.clone()]);
+    Derivation {
+        entity,
+        evidence,
+        is_fact,
+        premises,
+        rank,
     }
 }
 
@@ -285,6 +360,7 @@ fn evaluate_mode(prog: &Program, vis: &Visibility, ctx: &Plane, naive: bool) -> 
             &rules,
             &strata,
             &blocked,
+            ctx,
             top,
             &mut out.errors,
             naive,
@@ -496,7 +572,7 @@ fn split<'a>(
 }
 
 fn sources(derivs: &[Derivation]) -> Vec<String> {
-    let mut s: Vec<String> = derivs.iter().map(|d| d.source.to_string()).collect();
+    let mut s: Vec<String> = derivs.iter().map(|d| d.source().to_string()).collect();
     s.sort();
     s.dedup();
     s
@@ -583,15 +659,15 @@ fn resolve(
     key: Id,
     ckey: Id,
 ) -> Winner {
-    let ps = pos.iter().any(|d| d.strict);
-    let ns = neg.iter().any(|d| d.strict);
+    let ps = pos.iter().any(|d| d.strict());
+    let ns = neg.iter().any(|d| d.strict());
     // Between two sides of the same strength, the more trusted one wins: an
     // LLM proposal against a textbook is a rejected candidate, not a
     // contradiction. Only derivations of the deciding strength count, so a
     // defeasible derivation cannot lend its trust to a strict one.
     let rank_of = |ds: &[&Derivation], strict: bool| {
         ds.iter()
-            .filter(|d| d.strict == strict)
+            .filter(|d| d.strict() == strict)
             .map(|d| d.rank)
             .max()
             .unwrap_or(0)
@@ -628,7 +704,7 @@ fn resolve(
         b.iter().all(|y| {
             a.iter().any(|x| {
                 prog.defeats
-                    .contains(&(x.source.to_string(), y.source.to_string()))
+                    .contains(&(x.source().to_string(), y.source().to_string()))
             })
         })
     };
@@ -640,7 +716,7 @@ fn resolve(
     let more_specific = |a: &[&Derivation], b: &[&Derivation]| {
         a.iter().any(|x| {
             b.iter()
-                .all(|y| prog.axes.strictly_within(&x.plane, &y.plane))
+                .all(|y| prog.axes.strictly_within(x.plane(), y.plane()))
         })
     };
     match (more_specific(&pos, &neg), more_specific(&neg, &pos)) {
@@ -704,24 +780,30 @@ fn closure(
     rules: &[&Rule],
     strata: &BTreeMap<String, usize>,
     blocked: &BTreeSet<String>,
+    context: &Plane,
     top: usize,
     errors: &mut BTreeSet<String>,
     naive: bool,
 ) -> (Db, bool) {
-    let mut db = Db::default();
+    let mut db = Db {
+        context: context.clone(),
+        ..Db::default()
+    };
     for f in facts {
         let key = f.atom.key();
         if blocked.contains(&key) {
             continue;
         }
-        let d = Derivation {
-            source: f.id.clone(),
-            is_fact: true,
-            strict: true,
-            plane: f.plane.clone(),
-            premises: Box::default(),
-            rank: prog.status_rank.get(&f.status).copied().unwrap_or(0),
-        };
+        let d = make_derivation(
+            &db,
+            &f.atom,
+            &f.id,
+            true,
+            Strength::Strict,
+            f.plane.clone(),
+            Box::default(),
+            prog.status_rank.get(&f.status).copied().unwrap_or(0),
+        );
         let (id, _) = db.insert(&key, || f.atom.clone());
         db.entries[id as usize].1.push(d);
     }
@@ -819,7 +901,7 @@ fn nest(db: &mut Db, n: &Nesting) -> bool {
         } else if a.rel == n.rel
             && ds
                 .iter()
-                .any(|d| d.source != base_id && d.source != step_id)
+                .any(|d| d.source() != base_id.as_str() && d.source() != step_id.as_str())
             && let Some((z, y)) = pick(a, &n.roles)
         {
             given.push((k.to_string(), z, y));
@@ -922,14 +1004,17 @@ fn nest(db: &mut Db, n: &Nesting) -> bool {
     let mut added = false;
     for (key, source, premises) in new {
         let ps = premises.iter().map(|k| db.premise(k)).collect();
-        let d = Derivation {
-            source: source.clone(),
-            is_fact: false,
-            strict: true,
-            plane: Plane::new(),
-            premises: db.premises(ps),
-            rank: 0,
-        };
+        let premises = db.premises(ps);
+        let d = make_derivation(
+            db,
+            &atoms[&key],
+            source,
+            false,
+            Strength::Strict,
+            Plane::new(),
+            premises,
+            0,
+        );
         let id = db.id(&key).expect("an atom made above");
         added |= db.derive(id, d);
     }
@@ -959,7 +1044,7 @@ fn settle(db: &mut Db, top: usize) {
         for (k, (_, ds)) in db.entries.iter().enumerate() {
             if !strict[k]
                 && ds.iter().any(|d| {
-                    d.is_fact || (d.strict && real(&d.premises).all(|p| strict[p as usize]))
+                    d.is_fact || (d.strict() && real(&d.premises).all(|p| strict[p as usize]))
                 })
             {
                 strict[k] = true;
@@ -972,7 +1057,11 @@ fn settle(db: &mut Db, top: usize) {
     }
     for (_, ds) in db.entries.iter_mut() {
         for d in ds.iter_mut().filter(|d| !d.is_fact) {
-            d.strict = d.strict && real(&d.premises).all(|p| strict[p as usize]);
+            d.evidence.strength = if d.strict() && real(&d.premises).all(|p| strict[p as usize]) {
+                Strength::Strict
+            } else {
+                Strength::Defeasible
+            };
         }
     }
     loop {
@@ -982,7 +1071,7 @@ fn settle(db: &mut Db, top: usize) {
             .enumerate()
             .map(|(k, (_, ds))| {
                 let s = strict[k];
-                let r = ds.iter().filter(|d| d.strict || !s).map(|d| d.rank).max();
+                let r = ds.iter().filter(|d| d.strict() || !s).map(|d| d.rank).max();
                 r.unwrap_or(0)
             })
             .collect();
@@ -1001,7 +1090,18 @@ fn settle(db: &mut Db, top: usize) {
             }
         }
         if !changed {
-            return;
+            break;
+        }
+    }
+    // Effective strength is part of evidence identity. Reattach the settled
+    // evidence to the entity; its ID remains fixed by immutable intension.
+    for (_, derivations) in &mut db.entries {
+        for derivation in derivations {
+            derivation.evidence.reidentify();
+            derivation.entity = Entity::new(
+                derivation.entity.intension.clone(),
+                vec![derivation.evidence.id.clone()],
+            );
         }
     }
 }
@@ -1266,14 +1366,17 @@ impl Lazy {
                 }
             }
             for (source, ps) in ds {
-                let d = Derivation {
-                    source: source.clone(),
-                    is_fact: false,
-                    strict: true,
-                    plane: Plane::new(),
-                    premises: db.premises(ps),
-                    rank: 0,
-                };
+                let premises = db.premises(ps);
+                let d = make_derivation(
+                    db,
+                    &db.at(id).0,
+                    source,
+                    false,
+                    Strength::Strict,
+                    Plane::new(),
+                    premises,
+                    0,
+                );
                 db.derive(id, d);
             }
         }
@@ -1376,22 +1479,23 @@ fn fixpoint(
                 })
                 .collect();
             let premises = db.premises(ps);
+            let conclusion = head.clone();
             let (id, is_new) = db.insert(&key, || head);
             if is_new {
                 born.insert(id);
             }
             // The rule's own strength for now; `settle` reads it through the premises.
-            added |= db.derive(
-                id,
-                Derivation {
-                    source: r.id.clone(),
-                    is_fact: false,
-                    strict: r.strength == Strength::Strict,
-                    plane: r.plane.clone(),
-                    premises,
-                    rank: 0,
-                },
+            let d = make_derivation(
+                db,
+                &conclusion,
+                &r.id,
+                false,
+                r.strength,
+                r.plane.clone(),
+                premises,
+                0,
             );
+            added |= db.derive(id, d);
         }
         if db.len() > limit {
             return true;
@@ -2053,7 +2157,7 @@ fn source_rank(prog: &Program, source: &str, db: &Db) -> usize {
     }
     db.values()
         .flat_map(|(_, ds)| ds.iter())
-        .filter(|d| d.source == source)
+        .filter(|d| d.source() == source)
         .map(|d| d.rank)
         .max()
         .unwrap_or(0)
@@ -2080,7 +2184,7 @@ fn support_facts(prog: &Program, db: &Db, key: &str) -> Vec<(usize, String)> {
         };
         for d in derivs {
             if d.is_fact {
-                out.insert((d.rank, labelled(prog, &d.source)));
+                out.insert((d.rank, labelled(prog, d.source())));
             }
             stack.extend(db.premise_keys(d).map(str::to_string));
         }
@@ -2144,10 +2248,10 @@ fn canonical<'a>(db: &Db, derivs: &'a [Derivation]) -> &'a Derivation {
     derivs
         .iter()
         .min_by(|a, b| {
-            (!a.strict, !a.is_fact, &a.source, keys(a)).cmp(&(
-                !b.strict,
+            (!a.strict(), !a.is_fact, a.source(), keys(a)).cmp(&(
+                !b.strict(),
                 !b.is_fact,
-                &b.source,
+                b.source(),
                 keys(b),
             ))
         })
@@ -2173,15 +2277,15 @@ fn explain_rec(
     let d = canonical(&out.db, derivs);
     let kind = if d.is_fact {
         "fact"
-    } else if d.strict {
+    } else if d.strict() {
         "strict"
     } else {
         "defeasible"
     };
     s.push_str(&format!(
         "{pad}{key}  ← {} [{kind}] @ {}\n",
-        d.source,
-        plane_to_string(&d.plane)
+        d.source(),
+        plane_to_string(d.plane())
     ));
     if !seen.insert(key.to_string()) || depth > 12 {
         return;

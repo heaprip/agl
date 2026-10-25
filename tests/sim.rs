@@ -66,7 +66,9 @@ fn a_visible_fact_is_overturned_only_by_a_more_trusted_strict_derivation() {
                 );
             };
             assert!(
-                derivs.iter().any(|d| d.strict && d.rank > rank(&f.status)),
+                derivs
+                    .iter()
+                    .any(|d| d.strict() && d.rank > rank(&f.status)),
                 "seed {seed}: fact {} @ {} overturned by {:?}",
                 f.id,
                 plane_to_string(&f.plane),

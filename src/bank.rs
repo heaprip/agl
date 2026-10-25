@@ -14,7 +14,8 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
-use crate::model::{Name, Program, Term};
+use crate::meta::{ClaimId, Entity, Evidence, Intension, Projection};
+use crate::model::{Name, Plane, Program, Strength, Term};
 
 /// Rounds of gluing in the first stage.
 pub const ROUNDS: usize = 2;
@@ -371,8 +372,10 @@ pub enum Build {
 
 #[derive(Clone, Debug)]
 pub struct Entry {
+    pub entity: Entity,
+    pub evidence: Evidence,
+    pub projection: Projection<Ext>,
     pub shape: Shape,
-    pub ext: Ext,
     pub round: usize,
     pub build: Build,
 }
@@ -382,6 +385,7 @@ pub struct Entry {
 #[derive(Clone, Debug)]
 pub struct Bank {
     pub rel: Name,
+    pub context: Plane,
     pub entries: Vec<Entry>,
     pub classes: Vec<Vec<usize>>,
     /// Gluings evaluated.
@@ -392,9 +396,14 @@ impl Bank {
     /// Grows the bank of a relation with extent `r` for `ROUNDS` rounds.
     /// With `prune`, only representatives grow; without, every entry does.
     pub fn grow(rel: Name, r: Ext, prune: bool) -> Bank {
+        Self::grow_in(rel, r, Plane::new(), prune)
+    }
+
+    pub fn grow_in(rel: Name, r: Ext, context: Plane, prune: bool) -> Bank {
         let n = r.n();
         let mut bank = Bank {
             rel,
+            context,
             entries: Vec::new(),
             classes: Vec::new(),
             glued: 0,
@@ -420,7 +429,11 @@ impl Bank {
                         continue;
                     }
                     for m in 0..MERGES.len() {
-                        let exts = glue_ext(&bank.entries[i].ext, &bank.entries[j].ext, m);
+                        let exts = glue_ext(
+                            &bank.entries[i].projection.extent,
+                            &bank.entries[j].projection.extent,
+                            m,
+                        );
                         for (ext, head) in exts.into_iter().zip(heads(m)) {
                             bank.glued += 1;
                             let shape = Shape::glue(
@@ -468,10 +481,65 @@ impl Bank {
                 self.classes.len() - 1
             }
         };
+        let shape_text = shape.to_string();
+        let claim = ClaimId::derived("bank-projection", [self.rel.as_str(), shape_text.as_str()]);
+        let (operation, premises, intension) = match build {
+            Build::Rel => (
+                format!("bank-source:{}", self.rel),
+                Vec::new(),
+                Intension::Primitive {
+                    source: format!("relation:{}", self.rel),
+                },
+            ),
+            Build::Id => (
+                "bank-identity".to_string(),
+                Vec::new(),
+                Intension::Primitive {
+                    source: format!("identity:n={}", ext.n()),
+                },
+            ),
+            Build::Glue { a, b, m, head } => {
+                let left = &self.entries[a];
+                let right = &self.entries[b];
+                let ends = ["a.in", "a.out", "b.in", "b.out"];
+                let wiring = MERGES[m as usize]
+                    .iter()
+                    .map(|&(x, y)| (ends[x].to_string(), ends[y].to_string()))
+                    .collect();
+                let interface = vec![
+                    ends[head.0 as usize].to_string(),
+                    ends[head.1 as usize].to_string(),
+                ];
+                (
+                    format!("bank-glue:m={m}:head={},{}", head.0, head.1),
+                    vec![
+                        left.projection.claim.clone(),
+                        right.projection.claim.clone(),
+                    ],
+                    Intension::Glue {
+                        operation: "bank-glue".into(),
+                        parts: vec![left.entity.id.clone(), right.entity.id.clone()],
+                        wiring,
+                        interface,
+                    },
+                )
+            }
+        };
+        let evidence = Evidence::new(
+            claim,
+            operation,
+            premises,
+            Strength::Strict,
+            self.context.clone(),
+        );
+        let entity = Entity::new(intension, vec![evidence.id.clone()]);
+        let projection = Projection::new(&entity, self.context.clone(), ext, &evidence);
         self.classes[class].push(self.entries.len());
         self.entries.push(Entry {
+            entity,
+            evidence,
+            projection,
             shape,
-            ext,
             round,
             build,
         });
@@ -484,7 +552,7 @@ impl Bank {
     }
 
     pub fn ext(&self, class: usize) -> &Ext {
-        &self.entries[self.classes[class][0]].ext
+        &self.entries[self.classes[class][0]].projection.extent
     }
 
     /// Covering inclusions between classes, with whether logic gives them.

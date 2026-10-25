@@ -34,7 +34,7 @@ fn closures(src: &str) -> String {
                 .iter()
                 .map(|d| {
                     let ps: Vec<&str> = out.db.premise_keys(d).collect();
-                    format!("{} {} {} {:?}", d.source, d.strict, d.rank, ps)
+                    format!("{} {} {} {:?}", d.source(), d.strict(), d.rank, ps)
                 })
                 .collect();
             ds.sort();
@@ -217,7 +217,7 @@ fn lazy_matches_whole(lazy: &str, whole: &str, what: &str) -> (usize, usize) {
                 .iter()
                 .map(|d| {
                     let ps: Vec<&str> = db.premise_keys(d).collect();
-                    format!("{} {} {} {:?}", d.source, d.strict, d.rank, ps)
+                    format!("{} {} {} {:?}", d.source(), d.strict(), d.rank, ps)
                 })
                 .collect();
             v.sort();
