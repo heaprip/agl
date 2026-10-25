@@ -13,6 +13,7 @@ pub mod concept;
 pub mod develop;
 pub mod eval;
 pub mod extent;
+pub mod free;
 pub mod journal;
 pub mod label;
 pub mod learn;
