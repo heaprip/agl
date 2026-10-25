@@ -75,6 +75,8 @@ AGL_SIM_SEEDS=20000 cargo test --release --test nesting  # `nesting` проти�
 python3 tools/onto_stats.py probe wordnet 2025 lazy > target/scratch/wn.agl && cargo run --release -- target/scratch/wn.agl  # WordNet в ядре (H61, 2б)
 python3 tools/clean_world.py 3 > cases/clean/all3.agl  # чистый мир: все 512 отношений на 3 элементах (H72)
 cargo run --release -- --explore cases/clean/all3.agl  # банк выражений и роды (~2 с); -v — классы каждого отношения
+python3 tools/hidden_world.py weights 14 1 2/3 > cases/clean/weights.agl  # скрытый вес (H73); shuffled — контроль
+cargo run --release -- --scale cases/clean/weights.agl  # порядок скрытой величины через третьих, сорит, три плиты
 cargo run --release --example analogy      # прототип H51: недостающая реакция по аналогии
 cargo run --release --example bombelli     # веха Джанибекова, шаг 0: аномалия → плоскость пар (AGL_TRACE=1 — ход)
 cargo run --release --example cauchy       # H57 шаг 2: присоединение корня, выбор X² = s по аномалии

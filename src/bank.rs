@@ -87,7 +87,7 @@ impl Ext {
         self.bits[k / 64] >> (k % 64) & 1 == 1
     }
 
-    fn set(&mut self, i: usize, j: usize) {
+    pub fn set(&mut self, i: usize, j: usize) {
         let k = i * self.n + j;
         self.bits[k / 64] |= 1 << (k % 64);
     }

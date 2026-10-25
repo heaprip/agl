@@ -14,6 +14,7 @@ fn main() -> ExitCode {
         .and_then(|i| args.get(i + 1).cloned());
     let implications = args.iter().any(|a| a == "--implications");
     let explore = args.iter().any(|a| a == "--explore");
+    let hidden = args.iter().any(|a| a == "--scale");
     let where_ = args
         .iter()
         .position(|a| a == "--where")
@@ -27,7 +28,7 @@ fn main() -> ExitCode {
         .collect();
     if files.is_empty() {
         eprintln!(
-            "usage: agl [-v] [--diagnose] [--propose] [--concepts] [--implications] [--explore] [--learn REL] [--where ATOM] FILE.agl..."
+            "usage: agl [-v] [--diagnose] [--propose] [--concepts] [--implications] [--explore] [--scale] [--learn REL] [--where ATOM] FILE.agl..."
         );
         return ExitCode::from(2);
     }
@@ -171,6 +172,13 @@ fn main() -> ExitCode {
                 print!("{}", agl::bank::render(&banks, &kinds, verbose));
             } else {
                 println!("explore: fix the errors above first");
+            }
+        }
+        if hidden {
+            let (rels, domain, why) = agl::bank::relations(&prog);
+            match why {
+                Some(why) => println!("scale: {why}"),
+                None => print!("{}", agl::scale::render(&rels, &domain)),
             }
         }
         if prog.clean.is_some() && (learn.is_some() || propose) {
