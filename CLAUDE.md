@@ -65,6 +65,7 @@ uv run --python 3.11 --with memote==0.17.0 --with cobra==0.32.1 tools/memote_ref
 python3 tools/trunk.py build               # ствол и классы ChEBI из data/raw (офлайн); fetch, fetch-classes — из сети
 python3 tools/onto_stats.py stats         # форма ChEBI и WordNet (H61): роды, пути, интервалы, изменения между выпусками
 python3 tools/onto_stats.py replay        # H61: правки между выпусками на трёх формах номера (~15 с)
+python3 tools/onto_stats.py releases chebi 244 255 > target/scratch/chebi2.agl && cargo run --release -- target/scratch/chebi2.agl  # H61 шаг 7: ChEBI целиком, два выпуска — две плоскости (~5 с, 1,6 ГБ)
 python3 tools/llm_geometry.py fetch       # матрицы выхода Qwen2.5 0.5B–72B в data/cache/llm (~6 ГБ, вне git)
 uv run --python 3.12 --with numpy==2.2.6 tools/llm_geometry.py run [noise]  # H62: векторы понятий против WordNet (~5 мин)
 cargo run --release --example labels -- target/scratch/chebi255.tsv  # H61: метки вложенности; рёбра — tools/onto_stats.py edges chebi 255

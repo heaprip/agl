@@ -12,6 +12,10 @@ should be designed (docs/hypotheses.md, H61).
                                 offline: print an .agl program with every is_a edge as a
                                 fact, a nesting over them and 20 + 10 questions drawn from
                                 seed 1 (H61, step 2b)
+    tools/onto_stats.py releases FAMILY A B
+                                offline: print an .agl program with two releases as two
+                                planes, a lazy nesting and 80 questions from seed 1
+                                (H61, step 7)
     tools/onto_stats.py replay  offline: lay the edits between releases onto the numbers
                                 of the earlier one, for three forms of a number (H61)
 
@@ -529,6 +533,54 @@ def replay():
         replay_family(family, list(releases))
 
 
+def releases(family, a, b):
+    import random
+    verified()
+    pa = {t: ps for t, (ps, _) in load(family, a).items()}
+    pb = {t: ps for t, (ps, _) in load(family, b).items()}
+    aa, ab = ancestors(pa), ancestors(pb)
+    name = lambda s: "s" + s.replace("-", "_").replace(":", "_")
+    ea = {(t, p) for t, ps in pa.items() for p in ps}
+    eb = {(t, p) for t, ps in pb.items() for p in ps}
+    ra, rb = f"r{a}", f"r{b}"
+    # Pairs (species, ancestor) by where nesting holds, from seed 1.
+    rng = random.Random(1)
+    pairs = {"both": [], a: [], b: [], "none": []}
+    nodes = sorted(set(pa) | set(pb))
+    seen = set()
+    while any(len(v) < 10 for v in pairs.values()):
+        x, y = rng.choice(nodes), rng.choice(nodes)
+        if rng.random() < 0.5:
+            # Draw from one release's ancestors, or nesting would be rare.
+            src = aa if rng.random() < 0.5 else ab
+            if not src.get(x):
+                continue
+            y = rng.choice(sorted(src[x]))
+        if x == y or (x, y) in seen:
+            continue
+        seen.add((x, y))
+        ia, ib = y in aa.get(x, ()), y in ab.get(x, ())
+        kind = "both" if ia and ib else a if ia else b if ib else "none"
+        if len(pairs[kind]) < 10:
+            pairs[kind].append((x, y))
+    asked = [xy for k in ("both", a, b, "none") for xy in pairs[k]]
+    out = ["status source > question\n",
+           f"axis release\nvalue release {family}\n",
+           f"value release {ra} in {family}\nvalue release {rb} in {family}\n",
+           f"plane {ra} = release:{ra}\nplane {rb} = release:{rb}\n",
+           "nesting k: kind_of(a, b) by is_a(species, genus) lazy\n",
+           "rule found strict @: found(x: ?x, y: ?y) <- probe(x: ?x, y: ?y), kind_of(a: ?x, b: ?y)\n"]
+    for i, (t, p) in enumerate(sorted(ea | eb)):
+        where = f"release:{family}" if (t, p) in ea and (t, p) in eb else ra if (t, p) in ea else rb
+        out.append(f"fact e{i}: is_a(species: {name(t)}, genus: {name(p)}) @ {where} [source]\n")
+    out += [f"fact p{i}: probe(x: {name(x)}, y: {name(y)}) @ [question]\n" for i, (x, y) in enumerate(asked)]
+    for x, y in asked:
+        for plane, anc in ((ra, aa), (rb, ab)):
+            want = "yes" if y in anc.get(x, ()) else "unknown"
+            out.append(f"query found(x: {name(x)}, y: {name(y)}) @ {plane} expect {want}\n")
+    sys.stdout.write("".join(out))
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd == "fetch":
@@ -539,6 +591,8 @@ if __name__ == "__main__":
         edges(sys.argv[2], sys.argv[3])
     elif cmd == "probe":
         probe(sys.argv[2], sys.argv[3], sys.argv[4])
+    elif cmd == "releases":
+        releases(sys.argv[2], sys.argv[3], sys.argv[4])
     elif cmd == "replay":
         replay()
     else:

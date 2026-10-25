@@ -272,3 +272,21 @@ fn lazy_nesting_equals_whole_where_only_rules_read_it() {
     eprintln!("lazy: {made} atoms of n made against {all} whole, {runs} programs");
     assert!(made < all, "laziness never saved an atom");
 }
+
+/// The closure limit counts derived atoms, not facts: a whole ontology is
+/// more facts than the limit (H61, step 7), runaway derivation still stops.
+#[test]
+fn closure_limit_counts_derived_atoms_only() {
+    let facts: String = (0..100_001)
+        .map(|i| format!("fact e{i}: e(x: a{i}, y: b{i}) @\n"))
+        .chain(["rule q strict @: q(x: ?x) <- e(x: ?x, y: b0)\n".to_string()])
+        .collect();
+    let out = evaluate(&agl::parse(&facts).unwrap(), &Plane::new());
+    assert!(!out.truncated, "facts alone hit the limit");
+    let pairs: String = (0..400)
+        .map(|i| format!("fact v{i}: v(x: c{i}) @\n"))
+        .chain(["rule pq strict @: p(a: ?x, b: ?y) <- v(x: ?x), v(x: ?y)\n".to_string()])
+        .collect();
+    let out = evaluate(&agl::parse(&pairs).unwrap(), &Plane::new());
+    assert!(out.truncated, "160 000 derived atoms did not hit the limit");
+}

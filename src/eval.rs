@@ -19,7 +19,8 @@ use crate::units::Dim;
 /// Prefix of a premise that records an aggregate which found nothing.
 pub const ABSENT: &str = "∅ ";
 
-/// Upper bound on derived atoms, against runaway arithmetic recursion.
+/// Upper bound on derived atoms, against runaway arithmetic recursion; the
+/// facts of a context do not count (a whole ontology is many facts).
 const MAX_ATOMS: usize = 100_000;
 
 #[derive(Clone, Debug)]
@@ -292,7 +293,7 @@ fn evaluate_mode(prog: &Program, vis: &Visibility, ctx: &Plane, naive: bool) -> 
             // Silent truncation turned "not derived" into "unknown" (found by
             // the ablation of H57, step 4): say it where the report shows it.
             out.errors.insert(format!(
-                "closure stopped at {MAX_ATOMS} atoms in context {}: what is not derived may be missing",
+                "closure stopped at {MAX_ATOMS} derived atoms in context {}: what is not derived may be missing",
                 if ctx.is_empty() { "{}".to_string() } else { format!("{ctx:?}") }
             ));
         }
@@ -724,6 +725,7 @@ fn closure(
         let (id, _) = db.insert(&key, || f.atom.clone());
         db.entries[id as usize].1.push(d);
     }
+    let limit = db.len() + MAX_ATOMS;
     let mut levels: Vec<usize> = rules
         .iter()
         .map(|r| strata.get(r.head.rel.as_str()).copied().unwrap_or(0))
@@ -770,7 +772,7 @@ fn closure(
             .collect();
         let here: Vec<&Nesting> = nests.iter().copied().filter(|n| at(&n.rel)).collect();
         loop {
-            if fixpoint(&mut db, &layer, blocked, errors, naive, &lazy) {
+            if fixpoint(&mut db, &layer, blocked, errors, naive, &lazy, limit) {
                 settle(&mut db, top);
                 return (db, true);
             }
@@ -778,7 +780,7 @@ fn closure(
             for n in &here {
                 added |= nest(&mut db, n);
             }
-            if db.len() > MAX_ATOMS {
+            if db.len() > limit {
                 settle(&mut db, top);
                 return (db, true);
             }
@@ -1289,6 +1291,7 @@ fn fixpoint(
     errors: &mut BTreeSet<String>,
     naive: bool,
     lazy: &BTreeMap<String, Lazy>,
+    limit: usize,
 ) -> bool {
     // Atoms new in the last round; None in the first round: all are new.
     let mut fresh: Option<BTreeSet<Id>> = None;
@@ -1374,7 +1377,7 @@ fn fixpoint(
                 },
             );
         }
-        if db.len() > MAX_ATOMS {
+        if db.len() > limit {
             return true;
         }
         // A new derivation of an old atom gives no new match.
