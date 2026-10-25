@@ -12,6 +12,8 @@ should be designed (docs/hypotheses.md, H61).
                                 offline: print an .agl program with every is_a edge as a
                                 fact, a nesting over them and 20 + 10 questions drawn from
                                 seed 1 (H61, step 2b)
+    tools/onto_stats.py replay  offline: lay the edits between releases onto the numbers
+                                of the earlier one, for three forms of a number (H61)
 
 What is measured, as distributions (percentiles), not means:
   - parents per term (is_a), and roles per term (has_role: a second axis);
@@ -370,6 +372,163 @@ def probe(family, rel, kind):
     sys.stdout.write("".join(out))
 
 
+def sticky_tree(parents, old_tree):
+    """Main genus of each term: the one it had, while it is still a genus;
+    otherwise the smallest id. Terms without a genus are roots (None)."""
+    tree = {}
+    for t in sorted(parents):
+        ps = parents[t]
+        keep = old_tree.get(t)
+        tree[t] = keep if keep in ps else (min(ps) if ps else None)
+    return tree
+
+
+def chains(tree):
+    """Chain of main genera from the root down to each term: the path label."""
+    memo = {}
+
+    def go(t):
+        if t not in memo:
+            memo[t] = (t,)  # cycle guard
+            p = tree[t]
+            memo[t] = (go(p) if p is not None else ()) + (t,)
+        return memo[t]
+
+    for t in sorted(tree):
+        go(t)
+    return memo
+
+
+def postorder(tree):
+    """Post-order number of each term in the tree, children by id."""
+    kids = {}
+    for t in sorted(tree):
+        if tree[t] is not None:
+            kids.setdefault(tree[t], []).append(t)
+    post, n = {}, 0
+    for root in sorted(t for t in tree if tree[t] is None):
+        stack = [(root, False)]
+        while stack:
+            t, done = stack.pop()
+            if done:
+                post[t] = n
+                n += 1
+            else:
+                stack.append((t, True))
+                for c in reversed(kids.get(t, [])):
+                    stack.append((c, False))
+    return post
+
+
+def regions(parents, rank):
+    """Merged intervals of ranks of each term and everything below it, for a
+    given numbering (rank: term -> 0..n-1 without holes)."""
+    children = {}
+    for t in sorted(parents):
+        for p in parents[t]:
+            children.setdefault(p, []).append(t)
+    memo = {}
+    sys.setrecursionlimit(100000)
+
+    def go(t):
+        if t in memo:
+            return memo[t]
+        memo[t] = [(rank[t], rank[t])]  # cycle guard
+        iv = [(rank[t], rank[t])]
+        for c in children.get(t, []):
+            iv += go(c)
+        iv.sort()
+        merged = []
+        for a, b in iv:
+            if merged and a <= merged[-1][1] + 1:
+                merged[-1] = (merged[-1][0], max(merged[-1][1], b))
+            else:
+                merged.append((a, b))
+        memo[t] = merged
+        return merged
+
+    for t in sorted(rank, key=rank.get):
+        go(t)
+    return memo
+
+
+def frozen_keys(keys, parents, tree):
+    """Keys of form B: terms that had a key keep it; a new term goes into the
+    gap just before its main genus, new siblings in id order. A key is a
+    tuple compared lexicographically, so there is always room."""
+    keys = dict(keys)
+    top = max((k[0] for k in keys.values()), default=0) + 1
+    new = sorted(t for t in parents if t not in keys)
+    slot = {}
+
+    def key(t):
+        if t not in keys:
+            keys[t] = ()  # cycle guard
+            p = tree[t]
+            base = key(p) if p is not None and key(p) != () else (top, 1)
+            i = slot.get(base, 0)
+            slot[base] = i + 1
+            keys[t] = base[:-1] + (base[-1] - 1, i, 1)
+        return keys[t]
+
+    for t in new:
+        key(t)
+    return {t: keys[t] for t in parents}
+
+
+def replay_family(family, rels):
+    """Lay the edits of each next release onto the numbers of the previous one."""
+    first = {t: ps for t, (ps, _) in load(family, rels[0]).items()}
+    tree = sticky_tree(first, {})
+    post = postorder(tree)
+    keys = {t: (post[t], 1) for t in first}
+    pa, aa = first, ancestors(first)
+    print(f"== {family} {rels[0]}: {len(first)} terms")
+    for rel in rels[1:]:
+        pb = {t: ps for t, (ps, _) in load(family, rel).items()}
+        ab = ancestors(pb)
+        both = sorted(set(pa) & set(pb))
+        n = len(both)
+        print(f"== {family} → {rel}: {n} terms in both, {len(set(pb) - set(pa))} new")
+        # A: path label with sticky main genus.
+        tb = sticky_tree(pb, tree)
+        ca, cb = chains(tree), chains(tb)
+        own = sum(ca[t] != cb[t] and tree[t] != tb[t] for t in both)
+        inherited = sum(ca[t] != cb[t] and tree[t] == tb[t] for t in both)
+        print(f"  A path: number changed {own + inherited} ({100 * (own + inherited) / n:.2f}%): "
+              f"own main genus {own}, an ancestor's {inherited}")
+        # B: frozen numbers, intervals recomputed.
+        keys = frozen_keys({t: k for t, k in keys.items() if t in pb}, pb, tb)
+        rank = {t: i for i, t in enumerate(sorted(pb, key=lambda t: (keys[t], t)))}
+        frozen = regions(pb, rank)
+        fresh_post = postorder(tb)
+        fresh = regions(pb, fresh_post)
+        closure = sum(len(a) for a in ab.values())
+        for name, reg in (("frozen", frozen), ("fresh", fresh)):
+            covered = sum(b - a + 1 for iv in reg.values() for a, b in iv) - len(reg)
+            assert covered == closure, (name, covered, closure)
+        nf = sum(len(v) for v in frozen.values())
+        nr = sum(len(v) for v in fresh.values())
+        print(f"  B frozen: numbers changed 0; intervals {nf} vs {nr} when renumbered "
+              f"({nf / nr:.2f}x); per term {pct([len(v) for v in frozen.values()])}")
+        print(f"    renumbered: intervals per term {pct([len(v) for v in fresh.values()])}")
+        depth = [len(k) // 2 for k in keys.values()]
+        print(f"    key length (gap levels) {pct(depth)}")
+        # C: bounds only, the axes are not in the data.
+        low = sum(pa[t] != pb[t] for t in both)
+        high = sum(aa[t] != ab[t] for t in both)
+        print(f"  C axes (bounds): own coordinates {low} ({100 * low / n:.2f}%), "
+              f"ancestor set {high} ({100 * high / n:.2f}%)")
+        print(f"  closure {closure} pairs; checked by both labellings")
+        pa, aa, tree = pb, ab, tb
+
+
+def replay():
+    verified()
+    for family, releases in SOURCES.items():
+        replay_family(family, list(releases))
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd == "fetch":
@@ -380,5 +539,7 @@ if __name__ == "__main__":
         edges(sys.argv[2], sys.argv[3])
     elif cmd == "probe":
         probe(sys.argv[2], sys.argv[3], sys.argv[4])
+    elif cmd == "replay":
+        replay()
     else:
         print(__doc__)

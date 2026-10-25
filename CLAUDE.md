@@ -10,7 +10,7 @@ Relation-first формальная система представления с
 
 1. [docs/roadmap.md](docs/roadmap.md) — где мы и что дальше (раздел «Следующие шаги»).
 2. [docs/decisions.md](docs/decisions.md) — решения автора (1–22). Их не пересматривать.
-3. [docs/hypotheses.md](docs/hypotheses.md) — предложения помощника (H0–H65), **не приняты**.
+3. [docs/hypotheses.md](docs/hypotheses.md) — предложения помощника (H0–H66), **не приняты**.
 4. [docs/open-questions.md](docs/open-questions.md) — что решает только автор.
 5. [docs/impl/poc.md](docs/impl/poc.md) — нотация `.agl`, семантика ядра, детерминизм, рефлексия, обучение.
 
@@ -64,6 +64,7 @@ python3 tools/llm_dsl.py run 3              # LLM пишет .agl; вызовы 
 uv run --python 3.11 --with memote==0.17.0 --with cobra==0.32.1 tools/memote_ref.py build  # казусы memote
 python3 tools/trunk.py build               # ствол и классы ChEBI из data/raw (офлайн); fetch, fetch-classes — из сети
 python3 tools/onto_stats.py stats         # форма ChEBI и WordNet (H61): роды, пути, интервалы, изменения между выпусками
+python3 tools/onto_stats.py replay        # H61: правки между выпусками на трёх формах номера (~15 с)
 python3 tools/llm_geometry.py fetch       # матрицы выхода Qwen2.5 0.5B–72B в data/cache/llm (~6 ГБ, вне git)
 uv run --python 3.12 --with numpy==2.2.6 tools/llm_geometry.py run [noise]  # H62: векторы понятий против WordNet (~5 мин)
 cargo run --release --example labels -- target/scratch/chebi255.tsv  # H61: метки вложенности; рёбра — tools/onto_stats.py edges chebi 255
