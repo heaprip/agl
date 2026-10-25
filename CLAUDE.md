@@ -77,6 +77,7 @@ python3 tools/clean_world.py 3 > cases/clean/all3.agl  # чистый мир: в
 cargo run --release -- --explore cases/clean/all3.agl  # банк выражений и роды (~2 с); -v — классы каждого отношения
 python3 tools/hidden_world.py weights 14 1 2/3 > cases/clean/weights.agl  # скрытый вес (H73); shuffled — контроль
 cargo run --release -- --scale cases/clean/weights.agl  # порядок скрытой величины через третьих, сорит, три плиты
+mkdir -p target/scratch/hw && for s in 1 2 3 4 5; do for f in 1/3 1/2 2/3 1; do python3 tools/hidden_world.py weights 14 $s $f > target/scratch/hw/w_s${s}_${f/\//_}.agl; done; python3 tools/hidden_world.py shuffled 14 $s 2/3 > target/scratch/hw/x_s$s.agl; done; cargo run --release --example symptoms -- target/scratch/hw/*.agl  # таблица симптомов для автора
 cargo run --release --example analogy      # прототип H51: недостающая реакция по аналогии
 cargo run --release --example bombelli     # веха Джанибекова, шаг 0: аномалия → плоскость пар (AGL_TRACE=1 — ход)
 cargo run --release --example cauchy       # H57 шаг 2: присоединение корня, выбор X² = s по аномалии

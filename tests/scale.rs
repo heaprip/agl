@@ -140,15 +140,15 @@ fn inversions(w: &World, h: &[usize]) -> usize {
         .count()
 }
 
-/// Fechner's unit (`docs/impl/scale.md` §5): criteria 1, 2 (full world) and
-/// 4 hold; the plates of the world with 2/3 seen are printed — they miss
-/// and do not meet (§6).
+/// Fechner's unit on the completed comparison (`docs/impl/scale.md` §5, §7):
+/// criteria 1, 2 (full world) and 4 asserted; the plates of the world with
+/// 2/3 seen are printed.
 #[test]
 fn fechner_criteria() {
-    use agl::scale::{by_steps, fechner, fechner_plates, observed, steps_flat};
+    use agl::scale::{by_steps, fechner_plates, measure, observed, steps_flat};
     let full = world("weights_full");
     let (p, i) = parts(&full);
-    let h = fechner(p).unwrap();
+    let h = measure(p, i).unwrap();
     let obs = observed(p, i);
     let decided: Vec<bool> = obs
         .iter()
@@ -177,7 +177,7 @@ fn fechner_criteria() {
     let control = world("shuffled");
     let (p, i) = parts(&control);
     let pl = fechner_plates(p, i);
-    let bad = fechner(p).is_none()
+    let bad = measure(p, i).is_none()
         || !steps_flat(&pl, control.domain.len())
         || pl.iter().any(|x| x.missed * 20 > x.decided);
     assert!(bad, "criterion 4");

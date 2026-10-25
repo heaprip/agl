@@ -409,6 +409,23 @@ pub fn fechner(p: &Ext) -> Option<Vec<usize>> {
     None
 }
 
+/// "Clearly more" completed by the order through third things: what is
+/// above something clearly more than y is clearly more than y,
+/// P′ = (T⁺ ∪ Id);P;(T⁺ ∪ Id). `None` when the order does not agree.
+pub fn complete(p: &Ext, i: &Ext) -> Option<Ext> {
+    if !scale(p, i).consistent {
+        return None;
+    }
+    let mut ge = evidence(p, i);
+    (0..p.n()).for_each(|x| ge.set(x, x));
+    Some(compose(&compose(&ge, p), &ge))
+}
+
+/// Fechner's measure on the completed comparison.
+pub fn measure(p: &Ext, i: &Ext) -> Option<Vec<usize>> {
+    fechner(&complete(p, i)?)
+}
+
 /// Verdict of x against y by the measure: a difference of two steps or more
 /// is "more" (1) or "less" (−1), none is "alike" (0), one step is not
 /// decided — the width of the unit.
@@ -427,24 +444,33 @@ pub struct Steps {
     pub h: Option<Vec<usize>>,
     pub decided: usize,
     pub missed: usize,
+    /// Misses where one step said "alike".
+    pub missed_alike: usize,
     pub checked: usize,
 }
 
-/// Three plates of Fechner's measure, split as in `plates`.
+/// Three plates of Fechner's measure on the completed comparison, split as
+/// in `plates`.
 pub fn fechner_plates(p: &Ext, i: &Ext) -> [Steps; 3] {
     let n = p.n();
     let obs = observed(p, i);
     std::array::from_fn(|f| {
-        let mut pf = Ext::empty(n);
+        let (mut pf, mut if_) = (Ext::empty(n), Ext::empty(n));
         for (k, &(x, y, v)) in obs.iter().enumerate() {
+            if k % 3 == f {
+                continue;
+            }
             match v {
-                1 if k % 3 != f => pf.set(x, y),
-                -1 if k % 3 != f => pf.set(y, x),
-                _ => {}
+                1 => pf.set(x, y),
+                -1 => pf.set(y, x),
+                _ => {
+                    if_.set(x, y);
+                    if_.set(y, x);
+                }
             }
         }
-        let h = fechner(&pf);
-        let (mut decided, mut missed, mut checked) = (0, 0, 0);
+        let h = measure(&pf, &if_);
+        let (mut decided, mut missed, mut missed_alike, mut checked) = (0, 0, 0, 0);
         for (k, &(x, y, v)) in obs.iter().enumerate() {
             if k % 3 == f {
                 checked += 1;
@@ -452,6 +478,7 @@ pub fn fechner_plates(p: &Ext, i: &Ext) -> [Steps; 3] {
                     decided += 1;
                     if g != v {
                         missed += 1;
+                        missed_alike += usize::from(g == 0);
                     }
                 }
             }
@@ -460,6 +487,7 @@ pub fn fechner_plates(p: &Ext, i: &Ext) -> [Steps; 3] {
             h,
             decided,
             missed,
+            missed_alike,
             checked,
         }
     })
@@ -484,8 +512,8 @@ pub fn steps_flat(plates: &[Steps; 3], n: usize) -> bool {
 pub fn render_steps(p: &Ext, i: &Ext, domain: &[Name]) -> String {
     let n = domain.len();
     let mut s = String::new();
-    let Some(h) = fechner(p) else {
-        return "  measure: the comparison has a cycle, none\n".to_string();
+    let Some(h) = measure(p, i) else {
+        return "  measure: the order does not agree or has a cycle, none\n".to_string();
     };
     let top = h.iter().copied().max().unwrap_or(0);
     let levels: Vec<String> = (0..=top)
