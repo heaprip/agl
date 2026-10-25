@@ -73,6 +73,7 @@ uv run --python 3.12 --with numpy==2.2.6 tools/llm_geometry.py run [noise]  # H6
 cargo run --release --example labels -- target/scratch/chebi255.tsv  # H61: метки вложенности; рёбра — tools/onto_stats.py edges chebi 255
 AGL_SIM_SEEDS=20000 cargo test --release --test nesting  # `nesting` против двух правил: отчёты побайтно
 python3 tools/onto_stats.py probe wordnet 2025 lazy > target/scratch/wn.agl && cargo run --release -- target/scratch/wn.agl  # WordNet в ядре (H61, 2б)
+cargo test --release --test atlas      # H74: атлас таблиц n ≤ 3, микротеории, поиск моделей до n = 6, приёмка по звёздам (~2 с)
 python3 tools/clean_world.py 3 > cases/clean/all3.agl  # чистый мир: все 512 отношений на 3 элементах (H72)
 cargo run --release -- --explore cases/clean/all3.agl  # банк выражений и роды (~2 с); -v — классы каждого отношения
 python3 tools/hidden_world.py weights 14 1 2/3 > cases/clean/weights.agl  # скрытый вес (H73); shuffled — контроль
