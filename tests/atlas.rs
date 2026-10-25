@@ -358,3 +358,90 @@ fn the_s_boundary_of_the_widest_branch_gives_the_star() {
         assert_eq!(c, [1, 1, 1, 2, 1, 2]);
     }
 }
+
+// Section 8: products and factors.
+
+use agl::atlas::{factorizations, splits};
+
+fn s_entities(max: u8) -> Vec<Table> {
+    let yes = [law(LEFT), law(RIGHT), law(ASSOC)];
+    (1..=max).flat_map(|n| models_sat(n, &yes, &[]).0).collect()
+}
+
+#[test]
+fn a_product_keeps_exactly_the_shared_laws() {
+    let a = atlas();
+    let two: Vec<&Table> = a.entities.iter().filter(|t| t.n == 2).collect();
+    for x in &two {
+        for y in &two {
+            let p = x.times(y);
+            for l in &a.laws {
+                let both = l.holds(x) == Some(true) && l.holds(y) == Some(true);
+                assert_eq!(l.holds(&p) == Some(true), both, "{x} × {y}: {l}");
+            }
+        }
+    }
+}
+
+#[test]
+fn entities_factor_uniquely_into_primes() {
+    let ents = s_entities(8);
+    assert_eq!(ents.len(), 14);
+    let sp = splits(&ents);
+    let mut primes = Vec::new();
+    let mut composite = Vec::new();
+    for (i, e) in ents.iter().enumerate().skip(1) {
+        let f = factorizations(&sp, i);
+        assert_eq!(f.len(), 1, "#{i}");
+        if sp[i].is_empty() {
+            primes.push(e.n);
+        } else {
+            let mut sizes: Vec<u8> = f[0].iter().map(|&k| ents[k].n).collect();
+            sizes.sort();
+            composite.push(sizes);
+        }
+    }
+    assert_eq!(primes, [2, 3, 4, 5, 6, 7, 8, 8, 8]);
+    composite.sort();
+    assert_eq!(
+        composite,
+        [vec![2, 2], vec![2, 2, 2], vec![2, 3], vec![2, 4]]
+    );
+}
+
+/// The star Q8: a prime of order 8, not commutative, with one element other
+/// than the unit equal to its own inverse; D4, the other such prime, has five.
+#[test]
+fn q8_is_a_prime_of_order_eight() {
+    let ents = s_entities(8);
+    let sp = splits(&ents);
+    let mut involutions: Vec<usize> = Vec::new();
+    for (i, t) in ents.iter().enumerate() {
+        if t.n != 8 || !sp[i].is_empty() || star_commutative(t) {
+            continue;
+        }
+        let e = (0..8).find(|&e| (0..8).all(|x| op(t, e, x) == x)).unwrap();
+        involutions.push((0..8).filter(|&x| x != e && op(t, x, x) == e).count());
+    }
+    involutions.sort();
+    assert_eq!(involutions, [1, 5]);
+}
+
+#[test]
+fn factoring_does_not_depend_on_order() {
+    let ents = s_entities(8);
+    let mut rev = ents.clone();
+    rev.reverse();
+    let (a, b) = (splits(&ents), splits(&rev));
+    let k = ents.len();
+    for i in 0..k {
+        let mut x: Vec<(u8, u8)> = a[i].iter().map(|&(p, q)| (ents[p].n, ents[q].n)).collect();
+        let mut y: Vec<(u8, u8)> = b[k - 1 - i]
+            .iter()
+            .map(|&(p, q)| (rev[p].n.min(rev[q].n), rev[p].n.max(rev[q].n)))
+            .collect();
+        x.sort();
+        y.sort();
+        assert_eq!(x, y, "#{i}");
+    }
+}

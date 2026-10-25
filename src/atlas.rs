@@ -73,6 +73,67 @@ impl Table {
     }
 }
 
+impl Table {
+    /// The table on pairs: (a, b)·(c, d) = (a·c, b·d), the pair (a, b)
+    /// numbered a·m + b for `o` of m elements.
+    pub fn times(&self, o: &Table) -> Table {
+        let (n, m) = (self.n as usize, o.n as usize);
+        let k = n * m;
+        let mut t = Table {
+            n: k as u8,
+            cells: vec![None; k * k],
+        };
+        for x in 0..k {
+            for y in 0..k {
+                let a = self.get((x / m) as u8, (y / m) as u8);
+                let b = o.get((x % m) as u8, (y % m) as u8);
+                t.cells[x * k + y] = a.zip(b).map(|(a, b)| a * m as u8 + b);
+            }
+        }
+        t
+    }
+}
+
+/// For each of `ents` (canonical tables), the ways it is the product of two
+/// of them, each of at least two elements: pairs of indices, the first not
+/// above the second. None: the entity does not split.
+pub fn splits(ents: &[Table]) -> Vec<Vec<(usize, usize)>> {
+    let mut out = vec![Vec::new(); ents.len()];
+    let max = ents.iter().map(|t| t.n as usize).max().unwrap_or(0);
+    for i in 0..ents.len() {
+        for j in i..ents.len() {
+            let (a, b) = (ents[i].n as usize, ents[j].n as usize);
+            if a < 2 || b < 2 || a * b > max {
+                continue;
+            }
+            let p = ents[i].times(&ents[j]).canonical();
+            if let Some(k) = ents.iter().position(|e| *e == p) {
+                out[k].push((i, j));
+            }
+        }
+    }
+    out
+}
+
+/// Every way to write entity `i` as a product of entities that do not
+/// split, as sorted lists of indices, each way once.
+pub fn factorizations(splits: &[Vec<(usize, usize)>], i: usize) -> Vec<Vec<usize>> {
+    if splits[i].is_empty() {
+        return vec![vec![i]];
+    }
+    let mut out = BTreeSet::new();
+    for &(a, b) in &splits[i] {
+        for fa in factorizations(splits, a) {
+            for fb in factorizations(splits, b) {
+                let mut f: Vec<usize> = fa.iter().chain(&fb).copied().collect();
+                f.sort();
+                out.insert(f);
+            }
+        }
+    }
+    out.into_iter().collect()
+}
+
 fn next_perm(p: &mut [u8]) -> bool {
     let Some(i) = (1..p.len()).rev().find(|&i| p[i - 1] < p[i]) else {
         return false;
