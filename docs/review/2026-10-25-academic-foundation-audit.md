@@ -84,6 +84,12 @@
 
 ## Готовый конкурент, который нельзя игнорировать
 
+Hyperon/MeTTa разобран отдельно по текущему Rust-коду, а не только по статьям:
+[`2026-10-25-hyperon-code-audit.md`](2026-10-25-hyperon-code-audit.md). Он
+подтверждает общий путь «programs/relations as data + matching + rewriting»,
+но не предоставляет нативного контракта occurrence identity, context-indexed
+extent и evidence.
+
 [ErgoAI](https://github.com/ergoAI) / Flora-2 объединяет F-logic, HiLog,
 well-founded semantics, defeasible reasoning и Transaction Logic. В нём уже
 есть higher-order-looking syntax с first-order semantics, динамические модули,
