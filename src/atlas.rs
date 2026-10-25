@@ -869,9 +869,29 @@ pub fn models_sat(n: u8, yes: &[&Law], no: &[&Law]) -> (Vec<Table>, usize) {
     models_upto(n, yes, no, usize::MAX)
 }
 
-/// `models_sat`, stopping once more than `limit` classes are found.
+/// `models_sat`, stopping once more than `limit` classes are found. The
+/// search must finish: past the memory limit of the solver it stops the
+/// program rather than give an incomplete answer.
 pub fn models_upto(n: u8, yes: &[&Law], no: &[&Law], limit: usize) -> (Vec<Table>, usize) {
+    models_within(n, yes, no, limit, usize::MAX).unwrap_or_else(|| {
+        panic!(
+            "model search past {} bytes at n = {n}",
+            crate::sat::MAX_BYTES
+        )
+    })
+}
+
+/// `models_upto` within `conflicts`; none if the search gave up on them
+/// or on memory, so nothing is decided.
+pub fn models_within(
+    n: u8,
+    yes: &[&Law],
+    no: &[&Law],
+    limit: usize,
+    conflicts: usize,
+) -> Option<(Vec<Table>, usize)> {
     let mut e = Enc::new(n as usize);
+    e.s.budget = conflicts;
     for l in yes {
         e.law(&l.prefix, &l.left, &l.right, true);
     }
@@ -901,7 +921,7 @@ pub fn models_upto(n: u8, yes: &[&Law], no: &[&Law], limit: usize) -> (Vec<Table
         }
         e.s.add(&block);
     }
-    (found.into_iter().collect(), e.s.conflicts)
+    (!e.s.gave_up).then(|| (found.into_iter().collect(), e.s.conflicts))
 }
 
 struct Enc {
@@ -972,6 +992,11 @@ impl Enc {
             let rs = self.roots(right, &env, &sk);
             for (l, pl) in &ls {
                 for (r, pr) in &rs {
+                    // Past the solver's memory limit nothing more is
+                    // written: the search will give up.
+                    if self.s.gave_up {
+                        return;
+                    }
                     let mut base: Vec<Lit> = pl.iter().chain(pr).map(|&x| !x).collect();
                     match (l, r) {
                         (Root::Cell(la, lb), Root::Cell(ra, rb)) => {

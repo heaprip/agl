@@ -41,6 +41,10 @@ impl std::ops::Not for Lit {
 
 const UNSET: u8 = 2;
 
+/// The most memory the clauses may take, in bytes, counted as they are
+/// added and learned; past it the solver gives up rather than grow.
+pub const MAX_BYTES: usize = 1 << 28;
+
 #[derive(Default)]
 pub struct Solver {
     clauses: Vec<Vec<Lit>>,
@@ -56,12 +60,20 @@ pub struct Solver {
     phase: Vec<bool>,
     broken: bool,
     pub conflicts: usize,
+    /// The most conflicts a search may meet before giving up.
+    pub budget: usize,
+    /// Bytes taken by clauses and their watches.
+    pub bytes: usize,
+    /// Whether a search stopped on `budget` or `MAX_BYTES`: its "no" is
+    /// then "not decided".
+    pub gave_up: bool,
 }
 
 impl Solver {
     pub fn new() -> Solver {
         Solver {
             bump: 1.0,
+            budget: usize::MAX,
             ..Default::default()
         }
     }
@@ -94,6 +106,9 @@ impl Solver {
 
     /// Adds a clause; between searches, at the top level.
     pub fn add(&mut self, lits: &[Lit]) {
+        if self.gave_up {
+            return;
+        }
         self.backjump(0);
         let mut c: Vec<Lit> = lits.to_vec();
         c.sort();
@@ -117,6 +132,10 @@ impl Solver {
     }
 
     fn attach(&mut self, c: Vec<Lit>) -> usize {
+        self.bytes += 4 * c.len() + 40;
+        if self.bytes > MAX_BYTES {
+            self.gave_up = true;
+        }
         let i = self.clauses.len();
         self.watches[c[0].not().0 as usize].push(i);
         self.watches[c[1].not().0 as usize].push(i);
@@ -268,7 +287,7 @@ impl Solver {
     /// Searches for values making every clause true; on success, `model`
     /// reads them until the next change.
     pub fn solve(&mut self) -> bool {
-        if self.broken {
+        if self.broken || self.gave_up {
             return false;
         }
         self.backjump(0);
@@ -281,6 +300,11 @@ impl Solver {
         loop {
             if let Some(ci) = self.propagate() {
                 self.conflicts += 1;
+                if self.conflicts > self.budget || self.gave_up {
+                    self.gave_up = true;
+                    self.backjump(0);
+                    return false;
+                }
                 if self.limits.is_empty() {
                     self.broken = true;
                     return false;
