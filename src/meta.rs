@@ -631,6 +631,180 @@ impl<T: Clone + PartialEq> Metagraph<T> {
         Ok(pairs.into_iter().collect())
     }
 
+    /// Use a relation occurrence as the explicit activation of one or more
+    /// holes in the open Glue named by its relation endpoint.
+    pub fn bind_open_from_metaedge(
+        &mut self,
+        axes: &Axes,
+        edge_id: &EntityId,
+    ) -> Result<Vec<(Plane, EntityId)>, String> {
+        let edge = self
+            .metaedges
+            .get(edge_id)
+            .ok_or_else(|| format!("unknown metaedge `{edge_id}`"))?
+            .clone();
+        let open = self
+            .entities
+            .get(&edge.relation)
+            .ok_or_else(|| format!("metaedge relation `{}` is unknown", edge.relation))?
+            .clone();
+        if !matches!(&open.intension, Intension::Glue { .. }) {
+            return Err(format!(
+                "metaedge relation `{}` is not an open Glue",
+                edge.relation
+            ));
+        }
+
+        let mut seen_roles = BTreeSet::new();
+        let holes = open.intension.holes();
+        let mut bindings = Vec::new();
+        for port in &edge.ports {
+            if !seen_roles.insert(port.role.clone()) {
+                return Err(format!("metaedge repeats role `{}`", port.role));
+            }
+            if !holes.contains(port.role.as_str()) {
+                return Err(format!(
+                    "metaedge role `{}` is not a hole of `{}`",
+                    port.role, edge.relation
+                ));
+            }
+            bindings.push((port.role.clone(), port.target.clone()));
+        }
+        if bindings.is_empty() {
+            return Err("metaedge has no bindings for open Glue holes".into());
+        }
+
+        let active = self.active_evidence_ids_with_axes(axes);
+        let active_contexts = |entity: &Entity| -> Vec<Plane> {
+            entity
+                .bases
+                .iter()
+                .filter(|basis| active.contains(*basis))
+                .filter_map(|basis| self.evidence.get(basis))
+                .map(|evidence| evidence.context.clone())
+                .collect::<BTreeSet<_>>()
+                .into_iter()
+                .collect()
+        };
+        let open_contexts = active_contexts(&open);
+        let edge_entity = self
+            .entities
+            .get(edge_id)
+            .ok_or_else(|| format!("metaedge entity `{edge_id}` is missing"))?;
+        let edge_contexts = active_contexts(edge_entity);
+        if open_contexts.is_empty() {
+            return Err(format!(
+                "open entity `{}` is not active under axes",
+                open.id
+            ));
+        }
+        if edge_contexts.is_empty() {
+            return Err(format!(
+                "activation metaedge `{edge_id}` is not active under axes"
+            ));
+        }
+        let mut target_entities = Vec::new();
+        let mut target_contexts = Vec::new();
+        let mut claims = vec![self.entity_claim(&open.id)?, self.entity_claim(edge_id)?];
+        for (role, target) in &bindings {
+            let entity = self
+                .entities
+                .get(target)
+                .ok_or_else(|| format!("target `{target}` for role `{role}` is unknown"))?;
+            let contexts = active_contexts(entity);
+            if contexts.is_empty() {
+                return Err(format!(
+                    "target `{target}` for role `{role}` is not active under axes"
+                ));
+            }
+            target_entities.push((role.clone(), target.clone()));
+            target_contexts.push(contexts);
+            claims.push(self.entity_claim(target)?);
+        }
+        claims.sort();
+        claims.dedup();
+
+        let mut intension = open.intension.clone();
+        for (role, target) in &target_entities {
+            intension = intension.bind(role, target.clone())?;
+        }
+        let mut derivations = BTreeMap::<Plane, Evidence>::new();
+        let pools: Vec<Vec<Plane>> = std::iter::once(open_contexts)
+            .chain(std::iter::once(edge_contexts))
+            .chain(std::iter::once(vec![edge.context.clone()]))
+            .chain(target_contexts)
+            .collect();
+        let mut pools = pools.into_iter();
+        let mut combinations: BTreeSet<_> = pools.next().unwrap_or_default().into_iter().collect();
+        for pool in pools {
+            let mut next = BTreeSet::new();
+            for left in &combinations {
+                for right in &pool {
+                    if let Some(meet) = axes.plane_meet(left, right) {
+                        next.insert(meet);
+                    }
+                }
+            }
+            combinations = next;
+            if combinations.is_empty() {
+                break;
+            }
+        }
+        let provisional = Entity::new(intension.clone(), Vec::new());
+        for context in combinations {
+            let evidence = Evidence::new_situated(
+                ClaimId::derived("entity", [provisional.id.as_str()]),
+                "bind-open-from-metaedge",
+                claims.clone(),
+                Strength::Strict,
+                context.clone(),
+                Plane::new(),
+            );
+            derivations.insert(context, evidence);
+        }
+        let mut result = BTreeSet::new();
+        let id = provisional.id.clone();
+        for (context, evidence) in derivations {
+            self.add_evidence(evidence.clone())?;
+            self.add_entity(Entity::new(intension.clone(), vec![evidence.id]))?;
+            result.insert((context, id.clone()));
+        }
+        Ok(result.into_iter().collect())
+    }
+
+    /// Apply every active relation occurrence which addresses at least one
+    /// Hole of its open relation. Fillers come only from the occurrence's
+    /// port targets; closed entities are never searched as candidates.
+    pub fn activate_open_frontier(
+        &mut self,
+        axes: &Axes,
+    ) -> Result<Vec<(Plane, EntityId)>, String> {
+        let activations = self
+            .metaedges
+            .values()
+            .filter(|edge| self.metaedge_active_with_axes(axes, edge))
+            .filter(|edge| {
+                self.entities.get(&edge.relation).is_some_and(|entity| {
+                    let holes = entity.intension.holes();
+                    let roles = edge
+                        .ports
+                        .iter()
+                        .map(|port| port.role.as_str())
+                        .collect::<BTreeSet<_>>();
+                    !roles.is_empty()
+                        && roles.len() == edge.ports.len()
+                        && roles.iter().all(|role| holes.contains(*role))
+                })
+            })
+            .map(|edge| edge.entity.id.clone())
+            .collect::<Vec<_>>();
+        let mut made = BTreeSet::new();
+        for activation in activations {
+            made.extend(self.bind_open_from_metaedge(axes, &activation)?);
+        }
+        Ok(made.into_iter().collect())
+    }
+
     fn bind_open_active(
         &mut self,
         open: &EntityId,
@@ -654,70 +828,6 @@ impl<T: Clone + PartialEq> Metagraph<T> {
         let id = entity.id.clone();
         self.add_entity(entity)?;
         Ok(id)
-    }
-
-    /// Expand every active open composition with every active closed
-    /// occurrence, breadth-first for at most `rounds` and `max_new` entities.
-    /// The boolean result says that the size budget stopped expansion. This
-    /// is deliberately domain-blind: later port types may prune candidates,
-    /// but no anomaly kind dispatches to a different algorithm.
-    pub fn expand_open_frontier(
-        &mut self,
-        context: Plane,
-        rounds: usize,
-        max_new: usize,
-    ) -> Result<(Vec<EntityId>, bool), String> {
-        let before: BTreeSet<_> = self.entities.keys().cloned().collect();
-        let mut truncated = false;
-        'rounds: for _ in 0..rounds {
-            let active = self.active_evidence_ids();
-            let frontier = self
-                .entities
-                .values()
-                .filter(|entity| entity.bases.iter().any(|basis| active.contains(basis)))
-                .filter_map(|entity| {
-                    let holes = entity
-                        .intension
-                        .holes()
-                        .into_iter()
-                        .map(str::to_string)
-                        .collect::<Vec<_>>();
-                    (!holes.is_empty()).then(|| (entity.id.clone(), holes))
-                })
-                .collect::<Vec<_>>();
-            let candidates = self
-                .entities
-                .values()
-                .filter(|entity| {
-                    entity.intension.holes().is_empty()
-                        && entity.bases.iter().any(|basis| active.contains(basis))
-                })
-                .map(|entity| entity.id.clone())
-                .collect::<Vec<_>>();
-            let count = self.entities.len();
-            for (open, holes) in frontier {
-                for hole in holes {
-                    for candidate in &candidates {
-                        if self.entities.len().saturating_sub(before.len()) >= max_new {
-                            truncated = true;
-                            break 'rounds;
-                        }
-                        self.bind_open_active(&open, &hole, candidate, context.clone())?;
-                    }
-                }
-            }
-            if self.entities.len() == count {
-                break;
-            }
-        }
-        Ok((
-            self.entities
-                .keys()
-                .filter(|entity| !before.contains(*entity))
-                .cloned()
-                .collect(),
-            truncated,
-        ))
     }
 
     pub fn add_projection(&mut self, projection: Projection<T>) -> Result<(), String> {
@@ -942,6 +1052,19 @@ impl<T: Clone + PartialEq> Metagraph<T> {
                 .ports
                 .iter()
                 .all(|port| self.entity_active(&port.target))
+    }
+
+    pub fn metaedge_active_with_axes(&self, axes: &Axes, edge: &Metaedge) -> bool {
+        let active = self.active_evidence_ids_with_axes(axes);
+        let entity_active = |id: &EntityId| {
+            self.entities
+                .get(id)
+                .is_some_and(|entity| entity.bases.iter().any(|basis| active.contains(basis)))
+        };
+        active.contains(&edge.evidence)
+            && entity_active(&edge.entity.id)
+            && entity_active(&edge.relation)
+            && edge.ports.iter().all(|port| entity_active(&port.target))
     }
 
     pub fn equalities(&self) -> &[EqualAt] {

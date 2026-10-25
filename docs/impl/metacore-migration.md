@@ -31,9 +31,10 @@
   `occurrence: &derived-ID`; следующее правило может связать её переменной и
   использовать построенное ребро как relation или endpoint нового ребра.
 - `Intension::Glue` хранит связанные `EntityId` и незаполненные `Hole` в одном
-  `parts`. `Metagraph::expand_open_frontier` подставляет активные закрытые
-  occurrences без выбора доменного solver; порядок заполнения меняет evidence,
-  но не итоговый `EntityId`.
+  `parts`. Обычный `Metaedge`, у которого relation — open Glue, а role совпадает
+  с именем Hole, явно активирует ровно указанный filler. Контексты relation,
+  edge и targets пересекаются через `Axes::plane_meet`; прежний полный перебор
+  всех закрытых occurrences удалён.
 - `atlas::record_models` проверяет результаты общего finite-model search и
   переносит каждую таблицу как structural Glue из cell occurrences, с
   отдельной `Projection<Table>` и зависимостью принятия от входных законов.
@@ -50,9 +51,10 @@
 
 ## Следующие границы
 
-1. Научить обычные relation/rule mismatches оставлять открытые intensions в
-   frontier. Сейчас общий carrier и expansion готовы, но начальные holes ещё
-   дают структурные библиотеки (`layer::Query`), а не сама аномалия.
+1. Научить обычные relation/rule mismatches создавать open intension и
+   activation-metaedge. Carrier уже исполняет такое ребро без перебора, но
+   начальные holes пока дают структурные библиотеки (`layer::Query`), а не сама
+   аномалия; деклараций типов портов также ещё нет.
 2. Добавить valid/transaction time поверх journal; replay пока восстанавливает
    логическое состояние, но не бивременную политику.
 3. Перенести оставшиеся самостоятельные исполнители только по мере их участия

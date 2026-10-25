@@ -211,7 +211,7 @@ relation occurrence. Внешний запрос вправе изменить �
 | путь построения | общий `meta::Intension`; его создают `eval::Derivation`, `bank::Entry`; `layer::Query::intension` даёт ту же открытую структуру | перенос остальных отдельных исполнителей |
 | точная проекция | `bank::ExactRelation::{Dense,Sparse}` над production `Ext`; representation-independent equality | общий интерфейс для иных arities, если они понадобятся |
 | логика склеек | `Bank::Entry` несёт `Entity + construction Evidence + Projection`; `layer` сохраняет все IDs при равном extent | evidence/projection для результатов следующего слоя |
-| открытый фронтир | `Intension::Glue.parts = Entity | Hole`; `Metagraph::expand_open_frontier` заполняет все активные holes общим breadth-first шагом | типы портов и relation-produced activation вместо полного перебора |
+| открытый фронтир | `Intension::Glue.parts = Entity | Hole`; обычный `Metaedge` с open Glue как relation и именем Hole как role явно активирует filler; контексты open/edge/filler пересекаются через `Axes::plane_meet`, полного перебора occurrences больше нет | декларации типов портов; production mismatch ещё не создаёт activation-metaedge автоматически |
 | граф оснований | общий AND/OR-carrier `ClaimId/Evidence`; typed append-only journal/replay | политика независимости оснований и бивременность |
 | локальные исключения | `EqualAt`, `Metagraph` с сохранением истории | типизированный контрпример в отчёте и DSL |
 
