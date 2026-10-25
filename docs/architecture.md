@@ -200,15 +200,17 @@ extent(a, p) = extent(b, p)  не влечёт  a = b.
 | метаребро с ролями | `meta::Metaedge` принимает `EntityId` отношения и endpoints; `.agl` имеет `metaedge ID: &RELATION(...)`; `metaedge(...)` участвует в обычных rules/query | правила пока потребляют, но не конструируют новые first-class metaedges в head |
 | контекстная плоскость | `model::Plane`; отдельные `Projection.context`, `Evidence.context/source_context` | формальные restriction maps в общем API |
 | путь построения | общий `meta::Intension`; его создают `eval::Derivation`, `bank::Entry`; `layer::Query::intension` даёт ту же открытую структуру | перенос остальных отдельных исполнителей |
-| точная проекция | `bank::Ext`, общий `bits::DenseSet`, A3 | единый интерфейс плотного и разреженного вида |
+| точная проекция | `bank::ExactRelation::{Dense,Sparse}` над production `Ext`; representation-independent equality | общий интерфейс для иных arities, если они понадобятся |
 | логика склеек | `Bank::Entry` несёт `Entity + construction Evidence + Projection`; `layer` сохраняет все IDs при равном extent | evidence/projection для результатов следующего слоя |
-| граф оснований | общий AND/OR-carrier `ClaimId/Evidence`; `Derivation` использует его напрямую | journal/replay и политика независимости оснований |
+| граф оснований | общий AND/OR-carrier `ClaimId/Evidence`; typed append-only journal/replay | политика независимости оснований и бивременность |
 | локальные исключения | `EqualAt`, `Metagraph` с сохранением истории | типизированный контрпример в отчёте и DSL |
 
-Первый уровень `tests/identity_extent.rs` теперь строит обе intensions реальным
-`Bank`, проводит их через общий carrier и использует как endpoints. Это ещё не
-означает завершение миграции: DSL-ссылки, сериализация/replay и
-плотное/разреженное представления остаются следующими барьерами.
+`tests/identity_extent.rs` строит обе intensions реальным `Bank`, проводит их
+через общий carrier, использует как endpoints и повторяет состояние через
+проверяемый journal. DSL-ссылки и обычный rule/query path также подключены.
+Это закрывает фундаментальный killer, но не всю миграцию: производное создание
+метарёбер, бивременность и перенос остальных исполнителей остаются отдельными
+рубежами.
 
 ## 8. Предохранитель от второго калькулятора
 

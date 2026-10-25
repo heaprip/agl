@@ -65,6 +65,104 @@ pub struct Ext {
     bits: Vec<u64>,
 }
 
+/// Two physical representations of one exact finite binary relation. Storage
+/// never participates in semantic equality or an entity's identity.
+#[derive(Clone)]
+pub enum ExactRelation {
+    Dense(Ext),
+    Sparse {
+        n: usize,
+        pairs: Vec<(usize, usize)>,
+    },
+}
+
+impl ExactRelation {
+    pub fn dense(extent: Ext) -> Self {
+        Self::Dense(extent)
+    }
+
+    pub fn sparse(n: usize, pairs: &[(usize, usize)]) -> Result<Self, String> {
+        if let Some(&(a, b)) = pairs.iter().find(|&&(a, b)| a >= n || b >= n) {
+            return Err(format!("pair ({a},{b}) is outside a domain of {n}"));
+        }
+        let mut pairs = pairs.to_vec();
+        pairs.sort_unstable();
+        pairs.dedup();
+        Ok(Self::Sparse { n, pairs })
+    }
+
+    pub fn n(&self) -> usize {
+        match self {
+            ExactRelation::Dense(extent) => extent.n(),
+            ExactRelation::Sparse { n, .. } => *n,
+        }
+    }
+
+    pub fn pairs(&self) -> Vec<(usize, usize)> {
+        match self {
+            ExactRelation::Dense(extent) => extent.pairs(),
+            ExactRelation::Sparse { pairs, .. } => pairs.clone(),
+        }
+    }
+
+    pub fn get(&self, a: usize, b: usize) -> bool {
+        if a >= self.n() || b >= self.n() {
+            return false;
+        }
+        match self {
+            ExactRelation::Dense(extent) => extent.get(a, b),
+            ExactRelation::Sparse { pairs, .. } => pairs.binary_search(&(a, b)).is_ok(),
+        }
+    }
+
+    pub fn difference(&self, other: &ExactRelation) -> Vec<(usize, usize)> {
+        self.pairs()
+            .into_iter()
+            .filter(|&(a, b)| !other.get(a, b))
+            .collect()
+    }
+
+    pub fn restrict(
+        &self,
+        point_map: &[Option<usize>],
+        target_n: usize,
+    ) -> Result<ExactRelation, String> {
+        if point_map.len() != self.n() {
+            return Err(format!(
+                "restriction maps {} points, relation has {}",
+                point_map.len(),
+                self.n()
+            ));
+        }
+        if let Some(point) = point_map.iter().flatten().find(|&&p| p >= target_n) {
+            return Err(format!("restriction target {point} is outside {target_n}"));
+        }
+        let pairs = self
+            .pairs()
+            .into_iter()
+            .filter_map(|(a, b)| Some((point_map[a]?, point_map[b]?)))
+            .collect::<Vec<_>>();
+        ExactRelation::sparse(target_n, &pairs)
+    }
+}
+
+impl PartialEq for ExactRelation {
+    fn eq(&self, other: &Self) -> bool {
+        self.n() == other.n() && self.pairs() == other.pairs()
+    }
+}
+
+impl Eq for ExactRelation {}
+
+impl fmt::Debug for ExactRelation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ExactRelation")
+            .field("n", &self.n())
+            .field("pairs", &self.pairs())
+            .finish()
+    }
+}
+
 impl Ext {
     pub fn empty(n: usize) -> Self {
         Ext {

@@ -165,13 +165,13 @@ SHA-256 `086c43c8ed918b0b6985061376c41d061bd38688505702093076441b680eeaef`.
 | R — отношение первично | `Entity/Intension`, role-labelled link | общий carrier; `&ID` ссылается на occurrence; rules/query сопоставляют `metaedge(...)` | metacore, identity_extent, layer | first-class construction из rule head отсутствует |
 | M — метаребро | `Metaedge`, relation as endpoint | общий `Metaedge`, DSL declaration, closure matching и endpoint index | identity_extent, metacore | создание пока декларативное, не производное |
 | P — плоскость | context + restriction | context-indexed `Projection`, раздельные evaluation/source contexts | oracle, metacore, identity_extent | restriction проверен для `Ext`, но не стал общей категорией контекстов |
-| G — основание | derivation/provenance DAG | общий AND/OR `ClaimId/Evidence` внутри evaluator, Bank и Metagraph | oracle, metacore, identity_extent | нет общего journal/replay и меры независимости линий |
+| G — основание | derivation/provenance DAG | общий AND/OR `ClaimId/Evidence`; typed journal/replay | oracle, metacore, identity_extent | нет меры независимости линий и бивременности |
 | D — разложение | intension graph, homomorphism, factors | `concept`, `bank`, `free`, `factor` | concept/bank/free tests | сильные части есть, общего носителя нет |
 | T — род и надёжность знания | context axis + evidence policy | линейный rank | oracle | род знания и независимость линий не формализованы |
 | S — ствол | accepted context-indexed records | trunk data/cases | trunk, memote | нет общей версии и lockfile состояния |
 | F — форк | persistent branch of proposals | предложение как вывод CLI | propose tests | хранения ветви нет |
 | A — закрепление | named reusable intension + evidence threshold | журнал H74 имитировал; ложное закрепление удалено | journal regression | общего механизма нет |
-| V — пересмотр | refuter invalidates dependent evidence | `Metagraph` сохраняет retracted/unsupported историю; evaluator блокирует конфликт | oracle, identity_extent | нет AGM/deprecation, версий и journal replay |
+| V — пересмотр | refuter invalidates dependent evidence | retracted/unsupported история переживает journal replay | oracle, identity_extent | нет AGM/deprecation и версий политики |
 | H — пробел | typed gap on question/interface | `gap` в DSL и отчёте | cases | не управляет мобилизацией поиска |
 | C — цена пути | cost/distortion semiring | размер формулы и число попыток локально | benchmark only | отсутствует как семантика |
 | N — точный вектор/номер | stable identity + derived coordinates | dense bits, labels, law vectors | bits/label/atlas | смешаны id, координата и extent; форма не выбрана |
@@ -181,7 +181,7 @@ SHA-256 `086c43c8ed918b0b6985061376c41d061bd38688505702093076441b680eeaef`.
 | Re — реактивность | event/question-triggered run | CLI | cases | long-lived state не нужен до появления общей модели |
 | Sp — без пространственности | domain relations, no built-in geometry | units declared in data | units/cases | соблюдается; будущий числовой мир остаётся внешним |
 | At — атлас с нуля | external world/star | H72–H74 modules and tests | atlas/free/journal | полезный verifier, но не ядро |
-| J — история/lockfile | immutable records + valid/transaction time | hashed H74 journal, data manifests | journal/trunk | бивременность и lockfile вывода отсутствуют |
+| J — история/lockfile | immutable records + valid/transaction time | hashed typed metacore journal/replay, data manifests | journal, identity_extent, trunk | valid/transaction time и общий lockfile запуска отсутствуют |
 
 ## Сквозные связки, которые обязаны стать тестами
 

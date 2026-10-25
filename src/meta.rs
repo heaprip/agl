@@ -43,6 +43,12 @@ macro_rules! stable_id {
             pub fn as_str(&self) -> &str {
                 &self.0
             }
+
+            /// Restore an exact stable key from a verified journal record.
+            /// Normal construction should use `named` or `derived`.
+            pub fn from_stable_key(key: impl Into<String>) -> Self {
+                Self(key.into())
+            }
         }
 
         impl fmt::Display for $name {
@@ -165,7 +171,7 @@ impl Intension {
         }
     }
 
-    fn entities(&self) -> Vec<&EntityId> {
+    pub fn dependencies(&self) -> Vec<&EntityId> {
         match self {
             Intension::Primitive { .. } | Intension::Derive { .. } => Vec::new(),
             Intension::Glue { parts, .. } => parts.iter().collect(),
@@ -392,7 +398,7 @@ impl<T: Clone + PartialEq> Metagraph<T> {
     }
 
     pub fn add_entity(&mut self, mut entity: Entity) -> Result<(), String> {
-        for dependency in entity.intension.entities() {
+        for dependency in entity.intension.dependencies() {
             if !self.entities.contains_key(dependency) {
                 return Err(format!("unknown entity `{dependency}`"));
             }
@@ -626,6 +632,14 @@ impl<T: Clone + PartialEq> Metagraph<T> {
 
     pub fn metaedges(&self) -> impl Iterator<Item = &Metaedge> {
         self.metaedges.values()
+    }
+
+    pub fn entity(&self, id: &EntityId) -> Option<&Entity> {
+        self.entities.get(id)
+    }
+
+    pub fn retractions(&self) -> impl Iterator<Item = (&EvidenceId, &EvidenceId)> {
+        self.retractions.iter()
     }
 }
 

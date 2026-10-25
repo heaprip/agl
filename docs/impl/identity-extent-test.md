@@ -1,10 +1,11 @@
 # Killer test: identity отдельно от extent
 
-Статус: обязательная приёмка общего фундамента. Пункты 1–8 выполняются
-`tests/identity_extent.rs` через production `Bank` и общий `meta::Metagraph`;
-пункт 9 проверен каноническим snapshot при обратном порядке независимых
-вставок. В пункте 10 CQ-core уже не сливает IDs (`Bank` и `layer`), но второй
-physical storage и e-graph baseline ещё отсутствуют.
+Статус: приёмка общего фундамента проходит в `tests/identity_extent.rs` через
+production `Bank` и общий `meta::Metagraph`. Проверены пункты 1–10,
+перестановка независимых вставок, dense/sparse exact relation и полный цикл
+typed journal → text → проверка hash/dependency order → replay. CQ-core и
+индекс по extent не сливают IDs. E-graph не подключался и не нужен для этого
+исполнителя; если появится, он обязан пройти тот же тест.
 
 ## Что он должен убить
 

@@ -1,9 +1,11 @@
 //! Architectural killer: occurrence identity is not a contextual extent.
 //! Every construction and projection comes from the production relation bank.
 
-use agl::bank::{Bank, Ext};
+use agl::bank::{Bank, ExactRelation, Ext};
+use agl::journal::Journal;
 use agl::meta::{
     ClaimId, EntityId, Evidence, EvidenceState, Intension, Metaedge, Metagraph, PortBinding,
+    Projection,
 };
 use agl::model::{Name, Plane, Strength};
 
@@ -18,6 +20,34 @@ fn ingest(graph: &mut Metagraph<Ext>, bank: &Bank) {
         graph.add_entity(entry.entity.clone()).unwrap();
         graph.add_projection(entry.projection.clone()).unwrap();
     }
+}
+
+fn exact_graph(bank: &Bank, sparse: bool) -> Metagraph<ExactRelation> {
+    let mut graph = Metagraph::new();
+    for entry in &bank.entries {
+        graph.add_evidence(entry.construction.clone()).unwrap();
+        graph.add_evidence(entry.evidence.clone()).unwrap();
+        graph.add_entity(entry.entity.clone()).unwrap();
+        let extent = if sparse {
+            ExactRelation::sparse(
+                entry.projection.extent.n(),
+                &entry.projection.extent.pairs(),
+            )
+            .unwrap()
+        } else {
+            ExactRelation::dense(entry.projection.extent.clone())
+        };
+        graph
+            .add_projection(Projection {
+                claim: entry.projection.claim.clone(),
+                entity: entry.projection.entity.clone(),
+                context: entry.projection.context.clone(),
+                extent,
+                evidence: entry.projection.evidence.clone(),
+            })
+            .unwrap();
+    }
+    graph
 }
 
 /// Two bank constructions which the small world cannot distinguish but the
@@ -55,8 +85,8 @@ fn witnesses<'a>(small: &'a Bank, large: &'a Bank) -> (&'a agl::bank::Entry, &'a
     panic!("the real bank produced no identity/extent witnesses")
 }
 
-fn add_equality(
-    graph: &mut Metagraph<Ext>,
+fn add_equality<T: Clone + PartialEq>(
+    graph: &mut Metagraph<T>,
     left: &agl::bank::Entry,
     right: &agl::bank::Entry,
     context: Plane,
@@ -86,8 +116,8 @@ fn add_equality(
     evidence
 }
 
-fn add_link(
-    graph: &mut Metagraph<Ext>,
+fn add_link<T: Clone + PartialEq>(
+    graph: &mut Metagraph<T>,
     relation: &agl::bank::Entry,
     target: &agl::bank::Entry,
     context: Plane,
@@ -254,4 +284,81 @@ fn identity_extent_killer_runs_through_the_migrated_core() {
             .count(),
         1
     );
+}
+
+#[test]
+fn dense_and_sparse_exact_relations_have_the_same_semantic_state() {
+    let bank = Bank::grow_in(
+        Name::from("world-relation"),
+        Ext::from_pairs(3, &[(0, 0), (1, 1)]),
+        plane("q"),
+        false,
+    );
+    let dense = exact_graph(&bank, false);
+    let sparse = exact_graph(&bank, true);
+    assert_eq!(dense.report(), sparse.report());
+    assert_eq!(
+        dense
+            .entities()
+            .map(|entity| &entity.id)
+            .collect::<Vec<_>>(),
+        sparse
+            .entities()
+            .map(|entity| &entity.id)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn journal_replay_restores_live_and_retracted_semantics() {
+    let p = plane("p");
+    let bank = Bank::grow_in(
+        Name::from("world-relation"),
+        Ext::from_pairs(2, &[(0, 0), (1, 1)]),
+        p.clone(),
+        false,
+    );
+    let (a, b) = bank
+        .classes
+        .iter()
+        .filter_map(|class| {
+            let glued: Vec<_> = class
+                .iter()
+                .map(|&index| &bank.entries[index])
+                .filter(|entry| matches!(entry.entity.intension, Intension::Glue { .. }))
+                .collect();
+            (glued.len() >= 2).then(|| (glued[0], glued[1]))
+        })
+        .next()
+        .expect("the bank has two equal glue projections");
+
+    let mut graph = exact_graph(&bank, false);
+    let equality = add_equality(&mut graph, a, b, p.clone());
+    add_link(&mut graph, &bank.entries[0], a, p, "candidate-a");
+    let refuter = Evidence::new(
+        ClaimId::named("event", "refute-a"),
+        "test-refuter",
+        Vec::new(),
+        Strength::Strict,
+        Plane::new(),
+    );
+    graph.add_evidence(refuter.clone()).unwrap();
+    graph
+        .retract(a.construction.id.clone(), refuter.id)
+        .unwrap();
+
+    let mut journal = Journal::new();
+    graph.append_journal(&mut journal).unwrap();
+    let text = journal.text();
+    let checked = Journal::parse(&text).unwrap();
+    let replayed = Metagraph::<ExactRelation>::replay_journal(&checked).unwrap();
+    assert_eq!(replayed.report(), graph.report());
+    assert_eq!(
+        replayed.evidence_state(&equality.id),
+        Some(EvidenceState::Unsupported)
+    );
+
+    let mut replayed_journal = Journal::new();
+    replayed.append_journal(&mut replayed_journal).unwrap();
+    assert_eq!(replayed_journal.text(), text);
 }

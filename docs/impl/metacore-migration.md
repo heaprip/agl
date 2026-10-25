@@ -21,6 +21,11 @@
 - `layer::Query` экспортирует общий glue-intension, а таблица слоя возвращает
   все relation occurrences с подходящим extent. Для обычного уникального
   мира сохранён allocation-free singleton fast path.
+- `bank::ExactRelation` имеет dense и sparse storage с одной семантической
+  equality; storage не попадает в identity или canonical report.
+- `meta_journal` пишет типизированные evidence/entity/projection/metaedge/
+  equality/retraction events в существующий append-only `Journal`. Replay
+  заново собирает работающий граф, включая propagation отзыва.
 
 ## Почему это не прежний prototype
 
@@ -32,10 +37,10 @@
 
 ## Следующие границы
 
-1. Добавить journal/replay общего состояния и второй storage для
-   exact relation; после этого закрыть assertions 9–10.
-2. Решить, должны ли rule heads конструировать новые first-class metaedges;
+1. Решить, должны ли rule heads конструировать новые first-class metaedges;
    сейчас declarations создают их, а обычные rules/query уже сопоставляют.
+2. Добавить valid/transaction time поверх journal; replay пока восстанавливает
+   логическое состояние, но не бивременную политику.
 3. Перенести оставшиеся самостоятельные исполнители только по мере их участия
    в сквозном пути, а не механически.
 4. Только затем поднимать физическую веху Джанибекова на общий carrier.
