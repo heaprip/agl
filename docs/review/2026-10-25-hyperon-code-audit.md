@@ -179,8 +179,10 @@ Thought”](https://arxiv.org/abs/2112.08272) описывает AtomSpace ка�
 *описать* желаемую семантику в универсальном языке. Он проверяет, является ли
 она неустранимым контрактом ядра и сохраняют ли её оптимизации.
 
-Отдельный будущий differential experiment должен реализовать этот же конечный
-мир в чистой MeTTa без grounded-кода. В отчёте надо разделить:
+Differential experiment реализовал тот же конечный мир в чистой MeTTa без
+пользовательского grounded-кода; результат и воспроизводимый сценарий — в
+[`2026-10-25-hyperon-killer-baseline.md`](2026-10-25-hyperon-killer-baseline.md).
+Он разделяет:
 
 - что Hyperon сохраняет нативно;
 - что требует явного пользовательского ID/evidence protocol;
@@ -235,14 +237,12 @@ Hyperon постоянно требует внешнего состояния и
 
 ## Следующее ограниченное действие
 
-Не переносить Hyperon в кодовую базу и не начинать вторую общую
-реструктуризацию. После реализации локального killer test создать отдельную
-ветку `experiment/hyperon-killer-baseline` от принятого checkpoint и повторить
-тот же мир в MeTTa. Критерий решения заранее:
+Hyperon не переносится в кодовую базу. Отдельная ветка
+`experiment/hyperon-killer-baseline` повторила мир в MeTTa. Итог по заранее
+объявленному критерию:
 
-- **профиль над Hyperon**, если identity/evidence/revision выражаются коротким
-  чистым MeTTa protocol и проверяются запросами;
-- **собственное ядро**, если эти свойства требуют host-side ID store,
-  imperative callbacks или форка интерпретатора;
-- **гибрид**, если Hyperon годится как исследовательский rewrite frontend, но
-  agl journal остаётся authoritative semantic store.
+- identity/evidence кратко **описываются** чистым MeTTa protocol;
+- revision и history нативно не следуют по premise DAG, а требуют собственного
+  TMS protocol или host layer;
+- поэтому рабочее решение — собственный маленький authoritative store, с
+  Hyperon только как возможным внешним rewrite frontend.
