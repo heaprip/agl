@@ -61,7 +61,7 @@ fn main() {
         let ma: usize = pl.iter().map(|x| x.missed_alike).sum();
         println!(
             "{name:<26} | {order:>13} {meas:>7} | {d:>3}/{c:<3} decided, {m:>2} missed ({:>2}%), {ma:>2} as alike | {}",
-            if d > 0 { 100 * m / d } else { 0 },
+            (100 * m).checked_div(d).unwrap_or(0),
             steps_flat(&pl, n)
         );
     }
