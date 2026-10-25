@@ -5,12 +5,12 @@
 //! layer gives a microtheory (the closure of its laws), and its slice of
 //! small tables is a starting point, so nothing is chosen. For each start:
 //! definitions within the small tables, their branches on the layer, the
-//! widest, its S boundary, and a check forward by model search. A species
-//! is anchored when all its S-boundary definitions, equal on what they were
-//! found on, still agree on every size up to `top`; its models are then
-//! split into products.
+//! widest, its S boundary, and a check forward by model search.  Equal model
+//! counts are recorded as an observation, but do not anchor a species: equal
+//! cardinalities need not name equal model classes, and all definitions were
+//! checked by the same line of evidence.
 
-use crate::atlas::{Atlas, Law, Set, Table, factorizations, generated, models_upto, splits};
+use crate::atlas::{Atlas, Law, Set, Table, generated, models_upto};
 use crate::journal::Journal;
 use std::collections::BTreeMap;
 
@@ -195,56 +195,15 @@ pub fn develop(points: u8, top: u8) -> Journal {
                     .collect(),
             );
         }
-        let agree = spec.len() > 1 && counts.windows(2).all(|w| w[0] == w[1]);
-        let capped = counts.iter().flatten().any(|c| c.ends_with('+'));
-        let anchored = agree && !capped;
         let body: Vec<String> = counts.iter().map(|c| c.join(",")).collect();
-        let r_sp = j.add(
+        j.add(
             "species",
-            "check-forward",
+            "check-forward-counts",
             &format!("n<={top}"),
-            anchored,
+            false,
             &r_defs,
             &body.join(" / "),
         );
-        if !anchored {
-            continue;
-        }
-        let yes: Vec<&Law> = spec[0].iter().map(|&l| &a.laws[l]).collect();
-        let models: Vec<_> = (1..=top)
-            .flat_map(|n| models_upto(n, &yes, &[], LIMIT).0)
-            .collect();
-        let sp = splits(&models);
-        let mut mid = Vec::new();
-        for m in &models {
-            mid.push(j.add(
-                "entity",
-                "model",
-                &format!("n<={top}"),
-                false,
-                &[r_sp],
-                &shown(m),
-            ));
-        }
-        for i in 0..models.len() {
-            let f = factorizations(&sp, i);
-            let what = if models[i].n == 1 {
-                "one".to_string()
-            } else if sp[i].is_empty() {
-                "prime".to_string()
-            } else {
-                let parts: Vec<String> = f[0].iter().map(|&x| format!("{:016x}", mid[x])).collect();
-                format!("{} way(s), first {}", f.len(), parts.join("*"))
-            };
-            j.add(
-                "factors",
-                "split",
-                &format!("n<={top}"),
-                false,
-                &[mid[i]],
-                &what,
-            );
-        }
     }
     j
 }

@@ -13,24 +13,21 @@ fn development_from_nothing() {
     assert_eq!(j.text(), first);
     assert!(first.len() < 64 * 1024, "{} bytes", first.len());
 
-    // One species is anchored: the star, by its counts on n = 1..6; its
-    // models factor into primes as in §8.
+    // Equal model counts are an observation, not an anchor: equal counts do
+    // not prove equal model classes, and this is only one line of evidence.
     let anchored: Vec<_> = j.records.iter().filter(|r| r.anchored).collect();
-    assert_eq!(anchored.len(), 1);
-    assert_eq!(anchored[0].kind, "species");
-    assert!(
-        anchored[0].body.split(" / ").all(|c| c == "1,1,1,2,1,2"),
-        "{}",
-        anchored[0].body
-    );
-    let kinds: Vec<&str> = j
+    assert!(anchored.is_empty());
+    let candidate = j
         .records
         .iter()
-        .filter(|r| r.kind == "factors")
-        .map(|r| r.body.as_str())
-        .collect();
-    assert_eq!(kinds.iter().filter(|b| **b == "prime").count(), 5);
-    assert_eq!(kinds.iter().filter(|b| b.starts_with("1 way")).count(), 2);
+        .find(|r| r.kind == "species" && r.body.split(" / ").all(|counts| counts == "1,1,1,2,1,2"))
+        .expect("the equal-count observation remains in the journal");
+    assert!(!candidate.anchored);
+    assert!(
+        candidate.body.split(" / ").all(|c| c == "1,1,1,2,1,2"),
+        "{}",
+        candidate.body
+    );
 
     // An edit by hand does not check.
     let edited = first.replacen("1,1,1,2,1,2", "1,1,1,2,1,3", 1);

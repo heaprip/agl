@@ -8,6 +8,7 @@
 
 pub mod atlas;
 pub mod bank;
+pub mod bits;
 pub mod check;
 pub mod concept;
 pub mod develop;

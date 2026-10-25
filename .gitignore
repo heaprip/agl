@@ -1,4 +1,5 @@
 /target
+/.claude/
 __pycache__/
 /data/cache
 /CLAUDE.local.md

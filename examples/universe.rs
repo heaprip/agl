@@ -2,7 +2,10 @@
 //! redex (λx.M)N of closed terms up to a size, and its contractum M[N/x]:
 //! the least limit N from which both sides agree on tokens of size ≤ m at
 //! every larger limit up to the top. Usage: universe m top size.
-use agl::universe::{Ask, L, Universe};
+#[path = "../tests/star/mod.rs"]
+mod star;
+use agl::universe::{Find, Universe};
+use star::{L, of};
 use std::time::Instant;
 fn main() {
     let arg = |i: usize, d: usize| std::env::args().nth(i).map_or(d, |s| s.parse().unwrap());
@@ -19,49 +22,36 @@ fn main() {
         }
     }
     let t0 = Instant::now();
-    // Redexes go round the cores; each core keeps one asker per limit, so
-    // what one redex learned serves the next. Results come back in order.
-    let cores = std::thread::available_parallelism().map_or(1, |n| n.get());
-    let askers = cores * us.len();
-    let keys: Vec<(String, String)> = std::thread::scope(|sc| {
-        let hs: Vec<_> = (0..cores)
-            .map(|c| {
-                let (us, redexes) = (&us, &redexes);
-                sc.spawn(move || {
-                    let mut asks: Vec<Ask> = us.iter().map(|u| Ask::sharing(u, askers)).collect();
-                    let mut out = Vec::new();
-                    for (i, (lhs, rhs)) in redexes.iter().enumerate().skip(c).step_by(cores) {
-                        let mut agree = Vec::new();
-                        for a in asks.iter_mut() {
-                            match (a.element(lhs, m), a.element(rhs, m)) {
-                                (Some(l), Some(r)) => agree.push(l == r),
-                                _ => break,
-                            }
-                        }
-                        let key = if agree.len() < us.len() {
-                            "undecided".to_string()
-                        } else if !agree[agree.len() - 1] {
-                            "not yet".to_string()
-                        } else {
-                            let from = agree.iter().rposition(|&x| !x).map_or(0, |i| i + 1);
-                            format!("N={}", m as usize + from)
-                        };
-                        out.push((i, (key, format!("{lhs} -> {rhs}"))));
-                    }
-                    out
-                })
-            })
-            .collect();
-        let mut all: Vec<_> = hs.into_iter().flat_map(|h| h.join().unwrap()).collect();
-        all.sort_by_key(|(i, _)| *i);
-        all.into_iter().map(|(_, k)| k).collect()
-    });
-    let mut hist = std::collections::BTreeMap::new();
-    for (key, what) in &keys {
-        if key == "not yet" || key == "undecided" {
-            println!("{key} at N={top}: {what}");
+    // One limit at a time, one finder for all redexes: what one learned
+    // serves the next, and the memory bound is the finder's alone.
+    let mut agree: Vec<Vec<Option<bool>>> = vec![Vec::new(); redexes.len()];
+    let formulas: Vec<_> = redexes.iter().map(|(l, r)| (of(l), of(r))).collect();
+    for u in &us {
+        let mut f = Find::new(u);
+        for (i, (fl, fr)) in formulas.iter().enumerate() {
+            let a = match (f.element(fl, m), f.element(fr, m)) {
+                (Some(l), Some(r)) => Some(l == r),
+                _ => None,
+            };
+            agree[i].push(a);
         }
-        *hist.entry(key.clone()).or_insert(0) += 1;
+    }
+    let mut hist = std::collections::BTreeMap::new();
+    for ((lhs, rhs), a) in redexes.iter().zip(&agree) {
+        let key = if let Some(p) = a.iter().position(|x| x.is_none()) {
+            println!("undecided at N={}: {lhs} -> {rhs}", m as usize + p);
+            "undecided".to_string()
+        } else if a[a.len() - 1] == Some(false) {
+            println!("not yet at N={top}: {lhs} -> {rhs}");
+            "not yet".to_string()
+        } else {
+            let from = a
+                .iter()
+                .rposition(|&x| x == Some(false))
+                .map_or(0, |i| i + 1);
+            format!("N={}", m as usize + from)
+        };
+        *hist.entry(key).or_insert(0) += 1;
     }
     println!(
         "m={m}, N up to {top}, {} redexes of size <= {size}: {hist:?} in {:?}",

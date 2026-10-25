@@ -592,57 +592,8 @@ pub fn relations(prog: &Program) -> (Vec<(Name, Ext)>, Vec<Name>, Option<String>
     (rels, domain, None)
 }
 
-/// A set of relations of the world, as bits.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Objs(Vec<u64>);
-
-impl Objs {
-    fn none(n: usize) -> Self {
-        Objs(vec![0; n.div_ceil(64).max(1)])
-    }
-
-    fn all(n: usize) -> Self {
-        let mut o = Objs::none(n);
-        (0..n).for_each(|i| o.insert(i));
-        o
-    }
-
-    fn insert(&mut self, i: usize) {
-        self.0[i / 64] |= 1 << (i % 64);
-    }
-
-    pub fn contains(&self, i: usize) -> bool {
-        self.0[i / 64] >> (i % 64) & 1 == 1
-    }
-
-    pub fn count(&self) -> usize {
-        self.0.iter().map(|w| w.count_ones() as usize).sum()
-    }
-
-    fn and(&self, o: &Objs) -> Objs {
-        Objs(self.0.iter().zip(&o.0).map(|(a, b)| a & b).collect())
-    }
-
-    fn minus(&self, o: &Objs) -> Objs {
-        Objs(self.0.iter().zip(&o.0).map(|(a, b)| a & !b).collect())
-    }
-
-    fn or(&self, o: &Objs) -> Objs {
-        Objs(self.0.iter().zip(&o.0).map(|(a, b)| a | b).collect())
-    }
-
-    fn within(&self, o: &Objs) -> bool {
-        self.0.iter().zip(&o.0).all(|(a, b)| a & !b == 0)
-    }
-
-    fn is_empty(&self) -> bool {
-        self.0.iter().all(|&w| w == 0)
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = usize> + '_ {
-        (0..self.0.len() * 64).filter(|&i| self.contains(i))
-    }
-}
+/// A set of relations of the world, as exact dense bits.
+pub type Objs = crate::bits::DenseSet;
 
 /// Kinds of relations: a formal context of relations against inclusions of
 /// shapes from every bank, and its concepts (H72, section 4).

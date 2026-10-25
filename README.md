@@ -18,8 +18,11 @@ cargo run --release -- cases/trunk/glycolysis.agl`. Где мы — [roadmap](do
 | Документ | Что в нём | Кто автор |
 | --- | --- | --- |
 | [vision](docs/vision.md) | зачем проект и что считать успехом | автор |
+| [architecture](docs/architecture.md) | рабочий контракт и академический словарь контекстно-индексированного открытого метаграфа | помощник, **не принято** |
+| [traceability](docs/traceability.md) | полная карта «идея → контракт → код/тест → пробел» | помощник, аудит |
+| [milestone/dzhanibekov](docs/milestones/dzhanibekov.md) | актуальная веха: качественная, геометрическая и численная линии без отдельного калькулятора | помощник, roadmap |
 | [decisions](docs/decisions.md) | принятые решения | только автор |
-| [hypotheses](docs/hypotheses.md) | рабочие гипотезы H0–H36 | помощник, **не принято** |
+| [hypotheses](docs/hypotheses.md) | рабочие гипотезы H0–H75 | помощник, **не принято** |
 | [open-questions](docs/open-questions.md) | вопросы, которые решает только автор | — |
 | [cases/newton](docs/cases/newton.md) | первый казус и журнал нагрузки на ядро | помощник, черновик |
 | [cases/glycolysis-hexokinase](docs/cases/glycolysis-hexokinase.md) | второй казус: первый шаг гликолиза | помощник, черновик |

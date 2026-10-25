@@ -21,7 +21,7 @@ fn main() {
     let cls: Vec<(Set, Vec<usize>)> = classes.into_iter().collect();
     eprintln!("content {} classes {}", content.len(), cls.len());
     let all = Set::all(a.entities.len());
-    let and = |x: &Set, y: &Set| Set(x.0.iter().zip(&y.0).map(|(p, q)| p & q).collect());
+    let and = |x: &Set, y: &Set| x.and(y);
     let valid = |ix: &[usize]| ix.iter().fold(all.clone(), |m, &i| and(&m, &cls[i].0)) == g;
     let weaker = |i: usize, j: usize| cls[i].0.within(&cls[j].0) && cls[i].0 != cls[j].0;
     let mut defs: Vec<Vec<usize>> = Vec::new();

@@ -499,44 +499,8 @@ fn renamed(set: &BTreeSet<Vec<u8>>, points: u8) -> Vec<Vec<u8>> {
     }
 }
 
-/// A set of entities, as bits.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Set(pub Vec<u64>);
-
-impl Set {
-    pub fn none(n: usize) -> Set {
-        Set(vec![0; n.div_ceil(64).max(1)])
-    }
-    pub fn all(n: usize) -> Set {
-        let mut s = Set::none(n);
-        (0..n).for_each(|i| s.insert(i));
-        s
-    }
-    pub fn insert(&mut self, i: usize) {
-        self.0[i / 64] |= 1 << (i % 64);
-    }
-    pub fn contains(&self, i: usize) -> bool {
-        self.0[i / 64] >> (i % 64) & 1 == 1
-    }
-    pub fn count(&self) -> usize {
-        self.0.iter().map(|w| w.count_ones() as usize).sum()
-    }
-    pub fn and(&self, o: &Set) -> Set {
-        Set(self.0.iter().zip(&o.0).map(|(a, b)| a & b).collect())
-    }
-    fn or(&self, o: &Set) -> Set {
-        Set(self.0.iter().zip(&o.0).map(|(a, b)| a | b).collect())
-    }
-    fn minus(&self, o: &Set) -> Set {
-        Set(self.0.iter().zip(&o.0).map(|(a, b)| a & !b).collect())
-    }
-    pub fn within(&self, o: &Set) -> bool {
-        self.0.iter().zip(&o.0).all(|(a, b)| a & !b == 0)
-    }
-    fn is_empty(&self) -> bool {
-        self.0.iter().all(|&w| w == 0)
-    }
-}
+/// A set of entities, as exact dense bits.
+pub type Set = crate::bits::DenseSet;
 
 /// Entities against laws: which entities each law holds on.
 pub struct Atlas {
@@ -610,12 +574,29 @@ impl Atlas {
         }
         let mut ls: Vec<usize> = first.into_values().collect();
         ls.sort();
-        let cut = |s: Set| s.and(among) == *ext;
-        let h = |i: usize| &self.holds[ls[i]];
+        // Mask each law once. Pair and triple checks then intersect words in
+        // place instead of allocating a dense set for every candidate.
+        let masked: Vec<Vec<u64>> = ls
+            .iter()
+            .map(|&law| {
+                self.holds[law]
+                    .0
+                    .iter()
+                    .zip(&among.0)
+                    .map(|(holds, mask)| holds & mask)
+                    .collect()
+            })
+            .collect();
+        let cuts = |left: &[u64], right: &[u64]| {
+            left.iter()
+                .zip(right)
+                .zip(&ext.0)
+                .all(|((a, b), expected)| a & b == *expected)
+        };
         let mut out = Vec::new();
         for i in 0..ls.len() {
             for j in i + 1..ls.len() {
-                if cut(h(i).and(h(j))) {
+                if cuts(&masked[i], &masked[j]) {
                     out.push(vec![ls[i], ls[j]]);
                     if out.len() >= limit {
                         return (out, true);
@@ -623,14 +604,20 @@ impl Atlas {
                 }
             }
         }
+        let mut pair = vec![0; among.0.len()];
         for i in 0..ls.len() {
             for j in i + 1..ls.len() {
-                let ij = h(i).and(h(j));
-                if cut(ij.clone()) {
+                if cuts(&masked[i], &masked[j]) {
                     continue;
                 }
+                pair.iter_mut()
+                    .zip(masked[i].iter().zip(&masked[j]))
+                    .for_each(|(word, (a, b))| *word = a & b);
                 for k in j + 1..ls.len() {
-                    if cut(ij.and(h(k))) && !cut(h(i).and(h(k))) && !cut(h(j).and(h(k))) {
+                    if cuts(&pair, &masked[k])
+                        && !cuts(&masked[i], &masked[k])
+                        && !cuts(&masked[j], &masked[k])
+                    {
                         out.push(vec![ls[i], ls[j], ls[k]]);
                         if out.len() >= limit {
                             return (out, true);
@@ -681,8 +668,15 @@ impl Atlas {
 
     /// Entities on which every law of `laws` holds.
     pub fn extent(&self, laws: &[usize]) -> Set {
-        laws.iter()
-            .fold(Set::all(self.entities.len()), |m, &l| m.and(&self.holds[l]))
+        let mut extent = Set::all(self.entities.len());
+        for &law in laws {
+            extent
+                .0
+                .iter_mut()
+                .zip(&self.holds[law].0)
+                .for_each(|(word, holds)| *word &= holds);
+        }
+        extent
     }
 
     /// A shortest set of laws, up to three, that holds on `ext` and on no
