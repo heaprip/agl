@@ -26,6 +26,10 @@
 - `meta_journal` пишет типизированные evidence/entity/projection/metaedge/
   equality/retraction events в существующий append-only `Journal`. Replay
   заново собирает работающий граф, включая propagation отзыва.
+- Обычный rule head `metaedge(relation: ..., role: ...)` создаёт
+  `Intension::Metaedge`, а не безымянный atom. Ядро добавляет роль
+  `occurrence: &derived-ID`; следующее правило может связать её переменной и
+  использовать построенное ребро как relation или endpoint нового ребра.
 
 ## Почему это не прежний prototype
 
@@ -37,8 +41,8 @@
 
 ## Следующие границы
 
-1. Решить, должны ли rule heads конструировать новые first-class metaedges;
-   сейчас declarations создают их, а обычные rules/query уже сопоставляют.
+1. Ввести формальный объект вопроса поверх общего carrier: цель, интерфейс,
+   контекст, критерий остановки и допустимый класс операций.
 2. Добавить valid/transaction time поверх journal; replay пока восстанавливает
    логическое состояние, но не бивременную политику.
 3. Перенести оставшиеся самостоятельные исполнители только по мере их участия

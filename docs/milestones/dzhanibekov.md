@@ -67,8 +67,8 @@
 ## Этап 0. Входной барьер фундамента
 
 **Статус: выполнен** в `tests/identity_extent.rs`: production `Bank`, общий
-carrier, обычный metaedge rule/query path, dense/sparse exact relation и
-typed journal/replay с отзывом.
+carrier, производная link-to-link цепочка через обычные rules, dense/sparse
+exact relation и typed journal/replay с отзывом.
 
 До физики проходит обязательный тест из `architecture.md`: две разные
 intensions имеют один extent в `p`, участвуют как разные endpoints

@@ -1,5 +1,6 @@
 //! Every case under `cases/` parses, lints clean and meets its expectations.
 
+use std::collections::BTreeSet;
 use std::fs;
 
 const SI: &str = include_str!("../cases/lib/si.agl");
@@ -78,6 +79,24 @@ metaedge broken: &missing(subject: &target) @
             .iter()
             .any(|diag| diag.code == "unknown-occurrence")
     );
+}
+
+#[test]
+fn malformed_derived_metaedges_are_rejected_before_evaluation() {
+    let src = "
+fact relation_occ: relation_object(name: observes) @
+fact seed_occ: seed(name: sample) @
+rule symbol strict @: metaedge(relation: observes, subject: &seed_occ) <- seed(name: sample)
+rule owns_id strict @: metaedge(occurrence: &seed_occ, relation: &relation_occ) <- seed(name: sample)
+rule no_relation strict @: metaedge(subject: &seed_occ) <- seed(name: sample)
+rule duplicate strict @: metaedge(relation: &relation_occ, subject: &seed_occ, subject: &relation_occ) <- seed(name: sample)
+";
+    let report = agl::run(&agl::parse(src).unwrap());
+    let codes: BTreeSet<_> = report.diags.iter().map(|diag| diag.code).collect();
+    assert!(codes.contains("bad-metaedge-endpoint"));
+    assert!(codes.contains("reserved-metaedge-role"));
+    assert!(codes.contains("bad-metaedge-head"));
+    assert!(codes.contains("duplicate-metaedge-role"));
 }
 
 #[test]

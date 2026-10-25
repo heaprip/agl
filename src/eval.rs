@@ -14,8 +14,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::meta::{
-    ClaimId, Entity, Evidence, Intension, Metaedge as RelationMetaedge, Metagraph, PortBinding,
-    Projection,
+    ClaimId, Entity, EntityId, Evidence, Intension, Metaedge as RelationMetaedge, Metagraph,
+    PortBinding, Projection,
 };
 use crate::model::*;
 use crate::units::Dim;
@@ -94,6 +94,27 @@ impl Db {
 
     pub fn contains_key(&self, key: &str) -> bool {
         self.index.contains_key(key)
+    }
+
+    /// Keys satisfying a ground query. Ordinary atoms retain exact matching;
+    /// a metaedge query is a role pattern because the kernel-added
+    /// `occurrence` role may intentionally be omitted.
+    pub fn query_keys<'a>(&'a self, pattern: &Atom) -> Vec<&'a str> {
+        if pattern.rel != METAEDGE_RELATION {
+            let key = pattern.key();
+            return self
+                .index
+                .get(key.as_str())
+                .map(|&id| vec![self.key(id)])
+                .unwrap_or_default();
+        }
+        let binding = Binding::new();
+        self.iter()
+            .filter(|(_, (atom, _))| {
+                atom.rel == pattern.rel && atom.neg == pattern.neg && fits(pattern, atom, &binding)
+            })
+            .map(|(key, _)| key.as_str())
+            .collect()
     }
 
     /// The text of an atom or of a premise that records an absence.
@@ -432,7 +453,7 @@ fn collect_metaedges(context: &Plane, db: &Db) -> (Vec<RelationMetaedge>, Vec<Ev
     let mut edges = Vec::new();
     let mut all_evidence = Vec::new();
     for (atom, derivations) in &db.entries {
-        if atom.rel != "metaedge" {
+        if atom.rel != METAEDGE_RELATION {
             continue;
         }
         for derivation in derivations {
@@ -841,6 +862,109 @@ pub fn strata(rules: &[Rule]) -> (BTreeMap<String, usize>, Vec<String>) {
 
 type Binding = BTreeMap<String, Term>;
 
+/// A compact parseable alias for an entity constructed by a rule. The real
+/// identity remains `EntityId`; aliases are checked for collisions when the
+/// occurrence index is built. FNV-1a matches the journal's portability goal:
+/// stable across runs and machines, not a security boundary.
+fn derived_occurrence_name(entity: &EntityId) -> Name {
+    let mut hash = 0xcbf29ce484222325_u64;
+    for byte in entity.as_str().bytes() {
+        hash ^= u64::from(byte);
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    Name::from(format!("derived-{hash:016x}"))
+}
+
+/// Occurrence references currently available to a rule head. Primitive facts
+/// use their declared ids; every metaedge also exposes its explicit
+/// `occurrence` role, including edges made by earlier fixpoint rounds.
+fn occurrence_entities(db: &Db) -> Result<BTreeMap<Name, EntityId>, String> {
+    let mut out = BTreeMap::new();
+    let insert = |out: &mut BTreeMap<Name, EntityId>, name: Name, entity: EntityId| {
+        if let Some(previous) = out.insert(name.clone(), entity.clone())
+            && previous != entity
+        {
+            return Err(format!(
+                "occurrence reference `{name}` names two different entities"
+            ));
+        }
+        Ok(())
+    };
+    for (atom, derivations) in db.values() {
+        for derivation in derivations {
+            if derivation.is_fact {
+                insert(
+                    &mut out,
+                    Name::from(derivation.source()),
+                    derivation.entity.id.clone(),
+                )?;
+            }
+            if matches!(derivation.entity.intension, Intension::Metaedge { .. })
+                && let Some((_, Term::Ref(reference))) = atom
+                    .args
+                    .iter()
+                    .find(|(role, _)| role == METAEDGE_OCCURRENCE_ROLE)
+            {
+                insert(&mut out, reference.clone(), derivation.entity.id.clone())?;
+            }
+        }
+    }
+    Ok(out)
+}
+
+/// Turn a grounded ordinary rule head into a first-class metaedge intension
+/// and add the edge's own occurrence reference to the atom seen by later
+/// rules. Every endpoint must name an occurrence already in the closure.
+fn prepare_metaedge_head(
+    occurrences: &BTreeMap<Name, EntityId>,
+    head: &Atom,
+    source: &Name,
+) -> Result<(Atom, Intension), String> {
+    if head.neg {
+        return Err("a rule cannot construct a negated metaedge".into());
+    }
+    let mut relation = None;
+    let mut ports = Vec::new();
+    let mut roles = BTreeSet::new();
+    for (role, term) in &head.args {
+        if !roles.insert(role) {
+            return Err(format!("a metaedge head repeats role `{role}`"));
+        }
+        if role == METAEDGE_OCCURRENCE_ROLE {
+            return Err("the `occurrence` role is assigned by the kernel".into());
+        }
+        let Term::Ref(reference) = term else {
+            return Err(format!(
+                "metaedge role `{role}` has `{term}` instead of an occurrence reference"
+            ));
+        };
+        let target = occurrences
+            .get(reference)
+            .cloned()
+            .ok_or_else(|| format!("unknown occurrence `{reference}` in metaedge head"))?;
+        if role == METAEDGE_RELATION_ROLE {
+            if relation.replace(target).is_some() {
+                return Err("a metaedge head repeats the `relation` role".into());
+            }
+        } else {
+            ports.push(PortBinding::new(role.to_string(), target));
+        }
+    }
+    let relation = relation.ok_or("a metaedge head needs a `relation` role")?;
+    let intension = Intension::Metaedge {
+        source: source.to_string(),
+        relation,
+        ports,
+    };
+    let occurrence = derived_occurrence_name(&Entity::new(intension.clone(), Vec::new()).id);
+    let mut args = head.args.clone();
+    args.push((Name::from(METAEDGE_OCCURRENCE_ROLE), Term::Ref(occurrence)));
+    Ok((
+        Atom::new(Name::from(METAEDGE_RELATION), args, false),
+        intension,
+    ))
+}
+
 fn insert_metaedge_facts(
     prog: &Program,
     context: &Plane,
@@ -912,13 +1036,22 @@ fn insert_metaedge_facts(
                 next.push(index);
                 continue;
             }
-            let mut args = vec![(Name::from("relation"), Term::Ref(decl.relation.clone()))];
+            let mut args = vec![
+                (
+                    Name::from(METAEDGE_OCCURRENCE_ROLE),
+                    Term::Ref(decl.id.clone()),
+                ),
+                (
+                    Name::from(METAEDGE_RELATION_ROLE),
+                    Term::Ref(decl.relation.clone()),
+                ),
+            ];
             args.extend(
                 decl.ports
                     .iter()
                     .map(|(role, target)| (role.clone(), Term::Ref(target.clone()))),
             );
-            let atom = Atom::new(Name::from("metaedge"), args, false);
+            let atom = Atom::new(Name::from(METAEDGE_RELATION), args, false);
             let key = atom.key();
             if blocked.contains(&key) {
                 continue;
@@ -1621,7 +1754,8 @@ fn fixpoint(
                 .as_ref()
                 .filter(|_| !naive)
                 .map(|f| Index::new(db, db.ids().filter(|i| f.contains(i))));
-            let mut new: Vec<(Atom, &Rule, Vec<Pre>)> = Vec::new();
+            let mut new: Vec<(Atom, &Rule, Vec<Pre>, Option<Intension>)> = Vec::new();
+            let occurrences = occurrence_entities(db);
             // (relation, x, y) of lazy atoms that whole matches rest on: a
             // pair the labels gave to a body that did not match makes nothing.
             let mut wanted: BTreeSet<(String, String, String)> = BTreeSet::new();
@@ -1657,7 +1791,22 @@ fn fixpoint(
                                 wanted.insert((l.0.clone(), l.1.clone(), l.2.clone()));
                             }
                         }
-                        new.push((head, *r, premises));
+                        if head.rel == METAEDGE_RELATION {
+                            let prepared = occurrences
+                                .as_ref()
+                                .map_err(Clone::clone)
+                                .and_then(|known| prepare_metaedge_head(known, &head, &r.id));
+                            match prepared {
+                                Ok((head, intension)) => {
+                                    new.push((head, *r, premises, Some(intension)))
+                                }
+                                Err(message) => {
+                                    errors.insert(format!("rule `{}`: {message}", r.id));
+                                }
+                            }
+                        } else {
+                            new.push((head, *r, premises, None));
+                        }
                     }
                 }
             }
@@ -1676,7 +1825,7 @@ fn fixpoint(
             l.cone(&up.as_ref().expect("set above").2, y, db);
         }
         let mut born: BTreeSet<Id> = BTreeSet::new();
-        for (head, r, premises) in new {
+        for (head, r, premises, intension) in new {
             let key = head.key();
             if blocked.contains(&key) {
                 continue;
@@ -1697,7 +1846,7 @@ fn fixpoint(
                 born.insert(id);
             }
             // The rule's own strength for now; `settle` reads it through the premises.
-            let d = make_derivation(
+            let mut d = make_derivation(
                 db,
                 &conclusion,
                 &r.id,
@@ -1707,6 +1856,9 @@ fn fixpoint(
                 premises,
                 0,
             );
+            if let Some(intension) = intension {
+                d.entity = Entity::new(intension, vec![d.evidence.id.clone()]);
+            }
             added |= db.derive(id, d);
         }
         if db.len() > limit {

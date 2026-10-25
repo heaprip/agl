@@ -507,8 +507,11 @@ fn answer(
     let out = evals.get(&plane);
     errors.extend(out.errors.iter().cloned());
     let key = q.atom.key();
-    let ckey = q.atom.complement().key();
+    let complement = q.atom.complement();
+    let ckey = complement.key();
     let pos_key = if q.atom.neg { &ckey } else { &key };
+    let matching = out.db.query_keys(&q.atom);
+    let matching_complement = out.db.query_keys(&complement);
     let (verdict, explanation) = if let Some(c) = out.conflicts.get(pos_key) {
         let kind = if c.kind == ConflictKind::Hard {
             "hard contradiction"
@@ -523,10 +526,10 @@ fn answer(
                 c.sources_neg.join(", ")
             ),
         )
-    } else if out.db.contains_key(&key) {
-        (Verdict::Yes, eval::explain(out, &key))
-    } else if out.db.contains_key(&ckey) {
-        (Verdict::No, eval::explain(out, &ckey))
+    } else if let Some(found) = matching.first() {
+        (Verdict::Yes, eval::explain(out, found))
+    } else if let Some(found) = matching_complement.first() {
+        (Verdict::No, eval::explain(out, found))
     } else if let Some(g) = gap_for(prog, q, &plane) {
         (Verdict::Gap, g)
     } else {

@@ -197,7 +197,7 @@ extent(a, p) = extent(b, p)  не влечёт  a = b.
 
 | Часть контракта | Что уже есть | Чего не хватает |
 | --- | --- | --- |
-| метаребро с ролями | `meta::Metaedge` принимает `EntityId` отношения и endpoints; `.agl` имеет `metaedge ID: &RELATION(...)`; `metaedge(...)` участвует в обычных rules/query | правила пока потребляют, но не конструируют новые first-class metaedges в head |
+| метаребро с ролями | `meta::Metaedge` принимает `EntityId` отношения и endpoints; declarations и rule heads создают first-class edges; `occurrence` связывает результат в следующем правиле | декларации типов портов и их проверка |
 | контекстная плоскость | `model::Plane`; отдельные `Projection.context`, `Evidence.context/source_context` | формальные restriction maps в общем API |
 | путь построения | общий `meta::Intension`; его создают `eval::Derivation`, `bank::Entry`; `layer::Query::intension` даёт ту же открытую структуру | перенос остальных отдельных исполнителей |
 | точная проекция | `bank::ExactRelation::{Dense,Sparse}` над production `Ext`; representation-independent equality | общий интерфейс для иных arities, если они понадобятся |

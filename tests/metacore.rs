@@ -318,3 +318,100 @@ query seen(target: &target_occ) @ expect yes
         Some(EvidenceState::Unsupported)
     );
 }
+
+#[test]
+fn rule_heads_construct_reusable_first_class_metaedges() {
+    let src = "
+relation candidate(relation, target)
+fact relation_occ: relation_object(name: observes) @
+fact target_occ: object(name: sample) @
+fact candidate_occ: candidate(relation: &relation_occ, target: &target_occ) @
+rule construct strict @: metaedge(relation: ?relation, subject: ?target) <- candidate(relation: ?relation, target: ?target)
+rule lift strict @: metaedge(relation: ?edge, subject: ?target) <- metaedge(occurrence: ?edge, relation: ?base, subject: ?target), candidate(relation: ?base, target: ?target)
+query metaedge(relation: &relation_occ, subject: &target_occ) @ expect yes
+";
+    let prog = agl::parse(src).unwrap();
+    let report = agl::run(&prog);
+    assert!(!report.has_errors(), "{}", agl::render(&report));
+    assert_eq!(
+        report.failed_queries().count(),
+        0,
+        "{}",
+        agl::render(&report)
+    );
+
+    let out = evaluate(&prog, &Plane::new());
+    assert!(out.errors.is_empty(), "{:?}", out.errors);
+    assert_eq!(out.metaedges.len(), 2);
+
+    let occurrence = |source: &str| {
+        out.db
+            .values()
+            .flat_map(|(_, derivations)| derivations)
+            .find(|derivation| derivation.source() == source)
+            .unwrap()
+            .entity
+            .id
+            .clone()
+    };
+    let relation = occurrence("relation_occ");
+    let target = occurrence("target_occ");
+    let root = out
+        .metaedges
+        .iter()
+        .find(|edge| edge.relation == relation)
+        .unwrap();
+    let nested = out
+        .metaedges
+        .iter()
+        .find(|edge| edge.relation == root.entity.id)
+        .unwrap();
+    assert_eq!(root.ports[0].target, target);
+    assert_eq!(nested.ports[0].target, target);
+
+    let root_atom = out
+        .db
+        .values()
+        .find(|(_, derivations)| {
+            derivations
+                .iter()
+                .any(|derivation| derivation.entity.id == root.entity.id)
+        })
+        .map(|(atom, _)| atom)
+        .unwrap();
+    assert!(root_atom.args.iter().any(|(role, term)| {
+        role == agl::model::METAEDGE_OCCURRENCE_ROLE && matches!(term, agl::model::Term::Ref(_))
+    }));
+
+    // The second edge's evidence uses the first edge's claim. Retraction is
+    // therefore semantic, not merely removal from the report.
+    let mut graph = out.metagraph().unwrap();
+    let refuter = Evidence::new(
+        ClaimId::named("event", "refute-derived-root"),
+        "test-refuter",
+        Vec::new(),
+        Strength::Strict,
+        Plane::new(),
+    );
+    graph.add_evidence(refuter.clone()).unwrap();
+    graph.retract(root.evidence.clone(), refuter.id).unwrap();
+    assert_eq!(
+        graph.evidence_state(&nested.evidence),
+        Some(EvidenceState::Unsupported)
+    );
+
+    let reordered = "
+relation candidate(relation, target)
+fact candidate_occ: candidate(relation: &relation_occ, target: &target_occ) @
+fact target_occ: object(name: sample) @
+fact relation_occ: relation_object(name: observes) @
+rule lift strict @: metaedge(relation: ?edge, subject: ?target) <- metaedge(occurrence: ?edge, relation: ?base, subject: ?target), candidate(relation: ?base, target: ?target)
+rule construct strict @: metaedge(relation: ?relation, subject: ?target) <- candidate(relation: ?relation, target: ?target)
+query metaedge(relation: &relation_occ, subject: &target_occ) @ expect yes
+";
+    let reordered = evaluate(&agl::parse(reordered).unwrap(), &Plane::new());
+    assert_eq!(
+        out.metagraph().unwrap().report(),
+        reordered.metagraph().unwrap().report()
+    );
+}

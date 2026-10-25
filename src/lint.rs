@@ -80,6 +80,9 @@ pub fn lint(prog: &Program) -> Vec<Diag> {
     let rule_ids: BTreeSet<&str> = prog.rules.iter().map(|r| r.id.as_str()).collect();
     for r in &prog.rules {
         check_roles(prog, &r.head, r.line, &mut out);
+        if r.head.rel == METAEDGE_RELATION {
+            check_metaedge_head(r, &mut out);
+        }
         let mut bound: BTreeSet<&str> = BTreeSet::new();
         for lit in &r.body {
             match lit {
@@ -160,6 +163,76 @@ pub fn lint(prog: &Program) -> Vec<Diag> {
         ready_made(prog, &mut out);
     }
     out
+}
+
+fn check_metaedge_head(rule: &Rule, out: &mut Vec<Diag>) {
+    if rule.head.neg {
+        out.push(err(
+            rule.line,
+            "negative-metaedge-head",
+            format!("rule `{}` cannot construct a negated metaedge", rule.id),
+        ));
+    }
+    let relation_roles = rule
+        .head
+        .args
+        .iter()
+        .filter(|(role, _)| role == METAEDGE_RELATION_ROLE)
+        .count();
+    if relation_roles != 1 {
+        out.push(err(
+            rule.line,
+            "bad-metaedge-head",
+            format!(
+                "rule `{}` must give exactly one `relation` role in a metaedge head",
+                rule.id
+            ),
+        ));
+    }
+    let mut roles = BTreeSet::new();
+    if let Some(role) = rule
+        .head
+        .args
+        .iter()
+        .map(|(role, _)| role.as_str())
+        .find(|role| !roles.insert(*role))
+    {
+        out.push(err(
+            rule.line,
+            "duplicate-metaedge-role",
+            format!("rule `{}` repeats metaedge role `{role}`", rule.id),
+        ));
+    }
+    if rule
+        .head
+        .args
+        .iter()
+        .any(|(role, _)| role == METAEDGE_OCCURRENCE_ROLE)
+    {
+        out.push(err(
+            rule.line,
+            "reserved-metaedge-role",
+            format!(
+                "rule `{}` cannot set `occurrence`; the kernel derives it from the metaedge intension",
+                rule.id
+            ),
+        ));
+    }
+    if let Some((role, term)) = rule
+        .head
+        .args
+        .iter()
+        .find(|(_, term)| !matches!(term, Term::Ref(_) | Term::Var(_)))
+    {
+        out.push(err(
+            rule.line,
+            "bad-metaedge-endpoint",
+            format!(
+                "rule `{}` metaedge role `{role}` has `{term}` instead of an occurrence reference",
+                rule.id
+            ),
+        ));
+    }
 }
 
 /// In a clean world (`world clean`, H72) the kernel rejects whatever comes

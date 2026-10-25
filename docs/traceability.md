@@ -144,7 +144,7 @@ SHA-256 `086c43c8ed918b0b6985061376c41d061bd38688505702093076441b680eeaef`.
 | 7 | метаядро выводится из казусов | метод разработки | regression, oracle, blind, memote | нет единого реестра «требование → тест» кроме этой карты |
 | 8, 13 | Камю — ветка весов, не истина и не аксиома | контекст/форк и многомерная оценка | казус «Праведные» | механизма весов нет |
 | 9 | личный проект, успех открыт | область действия | `vision` | не техническая задача |
-| 10 | relation-first буквально | `EntityId + Intension + Port + Metaedge` | `.agl` `&ID`; metaedge — настоящий atom closure для rules/query | rule head ещё не создаёт first-class metaedge |
+| 10 | relation-first буквально | `EntityId + Intension + Port + Metaedge` | `.agl` `&ID`; declarations и rule heads создают переиспользуемые metaedges | типы портов пока не проверяются |
 | 11 | LLM даёт материал, ядро проверяет | proposal с provenance | DSL-прогоны и локальные эксперименты | нет общего воспроизводимого цикла в стволе |
 | 12 | описывать или предписывать — не решено | тип вопроса/ветки | различение сохранено в документах | сознательно открыто |
 | 14 | intercessio только референс | граница заимствования | документировано | действий нет |
@@ -162,8 +162,8 @@ SHA-256 `086c43c8ed918b0b6985061376c41d061bd38688505702093076441b680eeaef`.
 
 | Узел | Объект контракта | Что уже есть | Проверка | Честный статус |
 | --- | --- | --- | --- | --- |
-| R — отношение первично | `Entity/Intension`, role-labelled link | общий carrier; `&ID` ссылается на occurrence; rules/query сопоставляют `metaedge(...)` | metacore, identity_extent, layer | first-class construction из rule head отсутствует |
-| M — метаребро | `Metaedge`, relation as endpoint | общий `Metaedge`, DSL declaration, closure matching и endpoint index | identity_extent, metacore | создание пока декларативное, не производное |
+| R — отношение первично | `Entity/Intension`, role-labelled link | общий carrier; `&ID` ссылается на occurrence; rule head сохраняет relation occurrence | metacore, identity_extent, layer | декларации типов портов отсутствуют |
+| M — метаребро | `Metaedge`, relation as endpoint | декларативное и производное создание; `occurrence` делает edge входом следующего rule | identity_extent, metacore | нет DPO/general graph rewrite semantics |
 | P — плоскость | context + restriction | context-indexed `Projection`, раздельные evaluation/source contexts | oracle, metacore, identity_extent | restriction проверен для `Ext`, но не стал общей категорией контекстов |
 | G — основание | derivation/provenance DAG | общий AND/OR `ClaimId/Evidence`; typed journal/replay | oracle, metacore, identity_extent | нет меры независимости линий и бивременности |
 | D — разложение | intension graph, homomorphism, factors | `concept`, `bank`, `free`, `factor` | concept/bank/free tests | сильные части есть, общего носителя нет |

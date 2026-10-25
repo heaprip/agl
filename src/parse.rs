@@ -334,10 +334,11 @@ fn parse_statement(prog: &mut Program, u: &Units, stmt: &str) -> Result<(), Stri
                 parsed.push((name(ident(role.trim())?), name(target)));
             }
             parsed.sort_by(|a, b| a.0.cmp(&b.0));
-            if parsed.iter().any(|(role, _)| role == "relation") {
-                return Err(
-                    "metaedge role `relation` is reserved for its relation occurrence".into(),
-                );
+            if parsed
+                .iter()
+                .any(|(role, _)| role == METAEDGE_RELATION_ROLE || role == METAEDGE_OCCURRENCE_ROLE)
+            {
+                return Err("metaedge roles `relation` and `occurrence` are reserved".into());
             }
             if parsed.windows(2).any(|ports| ports[0].0 == ports[1].0) {
                 return Err("a metaedge cannot repeat a role".into());

@@ -9,6 +9,12 @@ use std::rc::Rc;
 use crate::plane::Axes;
 use crate::units::Dim;
 
+/// Built-in relation and roles used to expose first-class relation
+/// occurrences to the ordinary rule engine.
+pub const METAEDGE_RELATION: &str = "metaedge";
+pub const METAEDGE_RELATION_ROLE: &str = "relation";
+pub const METAEDGE_OCCURRENCE_ROLE: &str = "occurrence";
+
 /// A name (relation, role, symbol, source) shared by every atom that uses
 /// it: the text is stored once, atoms hold references (H61, step 3a). It
 /// compares and prints as its text, so order and output stay those of text.
@@ -334,7 +340,8 @@ pub struct Fact {
 
 /// `metaedge ID: &RELATION(role: &TARGET, ...) @ SPEC`: a relation
 /// occurrence and every endpoint are references to statement occurrences,
-/// never ordinary domain symbols.
+/// never ordinary domain symbols. In the closure it also has the built-in
+/// `occurrence: &ID` role, so another rule can use the edge itself.
 #[derive(Clone, Debug)]
 pub struct MetaedgeDecl {
     pub id: Name,
