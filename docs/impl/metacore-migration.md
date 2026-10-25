@@ -34,6 +34,11 @@
   `parts`. `Metagraph::expand_open_frontier` подставляет активные закрытые
   occurrences без выбора доменного solver; порядок заполнения меняет evidence,
   но не итоговый `EntityId`.
+- `atlas::record_models` проверяет результаты общего finite-model search и
+  переносит каждую таблицу как structural Glue из cell occurrences, с
+  отдельной `Projection<Table>` и зависимостью принятия от входных законов.
+  Это первый рабочий atlas → metacore seam; он ещё не заменяет signed Hamilton
+  sieve и не считается полным выводом кватернионов из бульона.
 
 ## Почему это не прежний prototype
 

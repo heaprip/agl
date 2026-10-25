@@ -360,9 +360,17 @@ fn adjoining_does_not_depend_on_statement_order() {
     }
 }
 
-/// Step 4 of H57: the eight full tables n = 4 left by the pair stage
-/// (uₐu_b = ±u_c, anticommuting), probes among elements with coefficients in
-/// {−1, 0, 1} on two units. Returns the survivors under the active laws.
+/// Legacy H57 star, not a soup-derived discovery: this helper explicitly
+/// enumerates the three signed cyclic products, expands them to complete
+/// tables, and supplies every probe. The active laws only sieve those tables.
+///
+/// The next functional seam must replace this generator with generic table
+/// candidates whose primary constraints are represented as entities and
+/// evidence in the metacore. `atlas::Law` currently has no named constants or
+/// coefficient-valued products, while `bank` and `layer` generate binary
+/// query extents rather than finite operation tables. Until those generic
+/// interfaces meet, this test is a regression check for the old sieve only;
+/// it does not establish that quaternions are inferred from the soup.
 fn hamilton(active: &[&str]) -> (agl::model::Program, Vec<String>) {
     let mut src = std::fs::read_to_string("cases/discovery/hamilton.agl").unwrap();
     for u in 0..4 {

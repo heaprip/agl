@@ -10,6 +10,8 @@
 //! read in three values on a partial table and isomorphic branches cut (the
 //! least number heuristic of finite model finders such as Mace4).
 
+use crate::meta::{ClaimId, Entity, EntityId, Evidence, Intension, Metagraph, Part, Projection};
+use crate::model::{Plane, Strength};
 use crate::sat::{Lit, Solver};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
@@ -20,6 +22,128 @@ use std::fmt;
 pub struct Table {
     pub n: u8,
     pub cells: Vec<Option<u8>>,
+}
+
+/// Record finite-model candidates in the shared proof-relevant metagraph.
+///
+/// A table's identity is its structural presentation: one first-class cell
+/// entity per row-major assignment, glued into an ordered table boundary.
+/// Its projection stores the executable `Table` value, while construction
+/// evidence records the laws used to generate the candidate. Equal tables
+/// from another search keep the same identity and may add alternative support.
+pub fn record_models(
+    graph: &mut Metagraph<Table>,
+    tables: &[Table],
+    laws: &[&Law],
+    context: Plane,
+) -> Result<Vec<EntityId>, String> {
+    for table in tables {
+        if table.n == 0
+            || table.cells.len() != (table.n as usize).pow(2)
+            || table.cells.iter().any(Option::is_none)
+        {
+            return Err(format!(
+                "atlas candidate is not a complete nonempty {}×{} table",
+                table.n, table.n
+            ));
+        }
+        if table.cells.iter().flatten().any(|&value| value >= table.n) {
+            return Err(format!(
+                "atlas candidate has an output outside its order {}",
+                table.n
+            ));
+        }
+        if let Some(law) = laws.iter().find(|law| law.holds(table) != Some(true)) {
+            return Err(format!(
+                "atlas candidate `{table}` does not satisfy input law `{law}`"
+            ));
+        }
+    }
+
+    let mut law_claims = Vec::with_capacity(laws.len());
+    for law in laws {
+        let description = law.to_string();
+        let claim = ClaimId::named("atlas-law", &description);
+        let evidence = Evidence::new(
+            claim.clone(),
+            format!("atlas-input-law:{description}"),
+            Vec::new(),
+            Strength::Strict,
+            Plane::new(),
+        );
+        let entity = Entity::new(
+            Intension::Primitive {
+                source: format!("atlas-law:{description}"),
+            },
+            vec![evidence.id.clone()],
+        );
+        graph.add_evidence(evidence)?;
+        graph.add_entity(entity)?;
+        law_claims.push(claim);
+    }
+    law_claims.sort();
+    law_claims.dedup();
+
+    let mut ids = BTreeSet::new();
+    for table in tables {
+        let mut parts = Vec::with_capacity(table.cells.len());
+        let mut cell_claims = Vec::with_capacity(table.cells.len());
+        for (index, value) in table.cells.iter().enumerate() {
+            let value = value.expect("complete table checked above");
+            let source = format!("atlas-cell:{}:{index}:{value}", table.n);
+            let cell = Entity::new(Intension::Primitive { source }, Vec::new());
+            let claim = ClaimId::derived("entity", [cell.id.as_str()]);
+            let evidence = Evidence::new(
+                ClaimId::derived("entity", [cell.id.as_str()]),
+                "atlas-cell-assignment",
+                Vec::new(),
+                Strength::Strict,
+                context.clone(),
+            );
+            let cell = Entity::new(cell.intension, vec![evidence.id.clone()]);
+            graph.add_evidence(evidence)?;
+            graph.add_entity(cell.clone())?;
+            parts.push(Part::Entity(cell.id));
+            cell_claims.push(claim);
+        }
+
+        let intension = Intension::Glue {
+            operation: "atlas-finite-table".into(),
+            parts,
+            wiring: Vec::new(),
+            interface: vec![format!("order:{}", table.n)],
+        };
+        let provisional = Entity::new(intension.clone(), Vec::new());
+        let entity_claim = ClaimId::derived("entity", [provisional.id.as_str()]);
+        let premises = law_claims.iter().cloned().chain(cell_claims).collect();
+        let construction = Evidence::new(
+            entity_claim.clone(),
+            "atlas-model-from-laws",
+            premises,
+            Strength::Strict,
+            context.clone(),
+        );
+        let entity = Entity::new(intension, vec![construction.id.clone()]);
+        graph.add_evidence(construction.clone())?;
+        graph.add_entity(entity.clone())?;
+
+        let projection_evidence = Evidence::new(
+            ClaimId::derived("atlas-projection", [entity.id.as_str()]),
+            "atlas-table-projection",
+            vec![entity_claim],
+            Strength::Strict,
+            context.clone(),
+        );
+        graph.add_evidence(projection_evidence.clone())?;
+        graph.add_projection(Projection::new(
+            &entity,
+            context.clone(),
+            table.clone(),
+            &projection_evidence,
+        ))?;
+        ids.insert(entity.id);
+    }
+    Ok(ids.into_iter().collect())
 }
 
 impl Table {
