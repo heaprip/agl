@@ -8,8 +8,8 @@ use std::collections::BTreeMap;
 use crate::bank::{ExactRelation, Ext};
 use crate::journal::Journal;
 use crate::meta::{
-    ClaimId, Entity, EntityId, Evidence, EvidenceId, Intension, Metaedge, Metagraph, PortBinding,
-    Projection,
+    ClaimId, Entity, EntityId, Evidence, EvidenceId, Intension, Metaedge, Metagraph, Part,
+    PortBinding, Projection,
 };
 use crate::model::{Plane, Strength};
 
@@ -113,6 +113,13 @@ fn intension(intension: &Intension) -> String {
             wiring,
             interface,
         } => {
+            let parts = parts
+                .iter()
+                .map(|part| match part {
+                    Part::Entity(entity) => entity.to_string(),
+                    Part::Hole(hole) => format!("?{hole}"),
+                })
+                .collect::<Vec<_>>();
             let wiring = wiring
                 .iter()
                 .map(|(left, right)| format!("{}={}", hex(left), hex(right)))
@@ -121,7 +128,7 @@ fn intension(intension: &Intension) -> String {
             vec![
                 "g".into(),
                 hex(operation),
-                list(parts.iter().map(|entity| entity.as_str())),
+                list(parts.iter().map(String::as_str)),
                 hex(&wiring),
                 list(interface.iter().map(String::as_str)),
             ]
@@ -172,7 +179,10 @@ fn unintension(encoded: &str) -> Result<Intension, String> {
                 operation: unhex(operation)?,
                 parts: unlist(parts)?
                     .into_iter()
-                    .map(EntityId::from_stable_key)
+                    .map(|part| match part.strip_prefix('?') {
+                        Some(hole) => Part::Hole(hole.to_string()),
+                        None => Part::Entity(EntityId::from_stable_key(part)),
+                    })
                     .collect(),
                 wiring,
                 interface: unlist(interface)?,

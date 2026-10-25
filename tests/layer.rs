@@ -3,7 +3,7 @@
 
 use agl::bank::Ext;
 use agl::layer::{Found, Image, Query, explore, holds, table, to_agl};
-use agl::meta::{EntityId, Intension};
+use agl::meta::{Entity, EntityId, Intension};
 
 /// Every binary relation on `n` points.
 fn all(n: usize) -> Vec<Ext> {
@@ -52,6 +52,27 @@ fn query_exposes_ordered_open_intension() {
     assert_eq!(parts.len(), 2);
     assert!(!wiring.is_empty());
     assert_eq!(interface, ["var:0", "var:1"]);
+}
+
+#[test]
+fn filling_open_holes_is_the_same_construction_as_direct_gluing() {
+    let query = composition();
+    let r = EntityId::named("test", "r");
+    let s = EntityId::named("test", "s");
+    let open = query.open_intension();
+    assert_eq!(open.holes(), ["hole:0", "hole:1"].into_iter().collect());
+
+    let partial = open.bind("hole:0", r.clone()).unwrap();
+    assert_eq!(partial.holes(), ["hole:1"].into_iter().collect());
+    let filled = partial.bind("hole:1", s.clone()).unwrap();
+    assert!(filled.holes().is_empty());
+
+    let direct = query.intension(&[r, s]);
+    assert_eq!(filled, direct);
+    assert_eq!(
+        Entity::new(filled, Vec::new()).id,
+        Entity::new(direct, Vec::new()).id
+    );
 }
 
 #[test]

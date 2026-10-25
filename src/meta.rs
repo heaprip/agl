@@ -69,6 +69,23 @@ pub struct PortBinding {
     pub target: EntityId,
 }
 
+/// One occurrence in a structural composition. A hole is not a command to
+/// another solver: it is an unfilled relation position in the same intension.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Part {
+    Entity(EntityId),
+    Hole(String),
+}
+
+impl Part {
+    fn key(&self) -> String {
+        match self {
+            Part::Entity(entity) => entity.to_string(),
+            Part::Hole(hole) => format!("?{hole}"),
+        }
+    }
+}
+
 impl PortBinding {
     pub fn new(role: impl Into<String>, target: EntityId) -> Self {
         Self {
@@ -94,7 +111,7 @@ pub enum Intension {
     /// Structural composition of already first-class entities.
     Glue {
         operation: String,
-        parts: Vec<EntityId>,
+        parts: Vec<Part>,
         wiring: Vec<(String, String)>,
         interface: Vec<String>,
     },
@@ -154,7 +171,7 @@ impl Intension {
                 interface,
             } => {
                 let mut fields = vec![operation.clone()];
-                fields.extend(parts.iter().map(ToString::to_string));
+                fields.extend(parts.iter().map(Part::key));
                 fields.extend(wiring.iter().map(|(a, b)| format!("{a}={b}")));
                 fields.extend(interface.iter().map(|p| format!("port:{p}")));
                 exact_key("glue", &fields)
@@ -174,13 +191,66 @@ impl Intension {
     pub fn dependencies(&self) -> Vec<&EntityId> {
         match self {
             Intension::Primitive { .. } | Intension::Derive { .. } => Vec::new(),
-            Intension::Glue { parts, .. } => parts.iter().collect(),
+            Intension::Glue { parts, .. } => parts
+                .iter()
+                .filter_map(|part| match part {
+                    Part::Entity(entity) => Some(entity),
+                    Part::Hole(_) => None,
+                })
+                .collect(),
             Intension::Metaedge {
                 relation, ports, ..
             } => std::iter::once(relation)
                 .chain(ports.iter().map(|port| &port.target))
                 .collect(),
         }
+    }
+
+    /// Names of the still-unfilled positions of this construction.
+    pub fn holes(&self) -> BTreeSet<&str> {
+        match self {
+            Intension::Glue { parts, .. } => parts
+                .iter()
+                .filter_map(|part| match part {
+                    Part::Hole(hole) => Some(hole.as_str()),
+                    Part::Entity(_) => None,
+                })
+                .collect(),
+            _ => BTreeSet::new(),
+        }
+    }
+
+    /// Fill every occurrence of one named hole. The result is still the same
+    /// structural intension; when its last hole is filled it is byte-for-byte
+    /// equal to a directly constructed closed `Glue`.
+    pub fn bind(&self, hole: &str, entity: EntityId) -> Result<Self, String> {
+        let Intension::Glue {
+            operation,
+            parts,
+            wiring,
+            interface,
+        } = self
+        else {
+            return Err("only a glue intension has open relation positions".into());
+        };
+        if !parts
+            .iter()
+            .any(|part| matches!(part, Part::Hole(name) if name == hole))
+        {
+            return Err(format!("unknown or already filled hole `{hole}`"));
+        }
+        Ok(Intension::Glue {
+            operation: operation.clone(),
+            parts: parts
+                .iter()
+                .map(|part| match part {
+                    Part::Hole(name) if name == hole => Part::Entity(entity.clone()),
+                    other => other.clone(),
+                })
+                .collect(),
+            wiring: wiring.clone(),
+            interface: interface.clone(),
+        })
     }
 }
 
@@ -419,6 +489,169 @@ impl<T: Clone + PartialEq> Metagraph<T> {
         }
         self.entities.insert(entity.id.clone(), entity);
         Ok(())
+    }
+
+    fn entity_claim(&self, id: &EntityId) -> Result<ClaimId, String> {
+        let entity = self
+            .entities
+            .get(id)
+            .ok_or_else(|| format!("unknown entity `{id}`"))?;
+        let mut claims = entity
+            .bases
+            .iter()
+            .map(|basis| {
+                self.evidence
+                    .get(basis)
+                    .map(|evidence| evidence.conclusion.clone())
+                    .ok_or_else(|| format!("unknown entity basis `{basis}`"))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        claims.sort();
+        claims.dedup();
+        match claims.as_slice() {
+            [claim] => Ok(claim.clone()),
+            [] => Err(format!("entity `{id}` has no construction evidence")),
+            _ => Err(format!(
+                "entity `{id}` bases do not support one construction claim"
+            )),
+        }
+    }
+
+    /// Active structural compositions which still contain unfilled relation
+    /// positions. This is a derived view of ordinary entities, not a queue of
+    /// special questions owned by another executor.
+    pub fn open_frontier(&self) -> Vec<(EntityId, Vec<String>)> {
+        let active = self.active_evidence_ids();
+        self.entities
+            .values()
+            .filter(|entity| entity.bases.iter().any(|basis| active.contains(basis)))
+            .filter_map(|entity| {
+                let holes = entity
+                    .intension
+                    .holes()
+                    .into_iter()
+                    .map(str::to_string)
+                    .collect::<Vec<_>>();
+                (!holes.is_empty()).then(|| (entity.id.clone(), holes))
+            })
+            .collect()
+    }
+
+    /// Fill a relation position with another active entity. The operation
+    /// produces ordinary evidence and an ordinary entity, so retraction and
+    /// alternative provenance use the same AND/OR graph as every other step.
+    pub fn bind_open(
+        &mut self,
+        open: &EntityId,
+        hole: &str,
+        part: &EntityId,
+        context: Plane,
+    ) -> Result<EntityId, String> {
+        let active = self.active_evidence_ids();
+        if !self
+            .entities
+            .get(open)
+            .is_some_and(|entity| entity.bases.iter().any(|basis| active.contains(basis)))
+        {
+            return Err(format!("open entity `{open}` is not active"));
+        }
+        if !self
+            .entities
+            .get(part)
+            .is_some_and(|entity| entity.bases.iter().any(|basis| active.contains(basis)))
+        {
+            return Err(format!("binding entity `{part}` is not active"));
+        }
+        self.bind_open_active(open, hole, part, context)
+    }
+
+    fn bind_open_active(
+        &mut self,
+        open: &EntityId,
+        hole: &str,
+        part: &EntityId,
+        context: Plane,
+    ) -> Result<EntityId, String> {
+        let open_entity = self.entities[open].clone();
+        let intension = open_entity.intension.bind(hole, part.clone())?;
+        let provisional = Entity::new(intension.clone(), Vec::new());
+        let evidence = Evidence::new_situated(
+            ClaimId::derived("entity", [provisional.id.as_str()]),
+            format!("bind-open:{hole}"),
+            vec![self.entity_claim(open)?, self.entity_claim(part)?],
+            Strength::Strict,
+            context,
+            Plane::new(),
+        );
+        self.add_evidence(evidence.clone())?;
+        let entity = Entity::new(intension, vec![evidence.id]);
+        let id = entity.id.clone();
+        self.add_entity(entity)?;
+        Ok(id)
+    }
+
+    /// Expand every active open composition with every active closed
+    /// occurrence, breadth-first for at most `rounds` and `max_new` entities.
+    /// The boolean result says that the size budget stopped expansion. This
+    /// is deliberately domain-blind: later port types may prune candidates,
+    /// but no anomaly kind dispatches to a different algorithm.
+    pub fn expand_open_frontier(
+        &mut self,
+        context: Plane,
+        rounds: usize,
+        max_new: usize,
+    ) -> Result<(Vec<EntityId>, bool), String> {
+        let before: BTreeSet<_> = self.entities.keys().cloned().collect();
+        let mut truncated = false;
+        'rounds: for _ in 0..rounds {
+            let active = self.active_evidence_ids();
+            let frontier = self
+                .entities
+                .values()
+                .filter(|entity| entity.bases.iter().any(|basis| active.contains(basis)))
+                .filter_map(|entity| {
+                    let holes = entity
+                        .intension
+                        .holes()
+                        .into_iter()
+                        .map(str::to_string)
+                        .collect::<Vec<_>>();
+                    (!holes.is_empty()).then(|| (entity.id.clone(), holes))
+                })
+                .collect::<Vec<_>>();
+            let candidates = self
+                .entities
+                .values()
+                .filter(|entity| {
+                    entity.intension.holes().is_empty()
+                        && entity.bases.iter().any(|basis| active.contains(basis))
+                })
+                .map(|entity| entity.id.clone())
+                .collect::<Vec<_>>();
+            let count = self.entities.len();
+            for (open, holes) in frontier {
+                for hole in holes {
+                    for candidate in &candidates {
+                        if self.entities.len().saturating_sub(before.len()) >= max_new {
+                            truncated = true;
+                            break 'rounds;
+                        }
+                        self.bind_open_active(&open, &hole, candidate, context.clone())?;
+                    }
+                }
+            }
+            if self.entities.len() == count {
+                break;
+            }
+        }
+        Ok((
+            self.entities
+                .keys()
+                .filter(|entity| !before.contains(*entity))
+                .cloned()
+                .collect(),
+            truncated,
+        ))
     }
 
     pub fn add_projection(&mut self, projection: Projection<T>) -> Result<(), String> {

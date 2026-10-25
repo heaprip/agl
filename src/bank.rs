@@ -14,7 +14,7 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
-use crate::meta::{ClaimId, Entity, Evidence, Intension, Projection};
+use crate::meta::{ClaimId, Entity, Evidence, Intension, Part, Projection};
 use crate::model::{Name, Plane, Program, Strength, Term};
 
 /// Rounds of gluing in the first stage.
@@ -658,7 +658,10 @@ impl Bank {
                     ],
                     Intension::Glue {
                         operation: "bank-glue".into(),
-                        parts: vec![left.entity.id.clone(), right.entity.id.clone()],
+                        parts: vec![
+                            Part::Entity(left.entity.id.clone()),
+                            Part::Entity(right.entity.id.clone()),
+                        ],
                         wiring,
                         interface,
                     },

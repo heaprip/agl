@@ -12,7 +12,7 @@
 //! here.
 
 use crate::bank::Ext;
-use crate::meta::{EntityId, Intension};
+use crate::meta::{EntityId, Intension, Part};
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
@@ -168,14 +168,11 @@ impl Query {
         out
     }
 
-    /// The same query as a shared open-structure intension. Repeated hole
-    /// occurrences stay repeated parts; equal variables become port wiring;
-    /// the ordered head remains the boundary.
-    pub fn intension(&self, holes: &[EntityId]) -> Intension {
+    fn structural_intension(&self, mut part: impl FnMut(u8) -> Part) -> Intension {
         let mut by_variable: BTreeMap<u8, Vec<String>> = BTreeMap::new();
         let mut parts = Vec::with_capacity(self.atoms.len());
         for (i, &(hole, left, right)) in self.atoms.iter().enumerate() {
-            parts.push(holes[hole as usize].clone());
+            parts.push(part(hole));
             by_variable
                 .entry(left)
                 .or_default()
@@ -200,6 +197,17 @@ impl Query {
                 format!("var:{}", self.head.1),
             ],
         }
+    }
+
+    /// The query before any relation is chosen for its holes. This is already
+    /// a first-class glue intension, not a request to a separate evaluator.
+    pub fn open_intension(&self) -> Intension {
+        self.structural_intension(|hole| Part::Hole(format!("hole:{hole}")))
+    }
+
+    /// The same query with every hole bound to a relation occurrence.
+    pub fn intension(&self, holes: &[EntityId]) -> Intension {
+        self.structural_intension(|hole| Part::Entity(holes[hole as usize].clone()))
     }
 }
 

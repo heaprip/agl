@@ -4,7 +4,7 @@
 use agl::bank::{Bank, ExactRelation, Ext};
 use agl::journal::Journal;
 use agl::meta::{
-    ClaimId, EntityId, Evidence, EvidenceState, Intension, Metaedge, Metagraph, PortBinding,
+    ClaimId, EntityId, Evidence, EvidenceState, Intension, Metaedge, Metagraph, Part, PortBinding,
     Projection,
 };
 use agl::model::{Name, Plane, Strength};
@@ -335,6 +335,26 @@ fn journal_replay_restores_live_and_retracted_semantics() {
     let mut graph = exact_graph(&bank, false);
     let equality = add_equality(&mut graph, a, b, p.clone());
     add_link(&mut graph, &bank.entries[0], a, p, "candidate-a");
+    let open_intension = Intension::Glue {
+        operation: "journal-open-frontier".into(),
+        parts: vec![
+            Part::Entity(bank.entries[0].entity.id.clone()),
+            Part::Hole("missing-relation".into()),
+        ],
+        wiring: Vec::new(),
+        interface: vec!["in".into(), "out".into()],
+    };
+    let provisional = agl::meta::Entity::new(open_intension.clone(), Vec::new());
+    let open_evidence = Evidence::new(
+        ClaimId::derived("entity", [provisional.id.as_str()]),
+        "test-open-frontier",
+        vec![bank.entries[0].construction.conclusion.clone()],
+        Strength::Strict,
+        Plane::new(),
+    );
+    let open = agl::meta::Entity::new(open_intension, vec![open_evidence.id.clone()]);
+    graph.add_evidence(open_evidence).unwrap();
+    graph.add_entity(open).unwrap();
     let refuter = Evidence::new(
         ClaimId::named("event", "refute-a"),
         "test-refuter",
@@ -353,6 +373,7 @@ fn journal_replay_restores_live_and_retracted_semantics() {
     let checked = Journal::parse(&text).unwrap();
     let replayed = Metagraph::<ExactRelation>::replay_journal(&checked).unwrap();
     assert_eq!(replayed.report(), graph.report());
+    assert_eq!(replayed.open_frontier(), graph.open_frontier());
     assert_eq!(
         replayed.evidence_state(&equality.id),
         Some(EvidenceState::Unsupported)

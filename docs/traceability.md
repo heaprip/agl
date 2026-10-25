@@ -172,7 +172,7 @@ SHA-256 `086c43c8ed918b0b6985061376c41d061bd38688505702093076441b680eeaef`.
 | F — форк | persistent branch of proposals | предложение как вывод CLI | propose tests | хранения ветви нет |
 | A — закрепление | named reusable intension + evidence threshold | журнал H74 имитировал; ложное закрепление удалено | journal regression | общего механизма нет |
 | V — пересмотр | refuter invalidates dependent evidence | retracted/unsupported история переживает journal replay | oracle, identity_extent | нет AGM/deprecation и версий политики |
-| H — пробел | typed gap on question/interface | `gap` в DSL и отчёте | cases | не управляет мобилизацией поиска |
+| H — пробел | open boundary / unfilled port | `Glue.parts` хранит `Hole`; metagraph выводит active frontier | open_frontier, layer | DSL `gap` пока остаётся старой отчётной проекцией |
 | C — цена пути | cost/distortion semiring | размер формулы и число попыток локально | benchmark only | отсутствует как семантика |
 | N — точный вектор/номер | stable identity + derived coordinates | dense bits, labels, law vectors | bits/label/atlas | смешаны id, координата и extent; форма не выбрана |
 | X — аномалия → новая ось | failed expectation -> proposed context/refinement | R1/R2, Bombelli/Hamilton examples | discovery/propose | примеры имеют собственные генераторы, общей операции нет |
