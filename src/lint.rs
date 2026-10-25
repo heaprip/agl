@@ -31,7 +31,7 @@ pub fn lint(prog: &Program) -> Vec<Diag> {
                 format!("fact `{}` has variables", f.id),
             ));
         }
-        if prog.normative_preds.contains(&f.atom.rel) && !normative_plane(&f.plane) {
+        if prog.normative_preds.contains(f.atom.rel.as_str()) && !normative_plane(&f.plane) {
             out.push(err(
                 f.line,
                 "is-ought",
@@ -76,7 +76,7 @@ pub fn lint(prog: &Program) -> Vec<Diag> {
                 ),
             ));
         }
-        if prog.normative_preds.contains(&r.head.rel) && !normative_plane(&r.plane) {
+        if prog.normative_preds.contains(r.head.rel.as_str()) && !normative_plane(&r.plane) {
             out.push(err(
                 r.line,
                 "is-ought",
@@ -98,7 +98,7 @@ pub fn lint(prog: &Program) -> Vec<Diag> {
     }
 
     for u in &prog.uniques {
-        if let Some(roles) = prog.relations.get(&u.rel) {
+        if let Some(roles) = prog.relations.get(u.rel.as_str()) {
             for role in std::iter::once(&u.role).chain(&u.by) {
                 if !roles.contains(role) {
                     out.push(err(
@@ -126,11 +126,11 @@ pub fn lint(prog: &Program) -> Vec<Diag> {
 }
 
 fn check_roles(prog: &Program, a: &Atom, line: usize, out: &mut Vec<Diag>) {
-    let Some(roles) = prog.relations.get(&a.rel) else {
+    let Some(roles) = prog.relations.get(a.rel.as_str()) else {
         return;
     };
     for (role, _) in &a.args {
-        if !roles.contains(role) {
+        if !roles.iter().any(|r| role == r) {
             out.push(err(
                 line,
                 "unknown-role",

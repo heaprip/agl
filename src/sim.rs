@@ -64,12 +64,12 @@ fn gen_atom(rng: &mut Rng, vars: &[&str]) -> Atom {
             let term = if !vars.is_empty() && rng.chance(1, 2) {
                 Term::Var(rng.pick(vars).to_string())
             } else {
-                Term::Sym(rng.pick(&CONSTS).to_string())
+                Term::Sym((*rng.pick(&CONSTS)).into())
             };
-            (role.to_string(), term)
+            ((*role).into(), term)
         })
         .collect();
-    Atom::new(rel, args, rng.chance(1, 3))
+    Atom::new(rel.into(), args, rng.chance(1, 3))
 }
 
 /// A random, lint-clean program: small vocabulary, so derivations and
@@ -96,7 +96,7 @@ pub fn gen_program(seed: u64) -> Program {
         let atom = gen_atom(&mut rng, &[]);
         let status = rng.pick(&statuses).to_string();
         prog.facts.push(Fact {
-            id: format!("f{i}"),
+            id: format!("f{i}").into(),
             atom,
             plane: gen_plane(&mut rng),
             status,
@@ -123,7 +123,7 @@ pub fn gen_program(seed: u64) -> Program {
             Strength::Defeasible
         };
         prog.rules.push(Rule {
-            id: format!("r{i}"),
+            id: format!("r{i}").into(),
             head,
             body: body.into_iter().map(Lit::Atom).collect(),
             strength,
@@ -155,14 +155,14 @@ pub fn gen_program(seed: u64) -> Program {
         let atom = Atom::new(
             "situated".into(),
             vec![
-                ("context".into(), Term::Sym(ctx)),
+                ("context".into(), Term::Sym(ctx.into())),
                 ("axis".into(), Term::Sym("w".into())),
-                ("value".into(), Term::Sym(value)),
+                ("value".into(), Term::Sym(value.into())),
             ],
             false,
         );
         prog.facts.push(Fact {
-            id: format!("sit{i}"),
+            id: format!("sit{i}").into(),
             atom,
             plane: gen_plane(&mut rng),
             status: "given".into(),
@@ -248,7 +248,7 @@ pub fn gen_flat_program(seed: u64, ranked: bool) -> Program {
             &"given"
         };
         prog.facts.push(Fact {
-            id: format!("f{}", prog.facts.len()),
+            id: format!("f{}", prog.facts.len()).into(),
             atom,
             plane: Plane::new(),
             status: status.to_string(),
@@ -257,7 +257,7 @@ pub fn gen_flat_program(seed: u64, ranked: bool) -> Program {
     };
     let rule = |prog: &mut Program, head: Atom, body: Vec<Atom>, strict: bool| {
         prog.rules.push(Rule {
-            id: format!("r{}", prog.rules.len()),
+            id: format!("r{}", prog.rules.len()).into(),
             head,
             body: body.into_iter().map(Lit::Atom).collect(),
             strength: if strict {
@@ -292,10 +292,10 @@ pub fn gen_flat_program(seed: u64, ranked: bool) -> Program {
     if rng.chance(1, 2) {
         let pat = |rel: &str, neg: bool| {
             Atom::new(
-                rel.to_string(),
+                rel.into(),
                 ROLES
                     .iter()
-                    .map(|r| (r.to_string(), Term::Var(r.to_uppercase())))
+                    .map(|r| ((*r).into(), Term::Var(r.to_uppercase())))
                     .collect(),
                 neg,
             )
@@ -303,10 +303,10 @@ pub fn gen_flat_program(seed: u64, ranked: bool) -> Program {
         let depth = 3 + rng.below(2);
         let rels: Vec<&str> = (0..=depth).map(|_| *rng.pick(&RELS)).collect();
         let start = Atom::new(
-            rels[0].to_string(),
+            rels[0].into(),
             ROLES
                 .iter()
-                .map(|r| (r.to_string(), Term::Sym(rng.pick(&CONSTS).to_string())))
+                .map(|r| ((*r).into(), Term::Sym((*rng.pick(&CONSTS)).into())))
                 .collect(),
             false,
         );

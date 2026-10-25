@@ -148,7 +148,7 @@ fn check(
         .values()
         .filter(|(a, _)| a.rel == "survives" && !a.neg)
         .filter_map(|(a, _)| match &a.args[0].1 {
-            Term::Sym(t) => Some(t.clone()),
+            Term::Sym(t) => Some(t.to_string()),
             _ => None,
         })
         .collect()

@@ -61,7 +61,28 @@ fn expand(path: &std::path::Path, stack: &mut Vec<std::path::PathBuf>) -> Result
     Ok(out)
 }
 
+thread_local! {
+    /// The names of the program being parsed, so that equal names share
+    /// their text (H61, step 3a); empty outside `parse`.
+    static NAMES: std::cell::RefCell<Option<Names>> = const { std::cell::RefCell::new(None) };
+}
+
+/// The shared name for `s` while a program is parsed, a fresh one otherwise.
+fn name(s: &str) -> Name {
+    NAMES.with_borrow_mut(|n| match n {
+        Some(n) => n.get(s),
+        None => Name::from(s),
+    })
+}
+
 pub fn parse(src: &str) -> Result<Program, String> {
+    NAMES.set(Some(Names::default()));
+    let out = parse_names(src);
+    NAMES.set(None);
+    out
+}
+
+fn parse_names(src: &str) -> Result<Program, String> {
     let mut prog = Program::default();
     let stmts = statements(src);
     // Units first: numbers anywhere in the program may use them.
@@ -126,14 +147,14 @@ fn compile_concepts(prog: &mut Program) {
         .iter()
         .map(|c| {
             let rule = Rule {
-                id: String::new(),
+                id: Name::default(),
                 head: c.head.clone(),
                 body: c.body.clone(),
                 strength: Strength::Strict,
                 plane: c.plane.clone(),
                 line: c.line,
             };
-            (c.head.rel.clone(), crate::concept::sense_key(c), rule)
+            (c.head.rel.to_string(), crate::concept::sense_key(c), rule)
         })
         .collect();
     senses.sort_by(|a, b| (&a.0, &a.1).cmp(&(&b.0, &b.1)));
@@ -144,8 +165,8 @@ fn compile_concepts(prog: &mut Program) {
         } else {
             1
         };
-        let (name, _, mut rule) = senses[i].clone();
-        rule.id = format!("{name}.{k}");
+        let (rel, _, mut rule) = senses[i].clone();
+        rule.id = name(&format!("{rel}.{k}"));
         prog.rules.push(rule);
     }
 }
@@ -262,7 +283,7 @@ fn parse_statement(prog: &mut Program, u: &Units, stmt: &str) -> Result<(), Stri
             let atom = parse_atom_in(lit.trim(), u)?;
             let plane = parse_spec(prog, spec)?;
             prog.facts.push(Fact {
-                id: ident(id.trim())?.to_string(),
+                id: name(ident(id.trim())?),
                 atom,
                 plane,
                 status,
@@ -287,7 +308,7 @@ fn parse_statement(prog: &mut Program, u: &Units, stmt: &str) -> Result<(), Stri
                 .collect::<Result<Vec<_>, _>>()?;
             let plane = parse_spec(prog, spec)?;
             prog.rules.push(Rule {
-                id: ident(id)?.to_string(),
+                id: name(ident(id)?),
                 head,
                 body,
                 strength,
@@ -303,13 +324,13 @@ fn parse_statement(prog: &mut Program, u: &Units, stmt: &str) -> Result<(), Stri
             };
             let (id, rest) = rest.split_once(':').ok_or(bad)?;
             let (n, e) = rest.split_once(" by ").ok_or(bad)?;
-            let pair = |s: &str| -> Result<(String, (String, String)), String> {
-                let (name, roles) = s.trim().split_once('(').ok_or(bad)?;
+            let pair = |s: &str| -> Result<(Name, (Name, Name)), String> {
+                let (rel, roles) = s.trim().split_once('(').ok_or(bad)?;
                 let roles = roles.strip_suffix(')').ok_or(bad)?;
                 let (a, b) = roles.split_once(',').ok_or(bad)?;
                 Ok((
-                    ident(name.trim())?.to_string(),
-                    (ident(a.trim())?.to_string(), ident(b.trim())?.to_string()),
+                    name(ident(rel.trim())?),
+                    (name(ident(a.trim())?), name(ident(b.trim())?)),
                 ))
             };
             let (rel, roles) = pair(n)?;
@@ -318,7 +339,7 @@ fn parse_statement(prog: &mut Program, u: &Units, stmt: &str) -> Result<(), Stri
                 return Err("nesting roles must differ".into());
             }
             let nest = Nesting {
-                id: ident(id.trim())?.to_string(),
+                id: name(ident(id.trim())?),
                 rel,
                 roles,
                 edge,
@@ -736,9 +757,9 @@ pub fn parse_atom_in(s: &str, u: &Units) -> Result<Atom, String> {
         let (role, term) = arg
             .split_once(':')
             .ok_or_else(|| format!("expected `role: term` in `{arg}`"))?;
-        out.push((ident(role.trim())?.to_string(), parse_term(term.trim(), u)?));
+        out.push((name(ident(role.trim())?), parse_term(term.trim(), u)?));
     }
-    Ok(Atom::new(ident(rel.trim())?.to_string(), out, neg))
+    Ok(Atom::new(name(ident(rel.trim())?), out, neg))
 }
 
 fn parse_term(s: &str, u: &Units) -> Result<Term, String> {
@@ -759,7 +780,7 @@ fn parse_term(s: &str, u: &Units) -> Result<Term, String> {
     if let Ok(n) = s.parse::<f64>() {
         return Ok(Term::Num(n, Dim::NONE));
     }
-    Ok(Term::Sym(ident(s)?.to_string()))
+    Ok(Term::Sym(name(ident(s)?)))
 }
 
 fn parse_expr(s: &str, u: &Units) -> Result<Expr, String> {

@@ -54,7 +54,7 @@ fn ground(prog: &Program) -> Theory {
     for a in &atoms {
         for (_, t) in &a.args {
             if let Term::Sym(s) = t {
-                consts.insert(s.clone());
+                consts.insert(s.to_string());
             }
         }
     }
@@ -93,7 +93,7 @@ fn ground(prog: &Program) -> Theory {
             let b: BTreeMap<String, Term> = vars
                 .iter()
                 .zip(&idx)
-                .map(|(v, &i)| (v.clone(), Term::Sym(consts[i].clone())))
+                .map(|(v, &i)| (v.clone(), Term::Sym(consts[i].as_str().into())))
                 .collect();
             let head = subst(&r.head, &b);
             let gbody: Vec<Atom> = body.iter().map(|a| subst(a, &b)).collect();
@@ -103,7 +103,7 @@ fn ground(prog: &Program) -> Theory {
             keys.sort();
             keys.dedup();
             rules.push(GRule {
-                id: r.id.clone(),
+                id: r.id.to_string(),
                 strict: r.strength == Strength::Strict,
                 head: head.key(),
                 body: keys,

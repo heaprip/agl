@@ -42,13 +42,13 @@ fn gen_body(rng: &mut Rng, earlier: &[String]) -> Vec<Lit> {
             .map(|r| {
                 let v = *rng.pick(&VARS);
                 used.insert(v);
-                (r.to_string(), var(v))
+                ((*r).into(), var(v))
             })
             .collect();
-        body.push(Lit::Atom(Atom::new(rel, args, false)));
+        body.push(Lit::Atom(Atom::new(rel.into(), args, false)));
     }
     if !used.contains("e") || !used.contains("a") {
-        let args = vec![("s".to_string(), var("e")), ("t".to_string(), var("a"))];
+        let args = vec![("s".into(), var("e")), ("t".into(), var("a"))];
         body.push(Lit::Atom(Atom::new("r".into(), args, false)));
         used.extend(["e", "a"]);
     }
@@ -90,7 +90,7 @@ fn gen_concepts(seed: u64) -> (Program, Vec<String>) {
 /// Random facts over four individuals, each in some alternative of the cover.
 fn gen_facts(rng: &mut Rng, cover: bool) -> Vec<Atom> {
     let people = ["i0", "i1", "i2", "i3"];
-    let sym = |s: &str| Term::Sym(s.to_string());
+    let sym = |s: &str| Term::Sym(s.into());
     let mut out = Vec::new();
     for a in people {
         for b in people {
@@ -124,7 +124,7 @@ fn answers(prog: &Program, facts: &[Atom]) -> BTreeMap<String, BTreeSet<String>>
         .iter()
         .enumerate()
         .map(|(i, a)| Fact {
-            id: format!("d{i}"),
+            id: format!("d{i}").into(),
             atom: a.clone(),
             plane: Plane::new(),
             status: "given".into(),
@@ -137,7 +137,7 @@ fn answers(prog: &Program, facts: &[Atom]) -> BTreeMap<String, BTreeSet<String>>
         let mut args = a.args.clone();
         args.sort_by(|x, y| x.0.cmp(&y.0));
         by_rel
-            .entry(a.rel.clone())
+            .entry(a.rel.to_string())
             .or_default()
             .insert(format!("{args:?}"));
     }

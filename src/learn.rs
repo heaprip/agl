@@ -133,7 +133,14 @@ pub fn learn(prog: &Program, target: &str) -> (Vec<Hypothesis>, Vec<String>) {
 fn single_role(examples: &[Example]) -> Option<String> {
     let roles: BTreeSet<Vec<String>> = examples
         .iter()
-        .map(|e| e.query.atom.args.iter().map(|(r, _)| r.clone()).collect())
+        .map(|e| {
+            e.query
+                .atom
+                .args
+                .iter()
+                .map(|(r, _)| r.to_string())
+                .collect()
+        })
         .collect();
     match roles.into_iter().collect::<Vec<_>>().as_slice() {
         [one] if one.len() == 1 => Some(one[0].clone()),
@@ -174,13 +181,13 @@ fn vocabulary<'a>(outs: impl Iterator<Item = &'a Outcome>, target: &str) -> Voca
             }
             for (ra, ta) in &atom.args {
                 v.unary
-                    .entry((atom.rel.clone(), ra.clone()))
+                    .entry((atom.rel.to_string(), ra.to_string()))
                     .or_default()
                     .insert(ta.to_string());
                 for (rb, tb) in &atom.args {
                     if ra != rb {
                         v.pairs
-                            .entry((atom.rel.clone(), ra.clone(), rb.clone()))
+                            .entry((atom.rel.to_string(), ra.to_string(), rb.to_string()))
                             .or_default()
                             .insert(tb.to_string());
                     }
@@ -197,7 +204,7 @@ fn domain(prog: &Program, entities: &BTreeSet<String>) -> Option<(String, String
     let mut sets: BTreeMap<(String, String), BTreeSet<String>> = BTreeMap::new();
     for f in &prog.facts {
         for (role, t) in &f.atom.args {
-            sets.entry((f.atom.rel.clone(), role.clone()))
+            sets.entry((f.atom.rel.to_string(), role.to_string()))
                 .or_default()
                 .insert(t.to_string());
         }
@@ -214,8 +221,8 @@ fn var(v: &str) -> Term {
 
 fn atom(rel: &str, args: &[(&str, &str)]) -> Atom {
     Atom::new(
-        rel.to_string(),
-        args.iter().map(|(r, v)| (r.to_string(), var(v))).collect(),
+        rel.into(),
+        args.iter().map(|(r, v)| ((*r).into(), var(v))).collect(),
         false,
     )
 }

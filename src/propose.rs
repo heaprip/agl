@@ -203,9 +203,12 @@ fn rule<'a>(prog: &'a Program, id: &str) -> &'a Rule {
 fn body_covers(winner: &Rule, loser: &Rule) -> bool {
     let shape = |a: &Atom| {
         (
-            a.rel.clone(),
+            a.rel.to_string(),
             a.neg,
-            a.args.iter().map(|(r, _)| r.clone()).collect::<Vec<_>>(),
+            a.args
+                .iter()
+                .map(|(r, _)| r.to_string())
+                .collect::<Vec<_>>(),
         )
     };
     let atoms = |r: &Rule| -> Vec<(String, bool, Vec<String>)> {

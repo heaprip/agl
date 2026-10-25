@@ -363,15 +363,20 @@ fn next_permutation(xs: &mut [usize]) -> bool {
 pub fn sense_key(c: &Concept) -> String {
     let t = |t: &Term| T::of(t);
     let mut q = Cq {
-        head: c.head.args.iter().map(|(r, x)| (r.clone(), t(x))).collect(),
+        head: c
+            .head
+            .args
+            .iter()
+            .map(|(r, x)| (r.to_string(), t(x)))
+            .collect(),
         atoms: vec![],
         neqs: vec![],
     };
     for lit in &c.body {
         match lit {
             Lit::Atom(a) => q.atoms.push(CAtom {
-                rel: a.rel.clone(),
-                args: a.args.iter().map(|(r, x)| (r.clone(), t(x))).collect(),
+                rel: a.rel.to_string(),
+                args: a.args.iter().map(|(r, x)| (r.to_string(), t(x))).collect(),
             }),
             Lit::Cmp(Expr::Term(l), CmpOp::Ne, Expr::Term(r)) => q.neqs.push((t(l), t(r))),
             _ => {}
@@ -442,7 +447,7 @@ impl Unfolder<'_> {
             .head
             .args
             .iter()
-            .map(|(r, t)| (r.clone(), rn(t)))
+            .map(|(r, t)| (r.to_string(), rn(t)))
             .collect();
         let mut partial = vec![Cq {
             head,
@@ -453,8 +458,8 @@ impl Unfolder<'_> {
             match lit {
                 Lit::Atom(a) => {
                     let atom = CAtom {
-                        rel: a.rel.clone(),
-                        args: a.args.iter().map(|(r, t)| (r.clone(), rn(t))).collect(),
+                        rel: a.rel.to_string(),
+                        args: a.args.iter().map(|(r, t)| (r.to_string(), rn(t))).collect(),
                     };
                     if depth > 0 && is_concept(self.prog, &a.rel) {
                         let subs = self.concept(&a.rel, depth - 1)?;
@@ -1099,11 +1104,15 @@ fn cone(prog: &Program, rel: &str) -> BTreeSet<String> {
     loop {
         let before = out.len();
         let mut body: Vec<String> = Vec::new();
-        for r in prog.rules.iter().filter(|r| out.contains(&r.head.rel)) {
+        for r in prog
+            .rules
+            .iter()
+            .filter(|r| out.contains(r.head.rel.as_str()))
+        {
             for lit in &r.body {
                 match lit {
-                    Lit::Atom(a) => body.push(a.rel.clone()),
-                    Lit::Agg { over, .. } => body.extend(over.iter().map(|a| a.rel.clone())),
+                    Lit::Atom(a) => body.push(a.rel.to_string()),
+                    Lit::Agg { over, .. } => body.extend(over.iter().map(|a| a.rel.to_string())),
                     Lit::Cmp(..) => {}
                 }
             }
@@ -1121,7 +1130,11 @@ fn cone(prog: &Program, rel: &str) -> BTreeSet<String> {
 /// arithmetic, defeasible rules and negation can each make a larger world
 /// lose a conclusion.
 fn not_monotone(prog: &Program, cone: &BTreeSet<String>) -> Option<String> {
-    for r in prog.rules.iter().filter(|r| cone.contains(&r.head.rel)) {
+    for r in prog
+        .rules
+        .iter()
+        .filter(|r| cone.contains(r.head.rel.as_str()))
+    {
         let why = if r.strength == Strength::Defeasible {
             Some("is defeasible")
         } else if r.head.neg {
@@ -1152,7 +1165,7 @@ fn not_monotone(prog: &Program, cone: &BTreeSet<String>) -> Option<String> {
 fn rule_consts(prog: &Program, cone: &BTreeSet<String>) -> BTreeSet<String> {
     fn sym(t: &Term, out: &mut BTreeSet<String>) {
         if let Term::Sym(s) = t {
-            out.insert(s.clone());
+            out.insert(s.to_string());
         }
     }
     fn expr(e: &Expr, out: &mut BTreeSet<String>) {
@@ -1166,7 +1179,11 @@ fn rule_consts(prog: &Program, cone: &BTreeSet<String>) -> BTreeSet<String> {
     }
     let mut out = BTreeSet::new();
     let atom = |a: &Atom, out: &mut BTreeSet<String>| a.args.iter().for_each(|(_, t)| sym(t, out));
-    for r in prog.rules.iter().filter(|r| cone.contains(&r.head.rel)) {
+    for r in prog
+        .rules
+        .iter()
+        .filter(|r| cone.contains(r.head.rel.as_str()))
+    {
         atom(&r.head, &mut out);
         for lit in &r.body {
             match lit {
@@ -1200,8 +1217,8 @@ fn below_rules(
     c2: &Plane,
 ) -> Result<Option<String>, String> {
     let name = |e: &E| match e {
-        E::B(i) => Term::Sym(format!("_w{i}")),
-        E::C(c) => Term::Sym(c.clone()),
+        E::B(i) => Term::Sym(format!("_w{i}").into()),
+        E::C(c) => Term::Sym(c.into()),
     };
     let extra = rule_consts(prog, &cone(prog, rel));
     for q in u1 {
@@ -1218,11 +1235,11 @@ fn below_rules(
             };
             for (i, (r, args)) in w.atoms.iter().enumerate() {
                 p.facts.push(Fact {
-                    id: format!("w{i}"),
+                    id: format!("w{i}").into(),
                     atom: Atom::new(
-                        r.clone(),
+                        r.into(),
                         args.iter()
-                            .map(|(role, e)| (role.clone(), name(e)))
+                            .map(|(role, e)| (role.into(), name(e)))
                             .collect(),
                         false,
                     ),
@@ -1242,10 +1259,10 @@ fn below_rules(
                 continue;
             }
             let goal = Atom::new(
-                rel.to_string(),
+                rel.into(),
                 w.head
                     .iter()
-                    .map(|(role, e)| (role.clone(), name(e)))
+                    .map(|(role, e)| (role.into(), name(e)))
                     .collect(),
                 false,
             )
@@ -1261,8 +1278,8 @@ fn below_rules(
 impl World {
     fn term(&self, e: &E) -> Term {
         match e {
-            E::C(c) => Term::Sym(c.clone()),
-            E::B(i) => Term::Sym(format!("_w{i}")),
+            E::C(c) => Term::Sym(c.into()),
+            E::B(i) => Term::Sym(format!("_w{i}").into()),
         }
     }
 
@@ -1271,11 +1288,8 @@ impl World {
             .atoms
             .iter()
             .map(|(rel, args)| {
-                let args = args
-                    .iter()
-                    .map(|(r, e)| (r.clone(), self.term(e)))
-                    .collect();
-                Atom::new(rel.clone(), args, false)
+                let args = args.iter().map(|(r, e)| (r.into(), self.term(e))).collect();
+                Atom::new(rel.into(), args, false)
             })
             .collect();
         let head = self

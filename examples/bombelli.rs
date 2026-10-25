@@ -32,7 +32,7 @@ fn premises(prog: &Program, rel: &str) -> BTreeSet<String> {
         .filter(|r| r.head.rel == rel)
         .flat_map(|r| &r.body)
         .filter_map(|l| match l {
-            Lit::Atom(a) => Some(a.rel.clone()),
+            Lit::Atom(a) => Some(a.rel.to_string()),
             _ => None,
         })
         .collect()
@@ -66,7 +66,7 @@ fn main() {
                 r.plane == **plane
                     && r.body
                         .iter()
-                        .any(|l| matches!(l, Lit::Atom(a) if used.contains(&a.rel)))
+                        .any(|l| matches!(l, Lit::Atom(a) if used.contains(a.rel.as_str())))
             })
         })
         .map(|(name, _)| name)

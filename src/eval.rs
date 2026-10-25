@@ -24,7 +24,7 @@ const MAX_ATOMS: usize = 100_000;
 
 #[derive(Clone, Debug)]
 pub struct Derivation {
-    pub source: String,
+    pub source: Name,
     pub is_fact: bool,
     pub strict: bool,
     pub plane: Plane,
@@ -336,7 +336,7 @@ fn split<'a>(
 }
 
 fn sources(derivs: &[Derivation]) -> Vec<String> {
-    let mut s: Vec<String> = derivs.iter().map(|d| d.source.clone()).collect();
+    let mut s: Vec<String> = derivs.iter().map(|d| d.source.to_string()).collect();
     s.sort();
     s.dedup();
     s
@@ -477,8 +477,10 @@ fn resolve(
         .collect();
     let beats = |a: &[&Derivation], b: &[&Derivation]| {
         b.iter().all(|y| {
-            a.iter()
-                .any(|x| prog.defeats.contains(&(x.source.clone(), y.source.clone())))
+            a.iter().any(|x| {
+                prog.defeats
+                    .contains(&(x.source.to_string(), y.source.to_string()))
+            })
         })
     };
     match (beats(&pos, &neg), beats(&neg, &pos)) {
@@ -512,16 +514,18 @@ pub fn strata(rules: &[Rule]) -> (BTreeMap<String, usize>, Vec<String>) {
             let mut need = 0;
             for lit in &r.body {
                 match lit {
-                    Lit::Atom(a) => need = need.max(level.get(&a.rel).copied().unwrap_or(0)),
+                    Lit::Atom(a) => {
+                        need = need.max(level.get(a.rel.as_str()).copied().unwrap_or(0))
+                    }
                     Lit::Agg { over, .. } => {
                         for a in over {
-                            need = need.max(level.get(&a.rel).copied().unwrap_or(0) + 1);
+                            need = need.max(level.get(a.rel.as_str()).copied().unwrap_or(0) + 1);
                         }
                     }
                     Lit::Cmp(..) => {}
                 }
             }
-            let cur = level.entry(r.head.rel.clone()).or_insert(0);
+            let cur = level.entry(r.head.rel.to_string()).or_insert(0);
             if need > *cur && need <= limit {
                 *cur = need;
                 changed = true;
@@ -577,7 +581,7 @@ fn closure(
     }
     let mut levels: Vec<usize> = rules
         .iter()
-        .map(|r| strata.get(&r.head.rel).copied().unwrap_or(0))
+        .map(|r| strata.get(r.head.rel.as_str()).copied().unwrap_or(0))
         .collect();
     levels.sort();
     levels.dedup();
@@ -599,11 +603,11 @@ fn closure(
     let lazy: BTreeMap<String, Lazy> = nests
         .iter()
         .filter(|n| n.lazy && lazy_allowed(prog, n) && !rules.iter().any(|r| r.head.rel == n.edge))
-        .map(|n| (n.rel.clone(), Lazy::build(n, &db)))
+        .map(|n| (n.rel.to_string(), Lazy::build(n, &db)))
         .collect();
     let nests: Vec<&Nesting> = nests
         .into_iter()
-        .filter(|n| !lazy.contains_key(&n.rel))
+        .filter(|n| !lazy.contains_key(n.rel.as_str()))
         .collect();
     let by_labels = |r: &Rule| {
         nests
@@ -649,7 +653,7 @@ fn closure(
 /// again after other rules of the stratum add edges; returns whether anything
 /// was added.
 fn nest(db: &mut Db, n: &Nesting) -> bool {
-    let pick = |a: &Atom, roles: &(String, String)| -> Option<(Term, Term)> {
+    let pick = |a: &Atom, roles: &(Name, Name)| -> Option<(Term, Term)> {
         let get = |r: &str| a.args.iter().find(|(x, _)| x == r).map(|(_, t)| t.clone());
         Some((get(&roles.0)?, get(&roles.1)?))
     };
@@ -732,8 +736,8 @@ fn nest(db: &mut Db, n: &Nesting) -> bool {
     }
     let mut atoms: BTreeMap<String, Atom> = derived.into_iter().map(|(a, k)| (k, a)).collect();
     let mut new: Vec<(String, Derivation)> = Vec::new();
-    let derivation = |source: &str, premises: Vec<String>| Derivation {
-        source: source.to_string(),
+    let derivation = |source: &Name, premises: Vec<String>| Derivation {
+        source: source.clone(),
         is_fact: false,
         strict: true,
         plane: Plane::new(),
@@ -894,7 +898,7 @@ pub(crate) struct Lazy {
 
 impl Lazy {
     fn build(n: &Nesting, db: &Db) -> Self {
-        let pick = |a: &Atom, roles: &(String, String)| -> Option<(Term, Term)> {
+        let pick = |a: &Atom, roles: &(Name, Name)| -> Option<(Term, Term)> {
             let get = |r: &str| a.args.iter().find(|(x, _)| x == r).map(|(_, t)| t.clone());
             Some((get(&roles.0)?, get(&roles.1)?))
         };
@@ -1032,8 +1036,9 @@ impl Lazy {
             .filter(|z| !z.starts_with('\0') && self.labels.within(x, z))
             .collect();
         cone.retain(|z| self.holds(z, y));
-        let derivation = |source: String, premises: Vec<String>| Derivation {
-            source,
+        let (base_id, step_id) = (self.nest.base_id(), self.nest.step_id());
+        let derivation = |source: &Name, premises: Vec<String>| Derivation {
+            source: source.clone(),
             is_fact: false,
             strict: true,
             plane: Plane::new(),
@@ -1046,7 +1051,7 @@ impl Lazy {
             let mut ds: Vec<Derivation> = Vec::new();
             for (q, ek) in self.out.get(z).into_iter().flatten() {
                 if q == y {
-                    ds.push(derivation(self.nest.base_id(), vec![ek.clone()]));
+                    ds.push(derivation(&base_id, vec![ek.clone()]));
                 }
                 let mut via: Vec<String> = Vec::new();
                 if self.holds(q, y) {
@@ -1064,7 +1069,7 @@ impl Lazy {
                     let mut premises = vec![ek.clone(), nk];
                     premises.sort();
                     premises.dedup();
-                    ds.push(derivation(self.nest.step_id(), premises));
+                    ds.push(derivation(&step_id, premises));
                 }
             }
             let entry = db.entry(key).or_insert_with(|| (head, vec![]));
@@ -1380,7 +1385,9 @@ impl Matcher<'_> {
         }
         match &lits[i] {
             Lit::Atom(pat) => {
-                let lazy = (!pat.neg).then(|| self.lazy.get(&pat.rel)).flatten();
+                let lazy = (!pat.neg)
+                    .then(|| self.lazy.get(pat.rel.as_str()))
+                    .flatten();
                 let found = match (self.forced, lazy) {
                     // A lazy relation does not change within the stratum.
                     (Some((at, _)), Some(_)) if at == i => return,
@@ -1471,7 +1478,9 @@ impl Matcher<'_> {
             if unify(pat, &ground, &mut bind) {
                 let key = ground.key();
                 seen.insert(key.clone());
-                self.wanted.borrow_mut().insert((l.nest.rel.clone(), a, b));
+                self.wanted
+                    .borrow_mut()
+                    .insert((l.nest.rel.to_string(), a, b));
                 out.push((bind, key));
             }
         }

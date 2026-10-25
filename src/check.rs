@@ -364,7 +364,7 @@ fn answer(
 }
 
 fn gap_for(prog: &Program, q: &Query, plane: &Plane) -> Option<String> {
-    let g = prog.gaps.get(&q.atom.rel)?;
+    let g = prog.gaps.get(q.atom.rel.as_str())?;
     match &g.resolved_by {
         Some(axis) if plane.contains_key(axis) => None,
         Some(axis) => Some(format!(

@@ -1,14 +1,111 @@
 //! Data model of a program: terms, atoms, literals, facts, rules, queries.
 
+use std::borrow::Borrow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
+use std::ops::Deref;
+use std::rc::Rc;
 
 use crate::plane::Axes;
 use crate::units::Dim;
 
+/// A name (relation, role, symbol, source) shared by every atom that uses
+/// it: the text is stored once, atoms hold references (H61, step 3a). It
+/// compares and prints as its text, so order and output stay those of text.
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
+pub struct Name(Rc<str>);
+
+impl Name {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl Deref for Name {
+    type Target = str;
+    fn deref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl Borrow<str> for Name {
+    fn borrow(&self) -> &str {
+        &self.0
+    }
+}
+
+impl AsRef<str> for Name {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl From<&str> for Name {
+    fn from(s: &str) -> Self {
+        Name(Rc::from(s))
+    }
+}
+
+impl From<String> for Name {
+    fn from(s: String) -> Self {
+        Name(Rc::from(s))
+    }
+}
+
+impl From<&String> for Name {
+    fn from(s: &String) -> Self {
+        Name(Rc::from(s.as_str()))
+    }
+}
+
+impl PartialEq<str> for Name {
+    fn eq(&self, o: &str) -> bool {
+        *self.0 == *o
+    }
+}
+
+impl PartialEq<&str> for Name {
+    fn eq(&self, o: &&str) -> bool {
+        *self.0 == **o
+    }
+}
+
+impl PartialEq<String> for Name {
+    fn eq(&self, o: &String) -> bool {
+        *self.0 == **o
+    }
+}
+
+impl fmt::Display for Name {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl fmt::Debug for Name {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&*self.0, f)
+    }
+}
+
+/// Hands out one `Name` per text, so equal names share their storage.
+#[derive(Default)]
+pub struct Names(BTreeSet<Name>);
+
+impl Names {
+    pub fn get(&mut self, s: &str) -> Name {
+        if let Some(n) = self.0.get(s) {
+            return n.clone();
+        }
+        let n = Name::from(s);
+        self.0.insert(n.clone());
+        n
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Term {
-    Sym(String),
+    Sym(Name),
     /// A value in SI with its dimension.
     Num(f64, Dim),
     Var(String),
@@ -38,14 +135,15 @@ impl fmt::Display for Term {
 /// with the same content print the same and share a key.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Atom {
-    pub rel: String,
-    pub args: Vec<(String, Term)>,
+    pub rel: Name,
+    pub args: Vec<(Name, Term)>,
     pub neg: bool,
 }
 
 impl Atom {
-    pub fn new(rel: String, mut args: Vec<(String, Term)>, neg: bool) -> Self {
+    pub fn new(rel: Name, mut args: Vec<(Name, Term)>, neg: bool) -> Self {
         args.sort_by(|a, b| a.0.cmp(&b.0));
+        args.shrink_to_fit();
         Atom { rel, args, neg }
     }
 
@@ -223,7 +321,7 @@ pub fn plane_to_string(p: &Plane) -> String {
 
 #[derive(Clone, Debug)]
 pub struct Fact {
-    pub id: String,
+    pub id: Name,
     pub atom: Atom,
     pub plane: Plane,
     pub status: String,
@@ -232,7 +330,7 @@ pub struct Fact {
 
 #[derive(Clone, Debug)]
 pub struct Rule {
-    pub id: String,
+    pub id: Name,
     pub head: Atom,
     pub body: Vec<Lit>,
     pub strength: Strength,
@@ -367,13 +465,13 @@ pub struct Compare {
 /// derives their atoms from labels instead of iterating them (H61).
 #[derive(Clone, Debug)]
 pub struct Nesting {
-    pub id: String,
-    pub rel: String,
+    pub id: Name,
+    pub rel: Name,
     /// (species role, genus role) of N
-    pub roles: (String, String),
-    pub edge: String,
+    pub roles: (Name, Name),
+    pub edge: Name,
     /// (species role, genus role) of E
-    pub edge_roles: (String, String),
+    pub edge_roles: (Name, Name),
     /// `... lazy`: atoms of N are made only when a rule body asks for them
     /// (H61, step 2b), if nothing else reads N; see `eval`.
     pub lazy: bool,
@@ -381,12 +479,12 @@ pub struct Nesting {
 }
 
 impl Nesting {
-    pub fn base_id(&self) -> String {
-        format!("{}_base", self.id)
+    pub fn base_id(&self) -> Name {
+        format!("{}_base", self.id).into()
     }
 
-    pub fn step_id(&self) -> String {
-        format!("{}_step", self.id)
+    pub fn step_id(&self) -> Name {
+        format!("{}_step", self.id).into()
     }
 
     /// `ID_base: N(a: ?x, b: ?y) <- E(x: ?x, y: ?y)` and
@@ -413,7 +511,7 @@ impl Nesting {
                 false,
             )
         };
-        let rule = |id: String, body: Vec<Lit>| Rule {
+        let rule = |id: Name, body: Vec<Lit>| Rule {
             id,
             head: n("x", "y"),
             body,

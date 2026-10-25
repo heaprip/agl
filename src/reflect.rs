@@ -84,7 +84,7 @@ fn support(out: &Outcome, key: &str) -> BTreeSet<String> {
         };
         for d in derivs {
             if !d.is_fact {
-                rules.insert(d.source.clone());
+                rules.insert(d.source.to_string());
             }
             stack.extend(d.premises.iter().cloned());
         }
@@ -94,7 +94,7 @@ fn support(out: &Outcome, key: &str) -> BTreeSet<String> {
 
 fn without(prog: &Program, removed: &[String]) -> Program {
     let mut p = prog.clone();
-    p.rules.retain(|r| !removed.contains(&r.id));
+    p.rules.retain(|r| !removed.iter().any(|x| r.id == *x));
     p
 }
 
@@ -272,7 +272,7 @@ fn plane_notes(prog: &Program, rules: &BTreeSet<String>, ctx: &Plane) -> Vec<Str
     let mut in_rules: Vec<&Rule> = prog
         .rules
         .iter()
-        .filter(|r| rules.contains(&r.id))
+        .filter(|r| rules.contains(r.id.as_str()))
         .collect();
     in_rules.sort_by(|a, b| a.id.cmp(&b.id));
     in_rules
@@ -304,7 +304,7 @@ fn missing(prog: &Program, q: &Query, expect: Verdict) -> Diagnosis {
         .collect();
     heads.sort_by(|a, b| a.id.cmp(&b.id));
     for r in heads {
-        sup.insert(r.id.clone());
+        sup.insert(r.id.to_string());
         let rel = relation(prog, &r.plane, &q.plane);
         if !prog.axes.plane_within(&q.plane, &r.plane) {
             notes.push(format!(
@@ -414,7 +414,7 @@ fn conflict(prog: &Program, c: &FoundConflict, passing: &[usize]) -> Diagnosis {
     let in_rules: Vec<&Rule> = prog
         .rules
         .iter()
-        .filter(|r| rules.contains(&r.id))
+        .filter(|r| rules.contains(r.id.as_str()))
         .collect();
     if in_rules.len() >= 2 && in_rules.windows(2).all(|w| w[0].plane == w[1].plane) {
         notes.push("the rules share one plane: no specificity can separate them".into());

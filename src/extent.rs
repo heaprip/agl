@@ -179,7 +179,7 @@ pub fn table(prog: &Program) -> (Table, bool) {
             table
                 .entry(roles.join(", "))
                 .or_default()
-                .entry(atom.rel.clone())
+                .entry(atom.rel.to_string())
                 .or_default()
                 .insert((name.clone(), values.join(", ")));
         }
