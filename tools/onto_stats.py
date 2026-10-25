@@ -16,6 +16,11 @@ should be designed (docs/hypotheses.md, H61).
                                 offline: print an .agl program with two releases as two
                                 planes, a lazy nesting and 80 questions from seed 1
                                 (H61, step 7)
+    tools/onto_stats.py axes chebi RELEASE [one]
+                                offline: print an .agl program with two axes, structure
+                                (is_a) and role (has_role, roles' is_a), and 50 questions
+                                "has x role r" from seed 1; `one`: a single nesting for
+                                both hierarchies (H61, step 4)
     tools/onto_stats.py replay  offline: lay the edits between releases onto the numbers
                                 of the earlier one, for three forms of a number (H61)
 
@@ -581,6 +586,69 @@ def releases(family, a, b):
     sys.stdout.write("".join(out))
 
 
+ROLE = "CHEBI:50906"
+
+
+def axes(rel, one):
+    """Roles are inherited down the structure and up the roles: x has role r
+    when x or an ancestor has_role r or a species of r."""
+    import random
+    verified()
+    terms = load("chebi", rel)
+    parents = {t: ps for t, (ps, _) in terms.items()}
+    anc = ancestors(parents)
+    roles = {t for t in terms if t == ROLE or ROLE in anc[t]}
+    has = {t: hr for t, (_, hr) in terms.items() if hr}
+    name = lambda s: "s" + s.replace("-", "_").replace(":", "_")
+
+    def kinds(x):
+        """Roles of x by the shortest way they come: own, down, up, both."""
+        own = set(has.get(x, ()))
+        down = {r for y in anc[x] for r in has.get(y, ())} - own
+        up = {q for r in own for q in anc[r]} - own - down
+        every = {q for y in {x} | anc[x] for r in has.get(y, ()) for q in {r} | anc[r]}
+        both = every - own - down - up
+        return {"own": own, "down": down, "up": up, "both": both}, every
+
+    rng = random.Random(1)
+    chem = sorted(t for t in terms if t not in roles)
+    rlist = sorted(roles)
+    want = {"own": [], "down": [], "up": [], "both": [], "none": []}
+    while any(len(v) < 10 for v in want.values()):
+        x = rng.choice(chem)
+        ks, every = kinds(x)
+        for k in ("own", "down", "up", "both"):
+            if len(want[k]) < 10 and ks[k] and rng.random() < 0.5:
+                want[k].append((x, rng.choice(sorted(ks[k]))))
+        if len(want["none"]) < 10 and rng.random() < 0.2:
+            r = rng.choice(rlist)
+            if r not in every:
+                want["none"].append((x, r))
+    asked = [xr for k in want for xr in want[k]]
+    rk = "kind_of" if one else "role_kind"
+    out = ["status source > question\n",
+           "nesting k: kind_of(a, b) by is_a(species, genus) lazy\n"]
+    if not one:
+        out.append("nesting kr: role_kind(a, b) by role_is_a(species, genus) lazy\n")
+    p = "probe(x: ?x, r: ?r)"
+    out += [f"rule own strict @: has(x: ?x, r: ?r) <- {p}, has_role(x: ?x, role: ?r)\n",
+            f"rule down strict @: has(x: ?x, r: ?r) <- {p}, kind_of(a: ?x, b: ?y), has_role(x: ?y, role: ?r)\n",
+            f"rule up strict @: has(x: ?x, r: ?r) <- {p}, has_role(x: ?x, role: ?q), {rk}(a: ?q, b: ?r)\n",
+            f"rule both strict @: has(x: ?x, r: ?r) <- {p}, kind_of(a: ?x, b: ?y), "
+            f"has_role(x: ?y, role: ?q), {rk}(a: ?q, b: ?r)\n"]
+    edges = sorted((t, g) for t, ps in parents.items() for g in ps)
+    for i, (t, g) in enumerate(edges):
+        e = "role_is_a" if t in roles and not one else "is_a"
+        out.append(f"fact e{i}: {e}(species: {name(t)}, genus: {name(g)}) @ [source]\n")
+    hr = sorted((t, r) for t, rs in has.items() for r in rs)
+    out += [f"fact h{i}: has_role(x: {name(t)}, role: {name(r)}) @ [source]\n" for i, (t, r) in enumerate(hr)]
+    out += [f"fact p{i}: probe(x: {name(x)}, r: {name(r)}) @ [question]\n" for i, (x, r) in enumerate(asked)]
+    for k, xs in want.items():
+        for x, r in xs:
+            out.append(f"query has(x: {name(x)}, r: {name(r)}) @ expect {'unknown' if k == 'none' else 'yes'}  # {k}\n")
+    sys.stdout.write("".join(out))
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd == "fetch":
@@ -593,6 +661,8 @@ if __name__ == "__main__":
         probe(sys.argv[2], sys.argv[3], sys.argv[4])
     elif cmd == "releases":
         releases(sys.argv[2], sys.argv[3], sys.argv[4])
+    elif cmd == "axes":
+        axes(sys.argv[2], sys.argv[3:] == ["one"])
     elif cmd == "replay":
         replay()
     else:

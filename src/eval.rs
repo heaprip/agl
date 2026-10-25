@@ -1221,14 +1221,17 @@ impl Lazy {
 
     /// Makes N(x, y) and every N(z, y) on a path from x to y, each with the
     /// derivations of its two rules.
-    fn cone(&self, x: &str, y: &str, db: &mut Db) {
+    /// `up` is everything x is within (`Labels::ancestors`): the cone is
+    /// drawn from it, not from everything within y, which for a root of a
+    /// whole ontology is the whole ontology.
+    fn cone(&self, up: &[&str], y: &str, db: &mut Db) {
         let fresh = format!("\0{y}");
-        let mut cone: BTreeSet<&str> = self
-            .labels
-            .descendants(y)
-            .into_iter()
-            .chain(self.labels.descendants(&fresh))
-            .filter(|z| !z.starts_with('\0') && self.labels.within(x, z))
+        let mut cone: BTreeSet<&str> = up
+            .iter()
+            .copied()
+            .filter(|z| {
+                !z.starts_with('\0') && (self.labels.within(z, y) || self.labels.within(z, &fresh))
+            })
             .collect();
         cone.retain(|z| self.holds(z, y));
         // Atoms first: a step rests on the next atom of the cone.
@@ -1342,8 +1345,14 @@ fn fixpoint(
         // Atoms of lazy nestings that matches rest on, with their cones. They
         // held already, so they give no new match. Made before the heads, so
         // that the premises can be numbered; no rule here derives them.
-        for (rel, x, y) in wanted {
-            lazy[&rel].cone(&x, &y, db);
+        // Sorted by (relation, x): the ancestors of x are found once.
+        let mut up: Option<(String, String, Vec<&str>)> = None;
+        for (rel, x, y) in &wanted {
+            let l = &lazy[rel];
+            if up.as_ref().is_none_or(|(r, a, _)| r != rel || a != x) {
+                up = Some((rel.clone(), x.clone(), l.labels.ancestors(x)));
+            }
+            l.cone(&up.as_ref().expect("set above").2, y, db);
         }
         let mut born: BTreeSet<Id> = BTreeSet::new();
         for (head, r, premises) in new {
