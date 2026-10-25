@@ -66,6 +66,21 @@ fact f: member_of(person: newton, taxon: homo_sapiens) @
 }
 
 #[test]
+fn unknown_metaedge_occurrence_is_reported() {
+    let src = "
+fact target: object(name: sample) @
+metaedge broken: &missing(subject: &target) @
+";
+    let report = agl::run(&agl::parse(src).unwrap());
+    assert!(
+        report
+            .diags
+            .iter()
+            .any(|diag| diag.code == "unknown-occurrence")
+    );
+}
+
+#[test]
 fn overlapping_planes_conflict_disjoint_do_not() {
     let base = "
 axis pressure

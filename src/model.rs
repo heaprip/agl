@@ -106,6 +106,9 @@ impl Names {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Term {
     Sym(Name),
+    /// A reference to a relation occurrence (`&statement_id`), distinct from
+    /// a domain symbol with the same spelling.
+    Ref(Name),
     /// A value in SI with its dimension.
     Num(f64, Dim),
     Var(String),
@@ -115,6 +118,7 @@ impl fmt::Display for Term {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Term::Sym(s) => write!(f, "{s}"),
+            Term::Ref(id) => write!(f, "&{id}"),
             Term::Var(v) => write!(f, "?{v}"),
             Term::Num(n, dim) => {
                 if n.fract() == 0.0 && n.abs() < 1e15 {
@@ -328,6 +332,18 @@ pub struct Fact {
     pub line: usize,
 }
 
+/// `metaedge ID: &RELATION(role: &TARGET, ...) @ SPEC`: a relation
+/// occurrence and every endpoint are references to statement occurrences,
+/// never ordinary domain symbols.
+#[derive(Clone, Debug)]
+pub struct MetaedgeDecl {
+    pub id: Name,
+    pub relation: Name,
+    pub ports: Vec<(Name, Name)>,
+    pub plane: Plane,
+    pub line: usize,
+}
+
 #[derive(Clone, Debug)]
 pub struct Rule {
     pub id: Name,
@@ -534,6 +550,7 @@ pub struct Program {
     pub axes: Axes,
     pub planes: BTreeMap<String, Plane>,
     pub facts: Vec<Fact>,
+    pub metaedges: Vec<MetaedgeDecl>,
     pub rules: Vec<Rule>,
     pub defeats: BTreeSet<(String, String)>,
     pub normative_preds: BTreeSet<String>,

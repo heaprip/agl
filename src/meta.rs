@@ -94,6 +94,7 @@ pub enum Intension {
     },
     /// A relation occurrence whose endpoints are themselves entities.
     Metaedge {
+        source: String,
         relation: EntityId,
         ports: Vec<PortBinding>,
     },
@@ -152,8 +153,12 @@ impl Intension {
                 fields.extend(interface.iter().map(|p| format!("port:{p}")));
                 exact_key("glue", &fields)
             }
-            Intension::Metaedge { relation, ports } => {
-                let mut fields = vec![relation.to_string()];
+            Intension::Metaedge {
+                source,
+                relation,
+                ports,
+            } => {
+                let mut fields = vec![source.clone(), relation.to_string()];
                 fields.extend(ports.iter().map(|p| format!("{}:{}", p.role, p.target)));
                 exact_key("metaedge", &fields)
             }
@@ -164,7 +169,9 @@ impl Intension {
         match self {
             Intension::Primitive { .. } | Intension::Derive { .. } => Vec::new(),
             Intension::Glue { parts, .. } => parts.iter().collect(),
-            Intension::Metaedge { relation, ports } => std::iter::once(relation)
+            Intension::Metaedge {
+                relation, ports, ..
+            } => std::iter::once(relation)
                 .chain(ports.iter().map(|port| &port.target))
                 .collect(),
         }
@@ -318,6 +325,7 @@ impl Metaedge {
         ports.dedup();
         let entity = Entity::new(
             Intension::Metaedge {
+                source: evidence.operation.clone(),
                 relation: relation.clone(),
                 ports: ports.clone(),
             },
@@ -421,14 +429,13 @@ impl<T: Clone + PartialEq> Metagraph<T> {
             .projections
             .iter()
             .find(|old| old.entity == projection.entity && old.context == projection.context)
+            && old.extent != projection.extent
         {
-            if old.extent != projection.extent {
-                return Err(format!(
-                    "conflicting projection for `{}` in {}",
-                    projection.entity,
-                    plane_to_string(&projection.context)
-                ));
-            }
+            return Err(format!(
+                "conflicting projection for `{}` in {}",
+                projection.entity,
+                plane_to_string(&projection.context)
+            ));
         }
         if !self.projections.contains(&projection) {
             self.projections.push(projection);

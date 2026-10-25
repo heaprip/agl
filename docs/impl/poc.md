@@ -23,6 +23,7 @@ overlap AXIS A B                   plane NAME = SPEC
 normative_axis AXIS                normative PRED
 relation PRED(role, ...)           gap PRED KIND [resolved_by AXIS]
 fact ID: LITERAL @ SPEC [STATUS]
+metaedge ID: &RELATION(role: &TARGET, ...) @ SPEC
 rule ID strict|defeasible @ SPEC: LITERAL <- LIT, LIT, ...
 defeats WINNER LOSER
 unique REL(role) by (key, key, ...)
@@ -53,6 +54,15 @@ world clean                        # чистый мир (H72): готовое �
 - Отрицание — `¬` или `~`.
 - Правило продолжается на следующей строке, пока строка кончается на `,` или
   `<-`.
+- `metaedge` ссылается через `&ID` именно на occurrences фактов или других
+  метарёбер. Это не предметный символ. Relation и targets получают стабильные
+  `EntityId`; ссылка на неизвестный ID — ошибка линтера, цикл — ошибка
+  вычисления. Метаребро доступно в `Outcome.metaedges`, общем
+  `Outcome::metagraph()` и каноническом CLI-отчёте. Одновременно оно является
+  обычным ground atom `metaedge(relation: &RELATION, role: &TARGET, ...)` в
+  closure: его можно сопоставлять в телах правил и спрашивать существующим
+  `query`. Производные правила зависят от claim метаребра и снимаются вместе с
+  его evidence.
 
 ## Семантика
 

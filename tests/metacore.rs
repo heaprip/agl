@@ -164,3 +164,157 @@ fn bank_glue_is_the_shared_intension_not_only_an_index_plan() {
     assert_eq!(glued.projection.entity, glued.entity.id);
     assert_eq!(glued.projection.evidence, glued.evidence.id);
 }
+
+#[test]
+fn dsl_metaedge_references_relation_occurrences_not_symbols() {
+    let src = "
+fact relation_occ: relation_object(name: observes) @
+fact target_occ: object(name: sample) @
+metaedge first: &relation_occ(subject: &target_occ) @
+metaedge second: &first(subject: &target_occ) @
+";
+    let out = evaluate(&agl::parse(src).unwrap(), &Plane::new());
+    assert!(out.errors.is_empty(), "{:?}", out.errors);
+    assert_eq!(out.metaedges.len(), 2);
+
+    let fact_entity = |source: &str| {
+        out.db
+            .values()
+            .flat_map(|(_, derivations)| derivations)
+            .find(|derivation| derivation.source() == source)
+            .unwrap()
+            .entity
+            .id
+            .clone()
+    };
+    let relation = fact_entity("relation_occ");
+    let target = fact_entity("target_occ");
+    let first = out
+        .metaedges
+        .iter()
+        .find(|edge| {
+            matches!(
+                &edge.entity.intension,
+                Intension::Metaedge { source, .. } if source == "first"
+            )
+        })
+        .unwrap();
+    let second = out
+        .metaedges
+        .iter()
+        .find(|edge| {
+            matches!(
+                &edge.entity.intension,
+                Intension::Metaedge { source, .. } if source == "second"
+            )
+        })
+        .unwrap();
+    assert_eq!(first.relation, relation);
+    assert_eq!(first.ports[0].target, target);
+    assert_eq!(second.relation, first.entity.id);
+    assert_eq!(second.ports[0].target, target);
+
+    let graph = out.metagraph().unwrap();
+    assert_eq!(graph.metaedges_using(&target).len(), 2);
+    assert!(graph.metaedges().all(|edge| graph.metaedge_active(edge)));
+    let report = agl::run(&agl::parse(src).unwrap());
+    assert_eq!(report.metaedges.len(), 2);
+    assert_eq!(agl::render(&report).matches("metaedge ").count(), 2);
+}
+
+#[test]
+fn dsl_metaedges_are_contextual_and_order_independent() {
+    let declarations = "
+axis world
+value world p
+value world q
+fact relation_occ: relation_object(name: observes) @
+fact target_occ: object(name: sample) @
+";
+    let forward = format!(
+        "{declarations}\
+         metaedge first: &relation_occ(subject: &target_occ) @ world:p\n\
+         metaedge second: &first(subject: &target_occ) @ world:p\n"
+    );
+    let reverse = format!(
+        "{declarations}\
+         metaedge second: &first(subject: &target_occ) @ world:p\n\
+         metaedge first: &relation_occ(subject: &target_occ) @ world:p\n"
+    );
+    let p = Plane::from([("world".into(), "p".into())]);
+    let q = Plane::from([("world".into(), "q".into())]);
+    let a = evaluate(&agl::parse(&forward).unwrap(), &p);
+    let b = evaluate(&agl::parse(&reverse).unwrap(), &p);
+    assert_eq!(
+        a.metagraph().unwrap().report(),
+        b.metagraph().unwrap().report()
+    );
+    assert_eq!(a.metaedges.len(), 2);
+    assert!(
+        evaluate(&agl::parse(&forward).unwrap(), &Plane::new())
+            .metaedges
+            .is_empty()
+    );
+    assert!(
+        evaluate(&agl::parse(&forward).unwrap(), &q)
+            .metaedges
+            .is_empty()
+    );
+}
+
+#[test]
+fn ordinary_rules_and_queries_compute_over_metaedges() {
+    let src = "
+relation seen(target)
+fact relation_occ: relation_object(name: observes) @
+fact target_occ: object(name: sample) @
+metaedge first: &relation_occ(subject: &target_occ) @
+rule sees strict @: seen(target: ?target) <- metaedge(relation: &relation_occ, subject: ?target)
+query metaedge(relation: &relation_occ, subject: &target_occ) @ expect yes
+query seen(target: &target_occ) @ expect yes
+";
+    let prog = agl::parse(src).unwrap();
+    let report = agl::run(&prog);
+    assert!(!report.has_errors(), "{}", agl::render(&report));
+    assert_eq!(
+        report.failed_queries().count(),
+        0,
+        "{}",
+        agl::render(&report)
+    );
+
+    let out = evaluate(&prog, &Plane::new());
+    let (_, seen) = out
+        .db
+        .values()
+        .find(|(atom, _)| atom.rel == "seen")
+        .unwrap();
+    assert_eq!(seen.len(), 1);
+    assert_eq!(seen[0].source(), "sees");
+    assert_eq!(seen[0].evidence.premises.len(), 1);
+
+    // The normal rule derivation depends on the metaedge claim in the same
+    // AND/OR graph, so retracting the link invalidates the consequence.
+    let mut graph = out.metagraph().unwrap();
+    let link = out
+        .meta_evidence
+        .iter()
+        .find(|evidence| evidence.operation == "first")
+        .unwrap()
+        .id
+        .clone();
+    let conclusion = seen[0].evidence.id.clone();
+    let refuter = Evidence::new(
+        ClaimId::named("event", "refute-first"),
+        "test-refuter",
+        Vec::new(),
+        Strength::Strict,
+        Plane::new(),
+    );
+    graph.add_evidence(refuter.clone()).unwrap();
+    graph.retract(link, refuter.id).unwrap();
+    assert_eq!(
+        graph.evidence_state(&conclusion),
+        Some(EvidenceState::Unsupported)
+    );
+}

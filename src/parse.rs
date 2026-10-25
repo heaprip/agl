@@ -122,8 +122,9 @@ fn parse_names(src: &str) -> Result<Program, String> {
     }
     let u = Units::declare(&quantities, &units)?;
     for (line_no, stmt) in stmts {
-        let (nf, nr, nq, nu, nb) = (
+        let (nf, nm_edge, nr, nq, nu, nb) = (
             prog.facts.len(),
+            prog.metaedges.len(),
             prog.rules.len(),
             prog.queries.len(),
             prog.uniques.len(),
@@ -140,6 +141,9 @@ fn parse_names(src: &str) -> Result<Program, String> {
         }
         parse_statement(&mut prog, &u, &stmt).map_err(|e| format!("line {line_no}: {e}"))?;
         prog.facts[nf..].iter_mut().for_each(|f| f.line = line_no);
+        prog.metaedges[nm_edge..]
+            .iter_mut()
+            .for_each(|edge| edge.line = line_no);
         prog.rules[nr..].iter_mut().for_each(|r| r.line = line_no);
         if let Some(n) = prog.nestings.last_mut()
             && n.line == 0
@@ -311,6 +315,38 @@ fn parse_statement(prog: &mut Program, u: &Units, stmt: &str) -> Result<(), Stri
                 atom,
                 plane,
                 status,
+                line: 0,
+            });
+        }
+        "metaedge" => {
+            let expected = "expected `metaedge ID: &RELATION(role: &TARGET, ...) @ SPEC`";
+            let (id, body) = rest.split_once(':').ok_or(expected)?;
+            let (link, spec) = split_at_plane(body)?;
+            let (relation, ports) = link.trim().split_once('(').ok_or(expected)?;
+            let relation = relation.trim().strip_prefix('&').ok_or(expected)?;
+            let relation = ident(relation)?;
+            let ports = ports.strip_suffix(')').ok_or(expected)?;
+            let mut parsed = Vec::new();
+            for port in split_top(ports, ',') {
+                let (role, target) = port.split_once(':').ok_or(expected)?;
+                let target = target.trim().strip_prefix('&').ok_or(expected)?;
+                let target = ident(target)?;
+                parsed.push((name(ident(role.trim())?), name(target)));
+            }
+            parsed.sort_by(|a, b| a.0.cmp(&b.0));
+            if parsed.iter().any(|(role, _)| role == "relation") {
+                return Err(
+                    "metaedge role `relation` is reserved for its relation occurrence".into(),
+                );
+            }
+            if parsed.windows(2).any(|ports| ports[0].0 == ports[1].0) {
+                return Err("a metaedge cannot repeat a role".into());
+            }
+            prog.metaedges.push(MetaedgeDecl {
+                id: name(ident(id.trim())?),
+                relation: name(relation),
+                ports: parsed,
+                plane: parse_spec(prog, spec)?,
                 line: 0,
             });
         }
@@ -789,6 +825,9 @@ pub fn parse_atom_in(s: &str, u: &Units) -> Result<Atom, String> {
 fn parse_term(s: &str, u: &Units) -> Result<Term, String> {
     if let Some(v) = s.strip_prefix('?') {
         return Ok(Term::Var(ident(v)?.to_string()));
+    }
+    if let Some(reference) = s.strip_prefix('&') {
+        return Ok(Term::Ref(name(ident(reference)?)));
     }
     if let Some((num, unit)) = s.split_once('[') {
         let n: f64 = num

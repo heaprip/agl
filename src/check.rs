@@ -126,6 +126,12 @@ pub struct FoundConflict {
     pub conflict: eval::Conflict,
 }
 
+#[derive(Debug)]
+pub struct FoundMetaedge {
+    pub context: Plane,
+    pub edge: crate::meta::Metaedge,
+}
+
 #[derive(Debug, Clone)]
 pub struct Exception {
     pub context: Plane,
@@ -143,6 +149,7 @@ pub struct Report {
     /// context, with the widest such context. A law seen on small worlds
     /// and refuted on a larger one shows here, not in silence.
     pub exceptions: Vec<Exception>,
+    pub metaedges: Vec<FoundMetaedge>,
     pub queries: Vec<QueryResult>,
     pub compares: Vec<CompareResult>,
 }
@@ -201,6 +208,7 @@ pub fn run(prog: &Program) -> Report {
     let mut evals = Evals::new(prog);
     let (conflicts, mut errors) = scan_conflicts(prog, &mut evals);
     let exceptions = scan_exceptions(prog, &mut evals);
+    let metaedges = scan_metaedges(prog, &mut evals);
     let queries: Vec<QueryResult> = prog
         .queries
         .iter()
@@ -242,9 +250,27 @@ pub fn run(prog: &Program) -> Report {
         errors: errors.into_iter().collect(),
         conflicts,
         exceptions,
+        metaedges,
         queries,
         compares,
     }
+}
+
+fn scan_metaedges(prog: &Program, evals: &mut Evals) -> Vec<FoundMetaedge> {
+    let mut seen = BTreeSet::new();
+    let mut found = Vec::new();
+    for context in contexts(prog).0 {
+        for edge in &evals.get(&context).metaedges {
+            if seen.insert((context.clone(), edge.entity.id.clone())) {
+                found.push(FoundMetaedge {
+                    context: context.clone(),
+                    edge: edge.clone(),
+                });
+            }
+        }
+    }
+    found.sort_by(|a, b| (&a.context, &a.edge.entity.id).cmp(&(&b.context, &b.edge.entity.id)));
+    found
 }
 
 /// Most contexts the contradiction scan visits; past it, a warning.
@@ -257,6 +283,9 @@ pub(crate) fn contexts(prog: &Program) -> (Vec<Plane>, bool) {
     let mut planes: BTreeSet<Plane> = BTreeSet::new();
     prog.facts.iter().for_each(|f| {
         planes.insert(f.plane.clone());
+    });
+    prog.metaedges.iter().for_each(|edge| {
+        planes.insert(edge.plane.clone());
     });
     prog.rules.iter().for_each(|r| {
         planes.insert(r.plane.clone());
@@ -562,6 +591,28 @@ pub fn render(report: &Report) -> String {
         )
     }));
     conflicts.sort();
+    let mut metaedges: Vec<String> = report
+        .metaedges
+        .iter()
+        .map(|found| {
+            let ports = found
+                .edge
+                .ports
+                .iter()
+                .map(|port| format!("{}={}", port.role, port.target))
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!(
+                "metaedge {} relation={} ports=[{}] @ {} evidence={}",
+                found.edge.entity.id,
+                found.edge.relation,
+                ports,
+                plane_to_string(&found.context),
+                found.edge.evidence
+            )
+        })
+        .collect();
+    metaedges.sort();
     let mut queries: Vec<String> = report
         .queries
         .iter()
@@ -603,6 +654,7 @@ pub fn render(report: &Report) -> String {
     compares.sort();
     compares.dedup();
     lines.extend(conflicts);
+    lines.extend(metaedges);
     lines.extend(queries);
     lines.extend(compares);
     lines.join("\n")

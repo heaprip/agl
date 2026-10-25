@@ -43,6 +43,40 @@ pub fn lint(prog: &Program) -> Vec<Diag> {
         }
     }
 
+    let mut occurrences = BTreeSet::new();
+    for (id, line, kind) in prog
+        .facts
+        .iter()
+        .map(|fact| (fact.id.as_str(), fact.line, "fact"))
+        .chain(
+            prog.metaedges
+                .iter()
+                .map(|edge| (edge.id.as_str(), edge.line, "metaedge")),
+        )
+    {
+        if !occurrences.insert(id) {
+            out.push(err(
+                line,
+                "duplicate-occurrence",
+                format!("duplicate {kind} occurrence id `{id}`"),
+            ));
+        }
+    }
+    for edge in &prog.metaedges {
+        for reference in std::iter::once(&edge.relation).chain(edge.ports.iter().map(|p| &p.1)) {
+            if !occurrences.contains(reference.as_str()) {
+                out.push(err(
+                    edge.line,
+                    "unknown-occurrence",
+                    format!(
+                        "metaedge `{}` references unknown occurrence `{reference}`",
+                        edge.id
+                    ),
+                ));
+            }
+        }
+    }
+
     let rule_ids: BTreeSet<&str> = prog.rules.iter().map(|r| r.id.as_str()).collect();
     for r in &prog.rules {
         check_roles(prog, &r.head, r.line, &mut out);
@@ -182,6 +216,10 @@ fn ready_made(prog: &Program, out: &mut Vec<Diag>) {
         prog.compares.iter().map(|c| (c.line, "compare")).collect(),
         prog.nestings.iter().map(|n| (n.line, "nesting")).collect(),
         prog.uniques.iter().map(|u| (u.line, "unique")).collect(),
+        prog.metaedges
+            .iter()
+            .map(|edge| (edge.line, "metaedge"))
+            .collect(),
     ];
     for (line, kind) in hand.into_iter().flatten() {
         found.push((line, vec![kind]));

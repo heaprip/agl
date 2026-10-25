@@ -13,7 +13,10 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::meta::{ClaimId, Entity, Evidence, Intension, Projection};
+use crate::meta::{
+    ClaimId, Entity, Evidence, Intension, Metaedge as RelationMetaedge, Metagraph, PortBinding,
+    Projection,
+};
 use crate::model::*;
 use crate::units::Dim;
 
@@ -204,6 +207,7 @@ impl Db {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn make_derivation(
     db: &Db,
     conclusion: &Atom,
@@ -284,6 +288,10 @@ pub struct Conflict {
 #[derive(Default, Debug)]
 pub struct Outcome {
     pub db: Db,
+    /// First-class links declared by `metaedge`, materialized from occurrences
+    /// in this closure rather than parsed as ordinary domain symbols.
+    pub metaedges: Vec<RelationMetaedge>,
+    pub meta_evidence: Vec<Evidence>,
     pub conflicts: BTreeMap<String, Conflict>,
     /// Why an atom derived in the closure does not hold: the conflict it
     /// lost, or the premises it fell with.
@@ -291,6 +299,36 @@ pub struct Outcome {
     /// Evaluation errors, such as adding quantities of different dimensions.
     pub errors: BTreeSet<String>,
     pub truncated: bool,
+}
+
+impl Outcome {
+    /// The closure and its declared metaedges in the shared semantic index.
+    /// This is a view over production evaluator records, not a second run.
+    pub fn metagraph(&self) -> Result<Metagraph<Atom>, String> {
+        let mut graph = Metagraph::new();
+        for (_, derivations) in self.db.values() {
+            for derivation in derivations {
+                graph.add_evidence(derivation.evidence.clone())?;
+            }
+        }
+        for evidence in &self.meta_evidence {
+            graph.add_evidence(evidence.clone())?;
+        }
+        for (_, derivations) in self.db.values() {
+            for derivation in derivations {
+                if !matches!(derivation.entity.intension, Intension::Metaedge { .. }) {
+                    graph.add_entity(derivation.entity.clone())?;
+                }
+            }
+        }
+        for edge in &self.metaedges {
+            graph.add_metaedge(edge.clone())?;
+        }
+        for projection in self.db.projections() {
+            graph.add_projection(projection)?;
+        }
+        Ok(graph)
+    }
 }
 
 pub fn evaluate(prog: &Program, ctx: &Plane) -> Outcome {
@@ -381,10 +419,39 @@ fn evaluate_mode(prog: &Program, vis: &Visibility, ctx: &Plane, naive: bool) -> 
         if blocked.len() == before {
             check_uniques(prog, &db, &mut out.conflicts);
             check_forbids(prog, ctx, &db, &mut out.conflicts);
+            let (metaedges, evidence) = collect_metaedges(ctx, &db);
+            out.metaedges = metaedges;
+            out.meta_evidence = evidence;
             out.db = db;
             return out;
         }
     }
+}
+
+fn collect_metaedges(context: &Plane, db: &Db) -> (Vec<RelationMetaedge>, Vec<Evidence>) {
+    let mut edges = Vec::new();
+    let mut all_evidence = Vec::new();
+    for (atom, derivations) in &db.entries {
+        if atom.rel != "metaedge" {
+            continue;
+        }
+        for derivation in derivations {
+            if let Intension::Metaedge {
+                relation, ports, ..
+            } = &derivation.entity.intension
+            {
+                edges.push(RelationMetaedge {
+                    entity: derivation.entity.clone(),
+                    relation: relation.clone(),
+                    ports: ports.clone(),
+                    context: context.clone(),
+                    evidence: derivation.evidence.id.clone(),
+                });
+                all_evidence.push(derivation.evidence.clone());
+            }
+        }
+    }
+    (edges, all_evidence)
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -774,6 +841,149 @@ pub fn strata(rules: &[Rule]) -> (BTreeMap<String, usize>, Vec<String>) {
 
 type Binding = BTreeMap<String, Term>;
 
+fn insert_metaedge_facts(
+    prog: &Program,
+    context: &Plane,
+    blocked: &BTreeSet<String>,
+    db: &mut Db,
+    errors: &mut BTreeSet<String>,
+    top: usize,
+) {
+    type Occurrence = (crate::meta::EntityId, ClaimId, Id, usize);
+    let mut known: BTreeMap<Name, Occurrence> = BTreeMap::new();
+    let mut ambiguous = BTreeSet::new();
+    for (id, (_, derivations)) in db.entries.iter().enumerate() {
+        for derivation in derivations.iter().filter(|d| d.is_fact) {
+            let source = Name::from(derivation.source());
+            if ambiguous.contains(&source) {
+                continue;
+            }
+            let occurrence = (
+                derivation.entity.id.clone(),
+                derivation.evidence.conclusion.clone(),
+                id as Id,
+                derivation.rank,
+            );
+            if let Some(previous) = known.insert(source.clone(), occurrence.clone())
+                && previous != occurrence
+            {
+                errors.insert(format!(
+                    "occurrence id `{source}` refers to more than one fact"
+                ));
+                known.remove(&source);
+                ambiguous.insert(source);
+            }
+        }
+    }
+
+    let visible: Vec<_> = prog
+        .metaedges
+        .iter()
+        .filter(|edge| prog.axes.plane_within(context, &edge.plane))
+        .collect();
+    let mut pending: Vec<usize> = (0..visible.len()).collect();
+    loop {
+        let before = pending.len();
+        let mut next = Vec::new();
+        for index in pending {
+            let decl = visible[index];
+            let Some((relation, relation_claim, relation_atom, relation_rank)) =
+                known.get(&decl.relation).cloned()
+            else {
+                next.push(index);
+                continue;
+            };
+            let mut ports = Vec::new();
+            let mut claims = vec![relation_claim];
+            let mut premise_ids = vec![relation_atom];
+            let mut rank = relation_rank;
+            let mut complete = true;
+            for (role, target) in &decl.ports {
+                let Some((entity, claim, atom, target_rank)) = known.get(target).cloned() else {
+                    complete = false;
+                    break;
+                };
+                ports.push(PortBinding::new(role.to_string(), entity));
+                claims.push(claim);
+                premise_ids.push(atom);
+                rank = rank.min(target_rank);
+            }
+            if !complete {
+                next.push(index);
+                continue;
+            }
+            let mut args = vec![(Name::from("relation"), Term::Ref(decl.relation.clone()))];
+            args.extend(
+                decl.ports
+                    .iter()
+                    .map(|(role, target)| (role.clone(), Term::Ref(target.clone()))),
+            );
+            let atom = Atom::new(Name::from("metaedge"), args, false);
+            let key = atom.key();
+            if blocked.contains(&key) {
+                continue;
+            }
+            let evidence = Evidence::new_situated(
+                ClaimId::named("atom", &key),
+                decl.id.to_string(),
+                claims,
+                Strength::Strict,
+                context.clone(),
+                decl.plane.clone(),
+            );
+            let entity = Entity::new(
+                Intension::Metaedge {
+                    source: decl.id.to_string(),
+                    relation,
+                    ports,
+                },
+                vec![evidence.id.clone()],
+            );
+            let derivation = Derivation {
+                entity: entity.clone(),
+                evidence: evidence.clone(),
+                is_fact: true,
+                premises: db.premises(premise_ids),
+                rank: rank.min(top),
+            };
+            let (atom_id, _) = db.insert(&key, || atom);
+            db.derive(atom_id, derivation);
+            let occurrence = (entity.id, evidence.conclusion, atom_id, rank.min(top));
+            if known.insert(decl.id.clone(), occurrence).is_some() {
+                errors.insert(format!("duplicate occurrence id `{}`", decl.id));
+                known.remove(&decl.id);
+            }
+        }
+        if next.is_empty() {
+            break;
+        }
+        if next.len() == before {
+            for index in next {
+                let decl = visible[index];
+                let mut missing = Vec::new();
+                if !known.contains_key(&decl.relation) {
+                    missing.push(decl.relation.as_str());
+                }
+                missing.extend(
+                    decl.ports
+                        .iter()
+                        .filter(|(_, target)| !known.contains_key(target))
+                        .map(|(_, target)| target.as_str()),
+                );
+                missing.sort();
+                missing.dedup();
+                errors.insert(format!(
+                    "metaedge `{}` has unavailable or cyclic references: {}",
+                    decl.id,
+                    missing.join(", ")
+                ));
+            }
+            break;
+        }
+        pending = next;
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 fn closure(
     prog: &Program,
@@ -808,6 +1018,7 @@ fn closure(
         let (id, _) = db.insert(&key, || f.atom.clone());
         db.entries[id as usize].1.push(d);
     }
+    insert_metaedge_facts(prog, context, blocked, &mut db, errors, top);
     let limit = db.len() + MAX_ATOMS;
     let mut levels: Vec<usize> = rules
         .iter()
@@ -1660,7 +1871,7 @@ impl<'a> Index<'a> {
                     Some(Term::Sym(s)) => s,
                     _ => continue,
                 },
-                Term::Num(..) => continue,
+                Term::Num(..) | Term::Ref(..) => continue,
             };
             let key = (pat.rel.clone(), pat.neg, role.clone(), sym.clone());
             let Some(list) = self.by_sym.get(&key) else {
