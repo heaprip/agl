@@ -1,5 +1,6 @@
 //! Peak memory by stage (H61, step 3): `parse`, `eval` (empty plane), `run`
-//! (the whole report). A counting allocator reports the heap in use and its
+//! (the whole report), `planes` (each plane of a fact in turn, outcomes
+//! held, as the report holds them). A counting allocator reports the heap in use and its
 //! peak after each stage; `/usr/bin/time -l` gives the resident peak.
 //!
 //!     cargo run --release --example memstage -- parse FILE.agl
@@ -53,6 +54,16 @@ fn main() {
                 // Hold the closure for a heap inspection (`heap PID`).
                 std::thread::sleep(std::time::Duration::from_secs(20));
                 drop(out);
+            }
+        }
+        "planes" => {
+            let planes: std::collections::BTreeSet<agl::model::Plane> =
+                prog.facts.iter().map(|f| f.plane.clone()).collect();
+            let mut held = Vec::new();
+            for p in planes {
+                let out = agl::eval::evaluate(&prog, &p);
+                stage(&format!("{p:?} ({} atoms)", out.db.len()));
+                held.push(out);
             }
         }
         _ => {
