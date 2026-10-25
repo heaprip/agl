@@ -1307,7 +1307,9 @@ fn fixpoint(
                 .filter(|_| !naive)
                 .map(|f| Index::new(db, db.ids().filter(|i| f.contains(i))));
             let mut new: Vec<(Atom, &Rule, Vec<Pre>)> = Vec::new();
-            let wanted: std::cell::RefCell<BTreeSet<(String, String, String)>> = Default::default();
+            // (relation, x, y) of lazy atoms that whole matches rest on: a
+            // pair the labels gave to a body that did not match makes nothing.
+            let mut wanted: BTreeSet<(String, String, String)> = BTreeSet::new();
             for r in rules {
                 let mut matches = Vec::new();
                 let body = schedule(r);
@@ -1316,7 +1318,6 @@ fn fixpoint(
                     index: &index,
                     forced: None,
                     lazy,
-                    wanted: &wanted,
                     rule: &r.id,
                     errors: &mut *errors,
                 };
@@ -1336,11 +1337,16 @@ fn fixpoint(
                 for (binding, premises) in matches {
                     let head = subst(&r.head, &binding);
                     if head.is_ground() {
+                        for p in &premises {
+                            if let Pre::Lazy(l) = p {
+                                wanted.insert((l.0.clone(), l.1.clone(), l.2.clone()));
+                            }
+                        }
                         new.push((head, *r, premises));
                     }
                 }
             }
-            (new, wanted.into_inner())
+            (new, wanted)
         };
         // Atoms of lazy nestings that matches rest on, with their cones. They
         // held already, so they give no new match. Made before the heads, so
@@ -1366,6 +1372,7 @@ fn fixpoint(
                 .map(|p| match p {
                     Pre::Id(i) => i,
                     Pre::Key(k) => db.premise(&k),
+                    Pre::Lazy(l) => db.premise(&l.3),
                 })
                 .collect();
             let premises = db.premises(ps);
@@ -1397,12 +1404,13 @@ fn fixpoint(
     }
 }
 
-/// A premise while a round matches: an atom of the database, or the key of
-/// one not made yet (a lazy atom) or of an absence.
+/// A premise while a round matches: an atom of the database, the key of an
+/// absence, or a lazy atom not made yet: (relation, x, y, key).
 #[derive(Clone)]
 enum Pre {
     Id(Id),
     Key(String),
+    Lazy(Box<(String, String, String, String)>),
 }
 
 fn expr_vars(e: &Expr, out: &mut BTreeSet<String>) {
@@ -1575,8 +1583,6 @@ struct Matcher<'a> {
     forced: Option<(usize, &'a Index<'a>)>,
     /// Lazy nestings by relation; matched from labels, not from the index.
     lazy: &'a BTreeMap<String, Lazy>,
-    /// (relation, x, y) of lazy atoms matched in this round.
-    wanted: &'a std::cell::RefCell<BTreeSet<(String, String, String)>>,
     rule: &'a str,
     errors: &'a mut BTreeSet<String>,
 }
@@ -1689,10 +1695,10 @@ impl Matcher<'_> {
             if unify(pat, &ground, &mut bind) {
                 let key = ground.key();
                 seen.insert(key.clone());
-                self.wanted
-                    .borrow_mut()
-                    .insert((l.nest.rel.to_string(), a, b));
-                out.push((bind, Pre::Key(key)));
+                out.push((
+                    bind,
+                    Pre::Lazy(Box::new((l.nest.rel.to_string(), a, b, key))),
+                ));
             }
         }
         out.extend(
