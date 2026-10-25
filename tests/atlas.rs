@@ -175,3 +175,112 @@ fn no_stars_in_the_kernel() {
         }
     }
 }
+
+// Section 6: the layer of maps of points.
+
+use agl::atlas::generated;
+
+fn layer(points: u8) -> &'static (Atlas, Set) {
+    static L3: OnceLock<(Atlas, Set)> = OnceLock::new();
+    static L4: OnceLock<(Atlas, Set)> = OnceLock::new();
+    let cell = if points == 3 { &L3 } else { &L4 };
+    cell.get_or_init(|| Atlas::with(3, &generated(points, 8)))
+}
+
+fn small(a: &Atlas) -> Set {
+    let mut s = Set::none(a.entities.len());
+    (0..a.entities.len())
+        .filter(|&i| a.entities[i].n <= 3)
+        .for_each(|i| s.insert(i));
+    s
+}
+
+fn star_in(a: &Atlas) -> Set {
+    let mut s = Set::none(a.entities.len());
+    (0..a.entities.len())
+        .filter(|&i| a.entities[i].n <= 3 && star_group(&a.entities[i]))
+        .for_each(|i| s.insert(i));
+    s
+}
+
+#[test]
+fn the_trunk_of_maps_has_associativity_not_commutativity() {
+    let (a, own) = layer(3);
+    assert_eq!(own.count(), 43);
+    let trunk: Vec<String> = a
+        .content(own)
+        .iter()
+        .map(|&l| a.laws[l].to_string())
+        .collect();
+    assert!(trunk.contains(&ASSOC.to_string()));
+    assert!(!trunk.contains(&COMM.to_string()));
+}
+
+#[test]
+fn the_star_comes_from_maps_of_three_points() {
+    let (a, own) = layer(3);
+    let sizes: Vec<u8> = (0..a.entities.len())
+        .filter(|&i| own.contains(i) && star_group(&a.entities[i]))
+        .map(|i| a.entities[i].n)
+        .collect();
+    assert_eq!(sizes, [1, 2, 3, 6]);
+    let s3 = (0..a.entities.len())
+        .find(|&i| own.contains(i) && a.entities[i].n == 6 && star_group(&a.entities[i]))
+        .unwrap();
+    assert!(!star_commutative(&a.entities[s3]));
+}
+
+/// The fork of the small layer, read on the layer of maps: one widest branch
+/// containing every other, holding exactly on the star's entities of the
+/// layer; the star triple in it, the shortest definition of section 4 not.
+#[test]
+fn the_layer_of_maps_settles_the_fork() {
+    for (points, widest) in [
+        (3, [1, 2, 3, 6].as_slice()),
+        (4, &[1, 2, 3, 4, 4, 6, 8, 12, 24]),
+    ] {
+        let (a, own) = layer(points);
+        let defs = a.definitions(&star_in(a), &small(a));
+        let br = a.branches(&defs, own);
+        let (top, in_top) = &br[0];
+        assert!(br.iter().all(|(s, _)| s.within(top)), "{points} points");
+        let mut sizes: Vec<u8> = (0..a.entities.len())
+            .filter(|&i| top.contains(i))
+            .map(|i| a.entities[i].n)
+            .collect();
+        sizes.sort();
+        assert_eq!(sizes, widest, "{points} points");
+        assert!(
+            (0..a.entities.len())
+                .filter(|&i| top.contains(i))
+                .all(|i| star_group(&a.entities[i]))
+        );
+        let ix = |s: &str| a.laws.iter().position(|l| l.to_string() == s).unwrap();
+        let mut triple = vec![ix(ASSOC), ix(LEFT), ix(RIGHT)];
+        triple.sort();
+        let d0 = {
+            let mut d = vec![ix("∀x∀y: x·(y·x) = (x·x)·y"), ix(LEFT)];
+            d.sort();
+            d
+        };
+        assert!(in_top.contains(&triple), "{points} points");
+        assert!(!in_top.contains(&d0), "{points} points");
+    }
+}
+
+#[test]
+fn generation_does_not_depend_on_order() {
+    let mut l = generated(3, 8);
+    l.reverse();
+    let (b, own_b) = Atlas::with(3, &l);
+    let (a, own_a) = layer(3);
+    let names = |a: &Atlas, s: &Set| -> Vec<String> {
+        let mut v: Vec<String> = (0..a.entities.len())
+            .filter(|&i| s.contains(i))
+            .map(|i| a.entities[i].to_string())
+            .collect();
+        v.sort();
+        v
+    };
+    assert_eq!(names(a, own_a), names(&b, &own_b));
+}
