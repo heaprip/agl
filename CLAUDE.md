@@ -79,6 +79,8 @@ cargo run --release --example factor -- 8  # H74 §8: простые и сост
 cargo test --release --test free      # H74 §10–11: законы как элементы свободной сущности, вывод по Биркгофу и нормальными формами (~14 с)
 cargo run --release --example develop -- 3 6 target/scratch/journal3.txt  # H74 §9: развитие с нуля в журнал (~16 с, ~17 КБ; предел 1 МБ)
 ./target/release/agl --layer cases/clean/all2.agl cases/clean/all3.agl > target/scratch/layer.agl && cargo run --release -- target/scratch/layer.agl  # H75 ступень А: отношения между отношениями, законы — совпадения, исключения в отчёте (~5 с)
+cargo run --release --example universe -- 3 14 9  # H75 А2: λ-термы в одной вселенной из точки, E и P; β по пределам N (~45 с, все ядра)
+cargo test --release --test universe   # H75 А2: K, S, β, ограничитель, детерминизм (~4 с)
 cargo test --release --test layer      # H75 ступень А: приёмка (~15 с)
 python3 tools/clean_world.py 3 > cases/clean/all3.agl  # чистый мир: все 512 отношений на 3 элементах (H72)
 cargo run --release -- --explore cases/clean/all3.agl  # банк выражений и роды (~2 с); -v — классы каждого отношения

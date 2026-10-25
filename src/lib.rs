@@ -30,6 +30,7 @@ pub mod sat;
 pub mod scale;
 pub mod sim;
 pub mod units;
+pub mod universe;
 
 pub use check::{Report, render, run};
 pub use parse::{parse, parse_file, read_expanded};
