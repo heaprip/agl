@@ -10,6 +10,7 @@ use std::fmt;
 use std::fmt::Write as _;
 
 use crate::model::{Plane, Strength, plane_to_string};
+use crate::plane::Axes;
 
 fn exact_key(namespace: &str, parts: impl IntoIterator<Item = impl AsRef<str>>) -> String {
     let mut out = format!("{}:{}", namespace.len(), namespace);
@@ -565,6 +566,71 @@ impl<T: Clone + PartialEq> Metagraph<T> {
         self.bind_open_active(open, hole, part, context)
     }
 
+    /// Bind one explicitly selected active entity at every compatible meet of
+    /// the active construction evidence contexts for the two entities.
+    pub fn bind_open_at_meets(
+        &mut self,
+        axes: &Axes,
+        open: &EntityId,
+        hole: &str,
+        part: &EntityId,
+    ) -> Result<Vec<(Plane, EntityId)>, String> {
+        let open_entity = self
+            .entities
+            .get(open)
+            .ok_or_else(|| format!("unknown open entity `{open}`"))?
+            .clone();
+        let part_entity = self
+            .entities
+            .get(part)
+            .ok_or_else(|| format!("unknown binding entity `{part}`"))?
+            .clone();
+        let intension = open_entity.intension.bind(hole, part.clone())?;
+        let active = self.active_evidence_ids_with_axes(axes);
+        let contexts = |entity: &Entity| -> Vec<Plane> {
+            entity
+                .bases
+                .iter()
+                .filter(|basis| active.contains(*basis))
+                .filter_map(|basis| self.evidence.get(basis))
+                .map(|evidence| evidence.context.clone())
+                .collect()
+        };
+        let open_bases = contexts(&open_entity);
+        let part_bases = contexts(&part_entity);
+        if open_bases.is_empty() {
+            return Err(format!("open entity `{open}` is not active"));
+        }
+        if part_bases.is_empty() {
+            return Err(format!("binding entity `{part}` is not active"));
+        }
+        let open_claim = self.entity_claim(open)?;
+        let part_claim = self.entity_claim(part)?;
+        let mut pairs = BTreeSet::new();
+        for open_context in &open_bases {
+            for part_context in &part_bases {
+                let Some(context) = axes.plane_meet(open_context, part_context) else {
+                    continue;
+                };
+                let provisional = Entity::new(intension.clone(), Vec::new());
+                let evidence = Evidence::new_situated(
+                    ClaimId::derived("entity", [provisional.id.as_str()]),
+                    format!("bind-open:{hole}"),
+                    vec![open_claim.clone(), part_claim.clone()],
+                    Strength::Strict,
+                    context.clone(),
+                    Plane::new(),
+                );
+                self.add_evidence(evidence.clone())?;
+                let entity = Entity::new(intension.clone(), vec![evidence.id]);
+                let id = entity.id.clone();
+                self.add_entity(entity)?;
+                pairs.insert((context, id));
+            }
+        }
+        Ok(pairs.into_iter().collect())
+    }
+
     fn bind_open_active(
         &mut self,
         open: &EntityId,
@@ -755,6 +821,17 @@ impl<T: Clone + PartialEq> Metagraph<T> {
     }
 
     fn active_evidence_ids(&self) -> BTreeSet<EvidenceId> {
+        self.active_evidence_ids_by(visible_in)
+    }
+
+    fn active_evidence_ids_with_axes(&self, axes: &Axes) -> BTreeSet<EvidenceId> {
+        self.active_evidence_ids_by(|source, target| axes.plane_within(target, source))
+    }
+
+    fn active_evidence_ids_by(
+        &self,
+        visible: impl Fn(&Plane, &Plane) -> bool,
+    ) -> BTreeSet<EvidenceId> {
         let mut active = BTreeSet::new();
         loop {
             let mut changed = false;
@@ -766,7 +843,7 @@ impl<T: Clone + PartialEq> Metagraph<T> {
                     self.evidence.values().any(|candidate| {
                         candidate.conclusion == *premise
                             && active.contains(&candidate.id)
-                            && visible_in(&candidate.context, &evidence.context)
+                            && visible(&candidate.context, &evidence.context)
                     })
                 });
                 if supported {
@@ -778,6 +855,32 @@ impl<T: Clone + PartialEq> Metagraph<T> {
                 return active;
             }
         }
+    }
+
+    /// State of one evidence record under the declared context hierarchy and
+    /// overlaps. The legacy context-free query remains available for callers
+    /// which do not own an `Axes` registry.
+    pub fn evidence_state_with_axes(&self, axes: &Axes, id: &EvidenceId) -> Option<EvidenceState> {
+        if !self.evidence.contains_key(id) {
+            return None;
+        }
+        if self.retractions.contains_key(id) {
+            return Some(EvidenceState::Retracted);
+        }
+        Some(if self.active_evidence_ids_with_axes(axes).contains(id) {
+            EvidenceState::Active
+        } else {
+            EvidenceState::Unsupported
+        })
+    }
+
+    /// Whether an entity has an active construction basis when context
+    /// inheritance and declared intersections are interpreted by `axes`.
+    pub fn entity_active_with_axes(&self, axes: &Axes, id: &EntityId) -> bool {
+        let active = self.active_evidence_ids_with_axes(axes);
+        self.entities
+            .get(id)
+            .is_some_and(|entity| entity.bases.iter().any(|basis| active.contains(basis)))
     }
 
     pub fn evidence_state(&self, id: &EvidenceId) -> Option<EvidenceState> {
