@@ -8,12 +8,13 @@ Relation-first формальная система представления с
 
 ## Перед любой работой прочитать
 
+0. [docs/entities.md](docs/entities.md) — каждая сущность проекта: замысел, запись, код, расхождение; список поправок автора, которые агенты уже нарушали. Читать первым.
 1. [docs/architecture.md](docs/architecture.md) — рабочий контракт вычислительного ядра и предохранитель от отдельного калькулятора.
 2. [docs/traceability.md](docs/traceability.md) — где каждая авторская идея находится в контракте, коде и тестах и какие связки отсутствуют.
 3. [docs/milestones/dzhanibekov.md](docs/milestones/dzhanibekov.md) — ближайшая веха и её критерии; не подменять отдельным физическим калькулятором.
 4. [docs/roadmap.md](docs/roadmap.md) — история маршрута и где мы на нём.
 5. [docs/decisions.md](docs/decisions.md) — решения автора (1–24). Их не пересматривать.
-6. [docs/hypotheses.md](docs/hypotheses.md) — предложения помощника (H0–H75), **не приняты**.
+6. [docs/hypotheses.md](docs/hypotheses.md) — предложения помощника (H0–H76), **не приняты**.
 7. [docs/open-questions.md](docs/open-questions.md) — что решает только автор.
 8. [docs/impl/poc.md](docs/impl/poc.md) — нотация `.agl`, семантика ядра, детерминизм, рефлексия, обучение.
 
