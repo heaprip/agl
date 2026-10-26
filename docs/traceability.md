@@ -115,12 +115,12 @@ SHA-256 `086c43c8ed918b0b6985061376c41d061bd38688505702093076441b680eeaef`.
 | генетический путь (H54) | `lessons/genetic` | данные будущей приёмки, не алгоритм |
 | пересчитываемый журнал поиска (H55–H56) | hypotheses, deterministic seed | частично в примерах; процесса и общего формата нет |
 | лестница расширений числа (H57–H60) | Bombelli/Cauchy/adjoin/Hamilton reviews | хорошие regression fixtures, но цели и IR зашиты в разные генераторы |
-| точные векторы и вложенные номера (H61) | labels/ontology reviews | exact representation подтверждено; стабильная форма identity не выбрана |
+| точные векторы и вложенные номера (H61) | labels/ontology reviews | exact representation подтверждено; стабильная форма identity не выбрана; в metacore не подключено (узел N) |
 | LLM-геометрия (H62) | llm-geometry review | слабый signal с noise control; только подсказка |
 | три плиты (H63) | hypotheses | правило независимой проверки; независимость надо хранить в provenance |
 | извлечение из LLM (H64) | hypotheses | отложено до общего proposal/evidence цикла |
 | semi-naive и GPU (H65, H67) | `eval`, tests/seminaive | CPU-оптимизация принята кодом; GPU отложен решением 3 |
-| asserted/inferred/proposed и hypervectors (H66, H68) | hypotheses | терминология и точный symbolic carrier ещё не сведены |
+| asserted/inferred/proposed и hypervectors (H66, H68) | hypotheses | терминология и точный symbolic carrier ещё не сведены; обе линии H68 — объём и содержание понятия — подтверждены как требование, а не открытый вопрос |
 | пол примитивов, закрепление, банк поиска (H69–H71) | foundations/anchor/kernel | требования сохранены; ложное H74-закрепление удалено |
 | чистый мир и скрытая шкала (H72–H73) | bank/scale и reviews | H72 переиспользуется; H73 закрыта как предрешённый генератором опыт |
 | атлас с нуля (H74) | atlas/free/rewrite/journal | внешний мир и verifier; не основание identity |
@@ -130,6 +130,10 @@ SHA-256 `086c43c8ed918b0b6985061376c41d061bd38688505702093076441b680eeaef`.
 исторический замер удалённой параллельной версии. Актуальный полный A3-прогон
 однопоточный, был остановлен после 1749 секунд и приёмку на 204 редексах не
 прошёл; малые `tests/universe.rs` этого не заменяют.
+
+Правки размещения памяти в `sat.rs`/`rewrite.rs` от прерванного аудита
+сохранены веткой `experiment/sat-rewrite-alloc`: вывод тот же, суммарно −4,8 %
+при заранее объявленном пороге −5 %, поэтому не влиты.
 
 ## Решения автора
 
@@ -174,7 +178,7 @@ SHA-256 `086c43c8ed918b0b6985061376c41d061bd38688505702093076441b680eeaef`.
 | V — пересмотр | refuter invalidates dependent evidence | retracted/unsupported история переживает journal replay | oracle, identity_extent | нет AGM/deprecation и версий политики |
 | H — пробел | open boundary / unfilled port | `Glue.parts` хранит `Hole`; role обычного `Metaedge` активирует указанный filler только на пересечении контекстов, без полного перебора occurrences | open_frontier, layer | production mismatch ещё не порождает open intension/activation-edge; port signatures не объявлены; DSL `gap` остаётся старой отчётной проекцией |
 | C — цена пути | cost/distortion semiring | размер формулы и число попыток локально | benchmark only | отсутствует как семантика |
-| N — точный вектор/номер | stable identity + derived coordinates | dense bits, labels, law vectors | bits/label/atlas | смешаны id, координата и extent; форма не выбрана |
+| N — точный вектор/номер | stable identity + derived coordinates | dense bits (`bits::DenseSet` в atlas/bank), labels (`label`, в `eval`), law vectors (atlas) | bits/label/atlas | смешаны id, координата и extent; форма не выбрана. **Дыра:** metacore (`meta.rs`) чисто символьный — строковые id и `BTree*`; ни точный вектор, ни номер-набор-законов, ни объём/содержание (H52/H61/H68) к общему носителю не подключены. Требования, которые подключение обязано сохранить: точные сумма и разность координат («родитель + пол ж = мать», «мать − родитель = пол ж»), вставка промежуточного уровня без перенумерации, размерность — и глубина, и число осей с запасом гибкости |
 | X — аномалия → новая ось | failed expectation -> proposed context/refinement | R1/R2, Bombelli/Hamilton examples | discovery/propose | примеры имеют собственные генераторы, общей операции нет |
 | L — LLM предлагает | proposal source with provenance | записанные DSL calls, geometry probes | воспроизведение отдельных опытов | не встроено в общий цикл |
 | Z — детерминизм | canonical executor | `BTree*`, explicit seed | sim/oracle/journal | реализованное требование |
@@ -211,6 +215,9 @@ SHA-256 `086c43c8ed918b0b6985061376c41d061bd38688505702093076441b680eeaef`.
 3. Перенос Bombelli/Cauchy/Hamilton на общий исполнитель и журнал попыток,
    пересчитываемый из входа и seed.
 4. Веха Джанибекова как первый сквозной домен этого пути.
+   До неё — точное векторное поле сущности в общем носителе (узел N, связка
+   R–D–N): иначе векторная линия H52/H61/H68 останется только в старых
+   вычислителях.
 5. Форк, закрепление, пересмотр и lockfile.
 6. Стоимости путей, LLM-цикл и долгоживущий процесс — только после появления
    стабильных объектов, которые они будут оценивать и хранить.
