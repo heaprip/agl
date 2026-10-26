@@ -2,7 +2,7 @@
 name = "agl"
 version = "0.1.0"
 edition = "2024"
-description = "Artificial General Logic — PoC of the v0 metakernel"
+description = "Artificial General Logic — kernel machine, rebuilt from a clean slate"
 license = "Apache-2.0"
 publish = false
 
