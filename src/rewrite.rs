@@ -51,6 +51,36 @@ impl Expr {
     }
 }
 
+/// The parts of a term, held in place: a term is made, matched and
+/// rebuilt many times, and a list on the heap for each costs more than the
+/// work.
+#[derive(Clone, Copy)]
+struct Parts([u32; 2], usize);
+
+impl std::ops::Deref for Parts {
+    type Target = [u32];
+    fn deref(&self) -> &[u32] {
+        &self.0[..self.1]
+    }
+}
+
+impl std::ops::DerefMut for Parts {
+    fn deref_mut(&mut self) -> &mut [u32] {
+        &mut self.0[..self.1]
+    }
+}
+
+impl IntoIterator for Parts {
+    type Item = u32;
+    type IntoIter = std::iter::Take<std::array::IntoIter<u32, 2>>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter().take(self.1)
+    }
+}
+
+/// A substitution: the term bound to each variable, if any.
+type Sub = [Option<u32>; 128];
+
 #[derive(Default)]
 struct Terms {
     nodes: Vec<Node>,
@@ -85,16 +115,20 @@ impl Terms {
     }
 
     /// The parts of a term: none, one or two.
-    fn parts(&self, t: u32) -> Vec<u32> {
+    fn parts(&self, t: u32) -> Parts {
         match self.node(t) {
-            Node::App(_, a, NIL) => vec![a],
-            Node::App(_, a, b) => vec![a, b],
-            _ => vec![],
+            Node::App(_, a, NIL) => Parts([a, NIL], 1),
+            Node::App(_, a, b) => Parts([a, b], 2),
+            _ => Parts([NIL, NIL], 0),
         }
     }
 
     /// The same action on new parts.
     fn rebuild(&mut self, t: u32, parts: &[u32]) -> u32 {
+        // Terms are shared: the same parts give the same term.
+        if *parts == *self.parts(t) {
+            return t;
+        }
         match self.node(t) {
             Node::App(f, _, _) => self.app(f, parts[0], parts.get(1).copied().unwrap_or(NIL)),
             _ => t,
@@ -151,12 +185,21 @@ impl Terms {
             (Node::App(f, ..), Node::App(g, ..)) if f != g => f > g,
             (Node::App(..), Node::App(..)) => {
                 let (ps, pt) = (self.parts(s), self.parts(t));
-                match ps.iter().zip(&pt).find(|(a, b)| a != b) {
+                match ps.iter().zip(pt.iter()).find(|(a, b)| a != b) {
                     Some((&a, &b)) => self.greater(a, b),
                     None => false,
                 }
             }
             _ => false,
+        }
+    }
+
+    /// Whether `t` may match `pat` by its top symbol.
+    fn same_top(&self, pat: u32, t: u32) -> bool {
+        match (self.node(pat), self.node(t)) {
+            (Node::Var(_), _) => true,
+            (Node::App(f, _, pb), Node::App(g, _, tb)) => f == g && (pb == NIL) == (tb == NIL),
+            _ => pat == t,
         }
     }
 
@@ -171,7 +214,9 @@ impl Terms {
             },
             (Node::App(f, _, pb), Node::App(g, _, tb)) if f == g && (pb == NIL) == (tb == NIL) => {
                 let (pp, tp) = (self.parts(pat), self.parts(t));
-                pp.iter().zip(&tp).all(|(&p, &q)| self.matches(p, q, sub))
+                pp.iter()
+                    .zip(tp.iter())
+                    .all(|(&p, &q)| self.matches(p, q, sub))
             }
             _ => pat == t,
         }
@@ -191,9 +236,9 @@ impl Terms {
             },
             Node::Con(_) => Some(t),
             Node::App(..) => {
-                let mut ps = Vec::new();
-                for p in self.parts(t) {
-                    ps.push(self.subst(p, sub, strict, chain)?);
+                let mut ps = self.parts(t);
+                for p in ps.iter_mut() {
+                    *p = self.subst(*p, sub, strict, chain)?;
                 }
                 Some(self.rebuild(t, &ps))
             }
@@ -235,7 +280,9 @@ impl Terms {
             (_, Node::Var(_)) => self.unify(b, a, sub),
             (Node::App(f, _, ab), Node::App(g, _, bb)) if f == g && (ab == NIL) == (bb == NIL) => {
                 let (pa, pb) = (self.parts(a), self.parts(b));
-                pa.iter().zip(&pb).all(|(&p, &q)| self.unify(p, q, sub))
+                pa.iter()
+                    .zip(pb.iter())
+                    .all(|(&p, &q)| self.unify(p, q, sub))
             }
             _ => false,
         }
@@ -246,7 +293,10 @@ impl Terms {
             Node::Var(v) => self.mk(Node::Var(v + SHIFT)),
             Node::Con(_) => t,
             Node::App(..) => {
-                let ps: Vec<u32> = self.parts(t).into_iter().map(|p| self.shift(p)).collect();
+                let mut ps = self.parts(t);
+                for p in ps.iter_mut() {
+                    *p = self.shift(*p);
+                }
                 self.rebuild(t, &ps)
             }
         }
@@ -304,7 +354,7 @@ impl Terms {
         let mut seen = Vec::new();
         order(self, l, &mut seen);
         order(self, r, &mut seen);
-        let mut sub = vec![None; 128];
+        let mut sub: Sub = [None; 128];
         for (i, &v) in seen.iter().enumerate() {
             sub[v as usize] = Some(self.mk(Node::Var(i as u8)));
         }
@@ -464,12 +514,9 @@ impl Theory {
     }
 
     /// The ways a law may be read left to right.
-    fn sides(law: Law) -> Vec<(u32, u32)> {
-        if law.oriented {
-            vec![(law.l, law.r)]
-        } else {
-            vec![(law.l, law.r), (law.r, law.l)]
-        }
+    fn sides(law: Law) -> impl Iterator<Item = (u32, u32)> {
+        let n = if law.oriented { 1 } else { 2 };
+        [(law.l, law.r), (law.r, law.l)].into_iter().take(n)
     }
 
     /// Critical pairs: the left side of `b` unified with a non-variable
@@ -482,7 +529,7 @@ impl Theory {
                 let mut places = Vec::new();
                 self.terms.places(l1, &mut Vec::new(), &mut places);
                 for (path, at) in places {
-                    let mut sub = vec![None; 128];
+                    let mut sub: Sub = [None; 128];
                     if !self.terms.unify(at, l2, &mut sub) {
                         continue;
                     }
@@ -505,12 +552,10 @@ impl Theory {
         }
         let u = match self.terms.node(t) {
             Node::App(..) => {
-                let ps: Vec<u32> = self
-                    .terms
-                    .parts(t)
-                    .into_iter()
-                    .map(|p| self.normal(p))
-                    .collect();
+                let mut ps = self.terms.parts(t);
+                for p in ps.iter_mut() {
+                    *p = self.normal(*p);
+                }
                 self.terms.rebuild(t, &ps)
             }
             _ => t,
@@ -519,7 +564,12 @@ impl Theory {
         'laws: for i in 0..self.laws.len() {
             let law = self.laws[i];
             for (l, r) in Theory::sides(law) {
-                let mut sub = vec![None; 128];
+                // The top symbols first: most laws fail there, before a
+                // substitution is set up.
+                if !self.terms.same_top(l, u) {
+                    continue;
+                }
+                let mut sub: Sub = [None; 128];
                 if !self.terms.matches(l, u, &mut sub) {
                     continue;
                 }
@@ -547,7 +597,7 @@ impl Theory {
             return false;
         }
         for rank in ordered_partitions(vs.len()) {
-            let mut sub = vec![None; 128];
+            let mut sub: Sub = [None; 128];
             for (k, &v) in vs.iter().enumerate() {
                 sub[v as usize] = Some(self.terms.mk(Node::Con(FRESH + rank[k])));
             }

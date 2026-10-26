@@ -148,12 +148,14 @@ impl Solver {
         while self.head < self.trail.len() {
             let p = self.trail[self.head];
             self.head += 1;
-            // Clauses watching ¬p, which has just turned false.
-            let ws = std::mem::take(&mut self.watches[p.0 as usize]);
-            let mut keep = Vec::with_capacity(ws.len());
+            // Clauses watching ¬p, which has just turned false; the list is
+            // compacted in place, those still watching it kept in order.
+            let mut ws = std::mem::take(&mut self.watches[p.0 as usize]);
+            let (mut i, mut j) = (0, 0);
             let mut conflict = None;
-            let mut it = ws.into_iter();
-            for ci in it.by_ref() {
+            while i < ws.len() {
+                let ci = ws[i];
+                i += 1;
                 let false_lit = p.not();
                 let c = &mut self.clauses[ci];
                 if c[0] == false_lit {
@@ -163,7 +165,8 @@ impl Solver {
                 if self.value[first.var()] != UNSET
                     && (self.value[first.var()] ^ first.negative() as u8) == 1
                 {
-                    keep.push(ci);
+                    ws[j] = ci;
+                    j += 1;
                     continue;
                 }
                 let mut moved = false;
@@ -181,7 +184,8 @@ impl Solver {
                 if moved {
                     continue;
                 }
-                keep.push(ci);
+                ws[j] = ci;
+                j += 1;
                 match self.lit(first) {
                     0 => {
                         conflict = Some(ci);
@@ -190,10 +194,11 @@ impl Solver {
                     _ => self.assign(first, Some(ci)),
                 }
             }
-            keep.extend(it);
+            ws.copy_within(i.., j);
+            ws.truncate(j + ws.len() - i);
             let slot = &mut self.watches[p.0 as usize];
-            keep.append(slot);
-            *slot = keep;
+            ws.append(slot);
+            *slot = ws;
             if conflict.is_some() {
                 return conflict;
             }
