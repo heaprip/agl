@@ -10,7 +10,7 @@ Relation-first формальная система представления с
 1. [docs/now.md](docs/now.md) — где мы, текущая фаза, что в работе.
 2. [docs/plan.md](docs/plan.md) — единственный ход работ; чего там нет, то не в работе.
 3. [docs/principles.md](docs/principles.md) — поправки автора, которые уже нарушались; каждое предложение сверяется с ними.
-4. [docs/decisions.md](docs/decisions.md) — решения автора 1–30; не пересматриваются.
+4. [docs/decisions.md](docs/decisions.md) — решения автора 1–31; не пересматриваются.
 5. `docs/spec/foundation.md` — спецификация фундамента, когда появится (фаза Ф1).
 
 Прошлое — метка `legacy-v0` и [docs/archive/](docs/archive/README.md):
