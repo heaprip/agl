@@ -1,8 +1,0 @@
-# p is defeated (strict ~p). q depends only on p. ~q (defeasible) should then stand: answer no.
-fact f1: a(x: k) @
-rule r_p defeasible @: p(x: ?x) <- a(x: ?x)
-rule s_np strict @: ¬p(x: ?x) <- a(x: ?x)
-rule r_q defeasible @: q(x: ?x) <- p(x: ?x)
-rule r_nq defeasible @: ¬q(x: ?x) <- a(x: ?x)
-defeats r_q r_nq
-query q(x: k) @ expect no
