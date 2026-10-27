@@ -1,8 +1,0 @@
-# q is strictly derivable: a -> b -> p -> q, all strict. A defeasible ~q should lose.
-fact f1: a(x: k) @
-rule r1 defeasible @: p(x: ?x) <- a(x: ?x)
-rule t1 strict @: b(x: ?x) <- a(x: ?x)
-rule t2 strict @: p(x: ?x) <- b(x: ?x)
-rule s1 strict @: q(x: ?x) <- p(x: ?x)
-rule n1 defeasible @: ¬q(x: ?x) <- a(x: ?x)
-query q(x: k) @ expect yes

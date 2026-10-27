@@ -1,4 +1,0 @@
-relation parenthood(child, parent)
-concept parent(ego: ?e, alter: ?a) @: parenthood(child: ?e, parent: ?a)
-rule rb strict @: b(ego: ?e, alter: ?a) <- parenthood(child: ?e, parent: ?a), ?n = count(?c) over (parenthood(child: ?c, parent: ?a)), ?n < 2
-compare parent @ vs b @ expect not_below

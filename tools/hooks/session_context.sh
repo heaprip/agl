@@ -1,20 +1,21 @@
 #!/bin/sh
-# SessionStart hook (startup, resume, clear, compact): puts the current state,
-# the principles and the work order back into context, so a new or compacted
-# session does not start from memory.
+# SessionStart hook (startup, resume, clear, compact): puts the model (with
+# its corrections) and the current state back into context, so a new or
+# compacted session does not start from memory.
 cd "$(dirname "$0")/../.." || exit 0
 echo "=== agl: контекст сессии (хук tools/hooks/session_context.sh) ==="
 echo
-cat docs/now.md
+cat docs/model.md
 echo
-echo "=== docs/principles.md ==="
+echo "=== docs/course.md: «Сейчас» и «Ждёт автора» ==="
 echo
-cat docs/principles.md
+LC_ALL=C awk '/^## /{on = ($0 == "## Сейчас" || $0 == "## Ждёт автора")} on' docs/course.md
 echo
 cat <<'CARD'
 === Порядок работы ===
-- До предложения или кода прочитать целиком: docs/now.md, docs/plan.md,
-  docs/principles.md, docs/decisions.md (и docs/spec/, когда появится).
+- Выше — модель с поправками и состояние из хода работ. Прочитать самому
+  целиком: docs/course.md, docs/decisions.md; затем local/concept-graph.md,
+  local/hypotheses.md и хвост CLAUDE.local.md («Где остановились»).
   Grep — не чтение. Сказать честно, что прочитано, а что нет.
 - Роли: автор решает и одобряет; главная сессия говорит с автором и ставит
   поручения, сама не исполняет; agl-worker исполняет одно поручение;
@@ -26,9 +27,11 @@ cat <<'CARD'
 - Эксперимент — ветка от контрольной точки; независимые ветки не наследуют
   друг друга; критерий до кода; после выбора — новая контрольная точка
   (решение 24).
-- Предложение помощника — гипотеза в docs/hypotheses.md (с H77), «не
+- Предложение помощника — гипотеза в local/hypotheses.md (вне git), «не
   принято»; в decisions.md — только по прямому слову автора, безлично;
   молчание — не согласие.
 - Высказывания автора — только в CLAUDE.local.md / local/ (решение 30).
-- Закончил задачу — обнови docs/now.md в том же коммите.
+- Закончил задачу — обнови docs/course.md, раздел «Сейчас», в том же коммите.
+- Перед ответом автору по существу — сверить с local/concept-graph.md и с
+  хвостом CLAUDE.local.md («Где остановились»), а не со сводкой сжатия.
 CARD

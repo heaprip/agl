@@ -1,4 +1,0 @@
-relation edge(from, to)
-concept a(x1: ?a) @: edge(from: ?a, to: ?b)
-concept loop(x1: ?a) @: edge(from: ?a, to: ?a)
-compare a @ vs loop @ expect above
