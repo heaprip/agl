@@ -11,6 +11,15 @@ echo "=== docs/principles.md ==="
 echo
 cat docs/principles.md
 echo
+# The author's concept graph is local (not in git); print its nodes and edges
+# so a compacted session checks proposals against it, not against memory.
+if [ -f local/concept-graph.md ]; then
+  echo "=== local/concept-graph.md (узлы и рёбра) ==="
+  echo
+  sed -n '/^## Узлы/,/^## Проверка атласа/p' local/concept-graph.md | sed '$d'
+  sed -n '/^## Обновления/,$p' local/concept-graph.md
+  echo
+fi
 cat <<'CARD'
 === Порядок работы ===
 - До предложения или кода прочитать целиком: docs/now.md, docs/plan.md,
@@ -31,4 +40,6 @@ cat <<'CARD'
   молчание — не согласие.
 - Высказывания автора — только в CLAUDE.local.md / local/ (решение 30).
 - Закончил задачу — обнови docs/now.md в том же коммите.
+- Перед ответом автору по существу — сверить с графом понятий выше и с
+  хвостом CLAUDE.local.md («Где остановились»), а не со сводкой сжатия.
 CARD
