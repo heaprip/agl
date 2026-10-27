@@ -5,24 +5,20 @@
 cd "$(dirname "$0")/../.." || exit 0
 echo "=== agl: контекст сессии (хук tools/hooks/session_context.sh) ==="
 echo
+cat docs/understanding.md
+echo
 cat docs/now.md
 echo
 echo "=== docs/principles.md ==="
 echo
 cat docs/principles.md
 echo
-# The author's concept graph is local (not in git); print its nodes and edges
-# so a compacted session checks proposals against it, not against memory.
-if [ -f local/concept-graph.md ]; then
-  echo "=== local/concept-graph.md (узлы и рёбра) ==="
-  echo
-  sed -n '/^## Узлы/,/^## Проверка атласа/p' local/concept-graph.md | sed '$d'
-  sed -n '/^## Обновления/,$p' local/concept-graph.md
-  echo
-fi
 cat <<'CARD'
 === Порядок работы ===
-- До предложения или кода прочитать целиком: docs/now.md, docs/plan.md,
+- Выше — понимание, now.md и принципы; local/concept-graph.md и хвост
+  CLAUDE.local.md — прочитать самому.
+- До предложения или кода прочитать целиком: docs/understanding.md,
+  docs/now.md, docs/plan.md,
   docs/principles.md, docs/decisions.md (и docs/spec/, когда появится).
   Grep — не чтение. Сказать честно, что прочитано, а что нет.
 - Роли: автор решает и одобряет; главная сессия говорит с автором и ставит
@@ -40,6 +36,6 @@ cat <<'CARD'
   молчание — не согласие.
 - Высказывания автора — только в CLAUDE.local.md / local/ (решение 30).
 - Закончил задачу — обнови docs/now.md в том же коммите.
-- Перед ответом автору по существу — сверить с графом понятий выше и с
+- Перед ответом автору по существу — сверить с local/concept-graph.md и с
   хвостом CLAUDE.local.md («Где остановились»), а не со сводкой сжатия.
 CARD
