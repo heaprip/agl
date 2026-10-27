@@ -31,10 +31,36 @@ cat <<'CARD'
 - Закончил задачу — обнови docs/course.md, раздел «Сейчас», в том же коммите.
 - Перед ответом автору по существу — сверить с local/concept-graph.md и с
   хвостом CLAUDE.local.md («Где остановились»), а не со сводкой сжатия.
+- После compact или перед темой mini-agl прочитать
+  local/experiments/mini-agl/RESUME.md. Это индекс ПОЛНОСТЬЮ НЕПРОВЕРЕННОЙ
+  теории/POC, не решение и не основание кода.
 CARD
 echo
-echo "=== docs/course.md: «Сейчас» и «Ждёт автора» ==="
+echo "=== docs/course.md: «Ждёт автора» и «Сейчас» ==="
 echo
-LC_ALL=C awk '/^## /{on = ($0 == "## Сейчас" || $0 == "## Ждёт автора")} on' docs/course.md
+state_file="$(mktemp "${TMPDIR:-/tmp}/agl-session-context.XXXXXX")" || exit 0
+trap 'rm -f "$state_file"' EXIT HUP INT TERM
+# «Ждёт автора» first, then «Сейчас» with the remaining budget; each section is
+# shortened by whole lines, so the open questions are never the part that is cut.
+LC_ALL=C awk '
+  BEGIN { limit = 6500; used = 0; cut = 0 }
+  /^## / { sec = ($0 == "## Ждёт автора") ? 1 : (($0 == "## Сейчас") ? 2 : 0) }
+  sec { n[sec]++; t[sec, n[sec]] = $0 }
+  END {
+    for (s = 1; s <= 2; s++) {
+      for (i = 1; i <= n[s]; i++) {
+        line = length(t[s, i]) + 1
+        if (used + line > limit) { cut = 1; break }
+        print t[s, i]
+        used += line
+      }
+      if (cut) break
+    }
+    if (cut) {
+      print ""
+      print "[Состояние сокращено; прочитать docs/course.md целиком.]"
+    }
+  }
+' docs/course.md > "$state_file"
+cat "$state_file"
 echo
-
