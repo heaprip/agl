@@ -36,3 +36,15 @@ sha256 `92c28e5e02bc689684cbc6d3c9deb0f8b18f23c537994f6bab03a4668044ef31`; ре�
 исключений > 1/3. Файлы: `lawlib3.py` (условия, закон на плоскости), `select_plane.py` (пул, устойчивость,
 Уэбб), `report3.py`, `score3.py` (оракул), `run_v3.py` / `run_v3.sh [OUTDIR] [SEEDS]` (стадия v2.1 +
 стадия плоскости, итог — `OUTDIR/summary.txt`). v1 и v2 запускаются как прежде.
+
+## Реальные данные (Wikidata, родство вокруг Queen Victoria) — не принято
+
+Тот же механизм v3 без правок, другой мир. План с приёмкой до данных и кода:
+`local/experiments/mini-agl/skeleton-real-plan.md` (вне git), sha256
+`475b5602fd6066eca80f9efa2efe5e5b64986e3f68d292a3174ac62ad883e0cd`. Загрузчик (единственное
+обращение к сети) — `tools/wikidata_kinship.py`; снимок и MANIFEST хешей — `data/wikidata/`. Файлы:
+`real_world.py` (адаптер: снимок -> вход v3; режим `hold` скрывает 1/5 фактов mother/father из всех записей;
+режим `randreal` — случайный контроль того же размера), `predict_real.py` (оценка R2 вне механизма),
+`run_real.py` / `run_real.sh [OUTDIR] [SEEDS]` (миры real, hold, twin, broken, degtwin, random, randreal,
+holddeg; итог — `OUTDIR/summary.txt`). Четвёртый слот отношений v3 называется `raised_by` из-за
+`lawlib3.RELS`; по содержанию это P40 «ребёнок» как (ребёнок, родитель).

@@ -1,0 +1,31 @@
+source: Wikidata Query Service https://query.wikidata.org/sparql
+licence: Wikidata structured data is CC0 1.0 (public domain dedication)
+root: Q9439  props: P25 P22 P26 P40 P3373  both directions
+caps: people<=2000  triples<=6000 (checked after each batch of 30, ties by Q number)
+rows: 6661  people: 1597  distinct triples: 6431  sources(P248): 74  queries: 35
+fetched: 2026-10-28 (date only here; the snapshot below is the reproducible object)
+sha256 kinship-victoria.tsv b363c17bbe2b38c45379e4f60215ba561bef8c3279ce780ea3b8241e6050869f
+sha256 kinship-victoria-sources.tsv 65d28651cf0e8fad082c3746d85facd239f63dab75aa70a72c266a9ec7f53af2
+--- query template, outgoing (VALUES ?s) ---
+SELECT ?s ?prop ?o ?src WHERE {
+  hint:Query hint:optimizer "None" .
+  VALUES ?s { wd:Q..., ... }
+  { { ?s p:P25 ?st . ?st ps:P25 ?o . BIND("P25" AS ?prop) } UNION { ?s p:P22 ?st . ?st ps:P22 ?o . BIND("P22" AS ?prop) } UNION { ?s p:P26 ?st . ?st ps:P26 ?o . BIND("P26" AS ?prop) } UNION { ?s p:P40 ?st . ?st ps:P40 ?o . BIND("P40" AS ?prop) } UNION { ?s p:P3373 ?st . ?st ps:P3373 ?o . BIND("P3373" AS ?prop) } }
+  FILTER(STRSTARTS(STR(?o), "http://www.wikidata.org/entity/Q"))
+  ?st wikibase:rank ?rk . FILTER(?rk != wikibase:DeprecatedRank)
+  OPTIONAL { ?st prov:wasDerivedFrom ?ref . ?ref pr:P248 ?src }
+}
+--- query template, incoming (VALUES ?o; pattern order reversed so ?o is bound first) ---
+SELECT ?s ?prop ?o ?src WHERE {
+  hint:Query hint:optimizer "None" .
+  VALUES ?o { wd:Q..., ... }
+  { { ?st ps:P25 ?o . ?s p:P25 ?st . BIND("P25" AS ?prop) } UNION { ?st ps:P22 ?o . ?s p:P22 ?st . BIND("P22" AS ?prop) } UNION { ?st ps:P26 ?o . ?s p:P26 ?st . BIND("P26" AS ?prop) } UNION { ?st ps:P40 ?o . ?s p:P40 ?st . BIND("P40" AS ?prop) } UNION { ?st ps:P3373 ?o . ?s p:P3373 ?st . BIND("P3373" AS ?prop) } }
+  FILTER(STRSTARTS(STR(?o), "http://www.wikidata.org/entity/Q"))
+  ?st wikibase:rank ?rk . FILTER(?rk != wikibase:DeprecatedRank)
+  OPTIONAL { ?st prov:wasDerivedFrom ?ref . ?ref pr:P248 ?src }
+}
+--- label query ---
+SELECT ?x ?l WHERE {
+  VALUES ?x { wd:Q..., ... }
+  ?x rdfs:label ?l . FILTER(LANG(?l) = "en")
+}
