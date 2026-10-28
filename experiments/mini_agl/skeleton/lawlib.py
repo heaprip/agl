@@ -53,6 +53,7 @@ class World:
         self.n = max(2, len(persons))
         self.c = 2 * math.log2(self.n)  # bits for one pair, code defined by the world
         self.cache = {}
+        self.scope_cache = {}  # depends on rosters only; twins of a world share it
 
     def restrict(self, persons):
         out = {}
@@ -122,6 +123,14 @@ def eval_term(w, t):
 
 def in_scope(w, t, x, y):
     """Could the pair (x,y) be recorded by term t? Roster-based; absent != violated."""
+    key = (t, x, y)
+    v = w.scope_cache.get(key)
+    if v is None:
+        v = w.scope_cache[key] = _in_scope(w, t, x, y)
+    return v
+
+
+def _in_scope(w, t, x, y):
     if len(t) == 1:
         a = t[0]
         px, py = (y, x) if a.endswith("~") else (x, y)
@@ -187,3 +196,26 @@ def exceptions(w, t1, t2):
     """Listed exceptions: pairs of t1 in scope of t2 that t2 does not give."""
     r2 = eval_term(w, t2)
     return sorted(p for p in eval_term(w, t1) if in_scope(w, t2, *p) and p not in r2)
+
+
+def degree_switch(facts, rng):
+    """Degree-preserving twin of one record (HR3-style): switch targets of two facts,
+    (a,b),(c,d) -> (a,d),(c,b), when no self-loop and no duplicate results. 10*|facts| tries.
+    Out- and in-degree of every person in the record are kept."""
+    edges = sorted(facts)
+    cur = set(edges)
+    n = len(edges)
+    if n < 2:
+        return set(cur)
+    for _ in range(10 * n):
+        i, j = int(rng.random() * n), int(rng.random() * n)
+        if i == j:
+            continue
+        a, b = edges[i]
+        c, d = edges[j]
+        if a == d or c == b or (a, d) in cur or (c, b) in cur:
+            continue
+        cur -= {(a, b), (c, d)}
+        cur |= {(a, d), (c, b)}
+        edges[i], edges[j] = (a, d), (c, b)
+    return cur

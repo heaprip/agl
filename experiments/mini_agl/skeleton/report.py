@@ -33,11 +33,13 @@ def main():
     recs = read_world(wpath)
     find, hold = split(recs)
     wa, wf, wh = World(recs), World(find), World(hold)
-    stats, sel = {}, []
+    stats, sel, cols = {}, [], None
     for line in open(spath).read().splitlines():
         p = line.split("\t")
         if p[0] == "#stat":
             stats[p[1]] = int(p[2])
+        elif p[0] == "#cols":
+            cols = p[1:]
         elif not line.startswith("#") and p[-1] == "1":
             sel.append((parse_law(p[0]), p))
     out = ["# report: records=%d find=%d hold=%d" % (len(recs), len(find), len(hold))]
@@ -58,7 +60,7 @@ def main():
             if s and s[0] > 0:
                 slices.append(rid)
         out.append("LAW %s" % law_str(t1, t2))
-        out.append("  c1 save(find)=%s  c2 twinMax=%s  c3 save(hold)=%s  c4 not derivable" % (p[1], p[2], p[4]))
+        out.append("  " + "  ".join("%s=%s" % kv for kv in zip(cols, p)) + "  not derivable")
         out.append("  all-world: %s" % (sa[1] if sa else None))
         out.append("  plane: %s; roster slices holding: %d/%d" % (", ".join(planes), len(slices), len(recs)))
         out.append("  sources: %s" % ", ".join("%s=%d" % kv for kv in sorted(sources(wa, t1, t2).items())))
